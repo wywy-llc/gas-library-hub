@@ -1,19 +1,18 @@
 <script lang="ts">
   import LibraryCard from '$lib/components/LibraryCard.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import SearchBox from '$lib/components/SearchBox.svelte';
   import { createFullUrl, getLogoUrl } from '$lib/constants/app-config.js';
-  import { SvelteURLSearchParams } from 'svelte/reactivity';
   import {
     all_libraries_count,
     meta_keywords_home,
-    next,
     no_search_results,
-    previous,
     search_from_box,
     search_gas_libraries,
     search_results_for,
     try_different_keywords,
   } from '$lib/paraglide/messages.js';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
   import type { PageData } from './$types.js';
 
   // 検索結果ページコンポーネント
@@ -46,29 +45,13 @@
     return createFullUrl(`/user/search${queryString ? `?${queryString}` : ''}`);
   });
 
-  // 前のページのURL生成
-  const prevPageUrl = $derived.by(() => {
-    if (data.currentPage <= 1) return '';
-    const params = new SvelteURLSearchParams();
-    if (data.searchQuery) params.set('q', data.searchQuery);
-    if (data.scriptType) params.set('scriptType', data.scriptType);
-    if (data.currentPage - 1 > 1) params.set('page', (data.currentPage - 1).toString());
-    const queryString = params.toString();
-    return `/user/search${queryString ? `?${queryString}` : ''}`;
-  });
+  const prevPageUrl = $derived(data.currentPage > 1 ? getPageUrl(data.currentPage - 1) : '');
 
-  // 次のページのURL生成
-  const nextPageUrl = $derived.by(() => {
-    if (data.currentPage >= totalPages) return '';
-    const params = new SvelteURLSearchParams();
-    if (data.searchQuery) params.set('q', data.searchQuery);
-    if (data.scriptType) params.set('scriptType', data.scriptType);
-    params.set('page', (data.currentPage + 1).toString());
-    const queryString = params.toString();
-    return `/user/search?${queryString}`;
-  });
+  const nextPageUrl = $derived(
+    data.currentPage < totalPages ? getPageUrl(data.currentPage + 1) : ''
+  );
 
-  // 指定ページのURL生成関数
+  // ページURL生成関数
   function getPageUrl(pageNum: number): string {
     const params = new SvelteURLSearchParams();
     if (data.searchQuery) params.set('q', data.searchQuery);
@@ -139,143 +122,9 @@
     </section>
 
     <!-- ページネーション -->
-    <nav
-      class="mx-auto mt-12 flex max-w-3xl items-center justify-between border-t border-gray-200 px-4 pt-6 sm:px-0"
-      aria-label="ページネーション"
-    >
-      <div class="-mt-px flex w-0 flex-1">
-        {#if data.currentPage > 1}
-          <a
-            href={prevPageUrl}
-            class="inline-flex items-center border-t-2 border-transparent pt-4 pr-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-            aria-label="前のページへ"
-            rel="prev"
-          >
-            <svg
-              class="mr-3 h-5 w-5 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M18 10a.75.75 0 01-.75.75H4.66l2.1 1.95a.75.75 0 11-1.02 1.1l-3.5-3.25a.75.75 0 010-1.1l3.5-3.25a.75.75 0 111.02 1.1l-2.1 1.95h12.59A.75.75 0 0118 10z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            {previous()}
-          </a>
-        {/if}
-      </div>
-      <div class="hidden md:-mt-px md:flex">
-        <!-- 現在のページを中心とした動的ページネーション -->
-        {#if totalPages <= 7}
-          <!-- 総ページ数が7以下の場合は全ページを表示 -->
-          {#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum (pageNum)}
-            {#if pageNum === data.currentPage}
-              <span
-                class="inline-flex items-center border-t-2 border-blue-600 px-4 pt-4 text-sm font-medium text-blue-600"
-                aria-current="page"
-              >
-                {pageNum}
-              </span>
-            {:else}
-              <a
-                href={getPageUrl(pageNum)}
-                class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                aria-label="ページ {pageNum} へ"
-              >
-                {pageNum}
-              </a>
-            {/if}
-          {/each}
-        {:else}
-          <!-- 総ページ数が8以上の場合は現在のページを中心とした表示 -->
-          {@const startPage = Math.max(1, data.currentPage - 2)}
-          {@const endPage = Math.min(totalPages, data.currentPage + 2)}
-
-          <!-- 最初のページ -->
-          {#if startPage > 1}
-            <a
-              href={getPageUrl(1)}
-              class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              aria-label="ページ 1 へ"
-            >
-              1
-            </a>
-            {#if startPage > 2}
-              <span
-                class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500"
-                >...</span
-              >
-            {/if}
-          {/if}
-
-          <!-- 現在のページ周辺 -->
-          {#each Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i) as pageNum (pageNum)}
-            {#if pageNum === data.currentPage}
-              <span
-                class="inline-flex items-center border-t-2 border-blue-600 px-4 pt-4 text-sm font-medium text-blue-600"
-                aria-current="page"
-              >
-                {pageNum}
-              </span>
-            {:else}
-              <a
-                href={getPageUrl(pageNum)}
-                class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                aria-label="ページ {pageNum} へ"
-              >
-                {pageNum}
-              </a>
-            {/if}
-          {/each}
-
-          <!-- 最後のページ -->
-          {#if endPage < totalPages}
-            {#if endPage < totalPages - 1}
-              <span
-                class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500"
-                >...</span
-              >
-            {/if}
-            <a
-              href={getPageUrl(totalPages)}
-              class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              aria-label="最終ページ {totalPages} へ"
-            >
-              {totalPages}
-            </a>
-          {/if}
-        {/if}
-      </div>
-      <div class="-mt-px flex w-0 flex-1 justify-end">
-        {#if data.currentPage < totalPages}
-          <a
-            href={nextPageUrl}
-            class="inline-flex items-center border-t-2 border-transparent pt-4 pl-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-            aria-label="次のページへ"
-            rel="next"
-          >
-            {next()}
-            <svg
-              class="ml-3 h-5 w-5 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </a>
-        {/if}
-      </div>
-    </nav>
+    <div class="mx-auto mt-12 max-w-3xl">
+      <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
+    </div>
   {:else}
     <section class="mx-auto max-w-3xl py-12 text-center" aria-label="検索結果なし">
       <svg
