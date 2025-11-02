@@ -27,16 +27,16 @@
   // 現在のロケールを取得
   const currentLocale = getLocale();
 
-  // SEO関連のデータを取得
-  const getSeoTitle = () => generateSeoTitle(library, librarySummary, currentLocale);
-  const getSeoDescription = () => generateSeoDescription(library, librarySummary, currentLocale);
-  const getSeoKeywords = () => generateKeywords(librarySummary, currentLocale);
-  const getJsonLd = () => generateJsonLd(library, librarySummary, currentLocale);
+  // SEO関連のデータをメモ化（$derivedでパフォーマンス最適化）
+  const seoTitle = $derived(generateSeoTitle(library, librarySummary, currentLocale));
+  const seoDescription = $derived(generateSeoDescription(library, librarySummary, currentLocale));
+  const seoKeywords = $derived(generateKeywords(librarySummary, currentLocale));
+  const jsonLd = $derived(generateJsonLd(library, librarySummary, currentLocale));
 
-  // コンポーネントマウント時にJSON-LDを動的に追加
+  // コンポーネントマウント時にJSON-LDを動的に追加（$derivedメモ化済みのjsonLdを使用）
   onMount(() => {
     // JSON-LDを追加
-    addJsonLdToHead(getJsonLd());
+    addJsonLdToHead(jsonLd);
 
     // クリーンアップ関数を返す
     return () => {
@@ -118,14 +118,14 @@
 </script>
 
 <svelte:head>
-  <title>{getSeoTitle()}</title>
-  <meta name="description" content={getSeoDescription()} />
-  <meta name="keywords" content={getSeoKeywords()} />
+  <title>{seoTitle}</title>
+  <meta name="description" content={seoDescription} />
+  <meta name="keywords" content={seoKeywords} />
   <meta name="author" content={library.authorName} />
 
   <!-- Open Graph tags -->
-  <meta property="og:title" content={getSeoTitle()} />
-  <meta property="og:description" content={getSeoDescription()} />
+  <meta property="og:title" content={seoTitle} />
+  <meta property="og:description" content={seoDescription} />
   <meta property="og:type" content="article" />
   <meta property="og:url" content={createAppUrl(`/user/libraries/${library.id}`)} />
   <meta property="og:site_name" content="GAS Library Hub" />
@@ -139,8 +139,8 @@
   <!-- Twitter Card tags -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content={createAppUrl(`/user/libraries/${library.id}`)} />
-  <meta name="twitter:title" content={getSeoTitle()} />
-  <meta name="twitter:description" content={getSeoDescription()} />
+  <meta name="twitter:title" content={seoTitle} />
+  <meta name="twitter:description" content={seoDescription} />
   <meta name="twitter:image" content={createAppUrl(`/user/libraries/${library.id}/ogp-image`)} />
   <meta name="twitter:creator" content={`@${library.authorName}`} />
 
