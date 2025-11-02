@@ -22,6 +22,13 @@
       "when": 1752318631697,
       "tag": "0002_tricky_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751803489224,
+      "tag": "0003_add_library_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

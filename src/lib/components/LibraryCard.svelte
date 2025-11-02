@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
     last_updated,
-    search_by_tag_aria,
-    search_by_tag_tooltip,
     script_type_library,
     script_type_web_app,
+    search_by_tag_aria,
+    search_by_tag_tooltip,
   } from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime.js';
   // cspell:ignore paraglide
@@ -13,9 +13,15 @@
   import type { Library } from '$lib/server/db/schema.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
 
+  // パフォーマンス最適化: 必要最小限のフィールドのみを要求
+  type MinimalLibrarySummary = Pick<
+    LibrarySummaryRecord,
+    'id' | 'libraryId' | 'tagsJa' | 'tagsEn' | 'seoDescriptionJa' | 'seoDescriptionEn'
+  >;
+
   interface Props {
     library: Library;
-    librarySummary?: LibrarySummaryRecord | null;
+    librarySummary?: MinimalLibrarySummary | null;
   }
 
   let { library, librarySummary }: Props = $props();
@@ -41,7 +47,7 @@
   data-testid="library-card"
   class="flex flex-col rounded-lg border border-gray-200 p-6 transition-all hover:border-gray-300 hover:shadow-lg"
 >
-  <div class="flex-grow">
+  <div class="grow">
     <div class="flex flex-wrap items-center gap-2">
       <h3 class="text-xl font-semibold text-blue-600 hover:underline">
         <a href="/user/libraries/{library.id}">
