@@ -2,6 +2,7 @@
   import LibraryCard from '$lib/components/LibraryCard.svelte';
   import SearchBox from '$lib/components/SearchBox.svelte';
   import { createFullUrl, getLogoUrl } from '$lib/constants/app-config.js';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
   import {
     all_libraries_count,
     meta_keywords_home,
@@ -38,7 +39,7 @@
     : `Google Apps Scriptライブラリの一覧。${totalResults}件の便利なライブラリを検索できます。`;
 
   $: currentUrl = (() => {
-    const params = new URLSearchParams();
+    const params = new SvelteURLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (scriptType) params.set('scriptType', scriptType);
     if (currentPage > 1) params.set('page', currentPage.toString());
@@ -49,7 +50,7 @@
   // 前のページのURL生成
   $: prevPageUrl = (() => {
     if (currentPage <= 1) return '';
-    const params = new URLSearchParams();
+    const params = new SvelteURLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (scriptType) params.set('scriptType', scriptType);
     if (currentPage - 1 > 1) params.set('page', (currentPage - 1).toString());
@@ -60,7 +61,7 @@
   // 次のページのURL生成
   $: nextPageUrl = (() => {
     if (currentPage >= totalPages) return '';
-    const params = new URLSearchParams();
+    const params = new SvelteURLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (scriptType) params.set('scriptType', scriptType);
     params.set('page', (currentPage + 1).toString());
@@ -70,7 +71,7 @@
 
   // 指定ページのURL生成関数
   function getPageUrl(pageNum: number): string {
-    const params = new URLSearchParams();
+    const params = new SvelteURLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (scriptType) params.set('scriptType', scriptType);
     if (pageNum > 1) params.set('page', pageNum.toString());

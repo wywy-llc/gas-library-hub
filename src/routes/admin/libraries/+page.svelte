@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
   import StatusUpdateButtons from '$lib/components/admin/StatusUpdateButtons.svelte';
   import Footer from '$lib/components/Footer.svelte';
   import { APP_CONFIG, PAGINATION } from '$lib/constants/app-config.js';
@@ -318,7 +319,7 @@
     const actualSearchValue = searchInput?.value || '';
 
     // URLを構築
-    const params = new URLSearchParams();
+    const params = new SvelteURLSearchParams();
     if (actualSearchValue.trim()) {
       params.set('search', actualSearchValue.trim());
     }
