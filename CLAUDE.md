@@ -1,128 +1,31 @@
-# CLAUDE.md
+# CLAUDE.md - Svelte 5
 
-このファイルは、このリポジトリでコードを操作する際にClaude Code (claude.ai/code) にガイダンスを提供します。
+> **グローバル規約**: `~/.claude/CLAUDE.md`のMCP Autonomous Agent規約に準拠
+> **ワークフロー**: `~/.claude/specifications/workflow/workflow-guide.md`参照
 
-## 🛠️ 開発コマンド
+## Svelte 5 + SvelteKit規約
 
-### 主要コマンド
+### Runes徹底活用
 
-- `npm run dev` - 開発サーバー起動（Paraglideコンパイル→Vite開発サーバー）
-- `npm run build` - 本番ビルド（Paraglideコンパイル→Viteビルド）
-- `npm run preview` - 本番ビルドプレビュー
-- `npm run test` - **🚨 全テスト実行（必須）**
-- `npm run paraglide:compile` - 国際化ファイルコンパイル
-- `npm run db:push` - データベーススキーマ更新
-- `npm run db:studio` - Drizzle Studio起動
-
-その他のコマンドは@package.jsonを参照
-
-## 🚨 必須：コード変更時の手順
-
-**全てのコード変更後に必ず実行：**
-
-```bash
-npm run test
+```yaml
+絶対原則: リアクティブ状態管理はRunes第一選択
+状態宣言: { 使用: $state, 禁止: letリアクティブ宣言 }
+算出プロパティ: { 使用: $derived }
+副作用: { 使用: $effect }
+Props: { 使用: $props, 禁止: export let }
+イベント: { 推奨: Propsコールバック, 非推奨: createEventDispatcher }
 ```
 
-これにより以下が順次実行されます：
+### ページテスト配置
 
-1. `npm run lint` - コードフォーマットとESLintチェック
-2. `npm run check` - TypeScript型チェック
-3. `npm run test:unit -- --run` - ユニットテスト
-4. `npm run test:e2e` - E2Eテスト
+```yaml
+原則: src/routes/ → src/stories/pages/にStorybookストーリー作成
+命名: '{PageName}.stories.svelte'
+例: src/routes/double-check/+page.svelte → src/stories/pages/DoubleCheckPage.stories.svelte
+制約: play関数使用禁止
+```
 
-**🔴 絶対ルール：**
-
-- **全てのテストがパスするまで作業完了禁止**
-- **修正内容に関係なく、エラーが発生したら必ず修正**
-- **エラーが残った状態での作業終了は絶対禁止**
-
-**💡 開発ワークフロー**:
-
-1. **コード修正・実装**
-2. **`npm run test`を実行**
-3. **🔴 エラーがある場合は必ず修正**（修正内容と関係なくても）
-   - lintエラー → コードフォーマットやESLintルール違反を修正
-   - 型エラー → TypeScript型定義を修正
-   - テストエラー → テストコードまたは実装を修正
-4. **全てのテストがパスするまで手順2-3を繰り返す**
-5. **🟢 全てのテストがパスしたら作業完了**
-
-**エラー修正の優先順位：**
-
-1. lint エラー（コードフォーマット・ESLint）
-2. TypeScript型エラー
-3. ユニットテストエラー
-4. E2Eテストエラー
-
-## 🏗️ アーキテクチャ
-
-### コアスタック
-
-- **フレームワーク**: SvelteKit 2.x + Svelte 5
-- **データベース**: PostgreSQL + Drizzle ORM
-- **認証**: Auth.js + Google OAuth（カスタムセッションも後方互換性で保持）
-- **国際化**: Paraglide JS（英語・日本語対応）
-- **スタイリング**: Tailwind CSS v4
-- **テスト**: Vitest (ユニット) + Playwright (E2E) + Storybook
-- **デプロイ**: Vercelアダプター
-- **ビルド**: Vite + TypeScript + ESLint + Prettier
-- **Markdown**: MDSvex（SvelteでのMarkdownサポート）
-- **外部API**: OpenAI API（AI要約生成）、GitHub API（リポジトリ情報取得）
-
-### プロジェクト構成
-
-- `src/lib/` - 共有ユーティリティとコンポーネント
-  - `constants/` - 定数定義ファイル（エラーメッセージ、設定値等）
-  - `paraglide/` - 国際化（i18n）関連ファイル
-    - `messages/` - 多言語メッセージファイル
-    - `runtime.js` - Paraglide JSランタイム
-  - `server/` - サーバーサイド専用コード
-    - `db/schema.ts` - Drizzleデータベーススキーマ
-    - `auth.ts` - カスタムセッション管理（後方互換性）
-    - `services/` - ビジネスロジックサービス
-- `src/routes/` - SvelteKitファイルベースルーティング
-- `src/stories/` - Storybookコンポーネント
-- `test/` - テスト関連ファイル
-  - `e2e/` - Playwrightテスト
-  - `factories/` - テストデータファクトリ
-  - `scripts/` - データベース管理スクリプト
-- `src/hooks.server.ts` - Auth.js + 国際化ハンドラー
-- `project.inlang/` - Paraglide JS設定
-
-### データベース
-
-- **DB**:
-  - **本番**: PostgreSQL、スキーマ: `src/lib/server/db/schema.ts`
-  - **接続**: `@neondatabase/serverless`、`@vercel/postgres`、`pg`対応
-  - **環境変数**: `DATABASE_URL`（本番）、`DATABASE_TEST_URL`（テスト）
-- **国際化**: Paraglide JS、Cookie名: `PARAGLIDE_LOCALE`、対応言語: `en`, `ja`
-
-## 🧪 テスト設定
-
-### コマンド
-
-- `npm run test` - **🚨 全テスト実行（必須）**
-- `npm run test:unit` - ユニットテストのみ
-- `npm run test:e2e` - E2Eテストのみ
-- `npm run storybook` - Storybookサーバー起動
-
-**注意**: `npm run test`は`npm run lint && npm run check && npm run test:unit -- --run && npm run test:e2e`を実行し、リント、型チェック、ユニットテスト、E2Eテストを順次実行します。
-
-### テスト構成
-
-- **ユニット**: Vitest（クライアント: jsdom、サーバー: node）
-  - クライアントテスト: `*.svelte.{test,spec}.{js,ts}` (jsdom環境)
-  - サーバーテスト: `*.{test,spec}.{js,ts}` (node環境)
-- **E2E**: Playwright（本番ビルドテスト）
-- **コンポーネント**: Storybook + 複数アドオン
-  - `addon-vitest` - play関数でのインタラクティブテスト
-  - `addon-docs` - 自動ドキュメント生成
-  - `addon-a11y` - アクセシビリティチェック
-  - `addon-svelte-csf` - Svelteコンポーネント対応
-  - play 関数を使用し、コンポーネントが期待通りの動作をすることを検証してください
-
-### E2Eデータベース管理
+## E2Eデータベース管理
 
 **自動管理**:
 
@@ -140,81 +43,113 @@ await db.execute(sql`DELETE FROM "library"`);
 await db.execute(sql`DELETE FROM "user"`);
 ```
 
-### テストデータFactory（E2E）
+## サービス層規約
 
-**🚨 必須**: 全テストデータ生成は`test/factories`の共通システム使用
+### オブジェクトリテラルパターン
 
-```typescript
-// 使用例
-import { LibraryTestDataFactories, DatabaseLibraryDataFactory } from '@/test/factories';
-
-// テストデータ生成
-const data = LibraryTestDataFactories.default.build();
-// DB作成
-const id = await DatabaseLibraryDataFactory.create();
-```
-
-**新Factory作成**:
-
-- `createPresetFactories()` - テストデータ用
-- `createDatabaseFactory()` - DB作成用  
-- `generateUniqueId()` - 一意ID生成
-- 型: `string | undefined`は`undefined`使用（`null`禁止）
-
-## 🔢 マジックナンバー・定数管理
-
-**🚨 必須ルール**: 全てのマジックナンバー・文字列リテラル・設定値を定数化
-
-### 実装パターン
+**絶対原則**: IIFE+as constパターン徹底。クラス静的メソッド禁止。
 
 ```typescript
-// src/lib/constants/example.ts
-export const EXAMPLE_CONFIG = {
-  MAX_ITEMS: 50,
-  STATUS_ACTIVE: 'active',
-  STATUS_INACTIVE: 'inactive',
-} as const;
-
-export type ExampleStatus = (typeof EXAMPLE_CONFIG)[keyof typeof EXAMPLE_CONFIG];
-
-export const EXAMPLE_MESSAGES = {
-  [EXAMPLE_CONFIG.STATUS_ACTIVE]: 'アクティブ',
-  [EXAMPLE_CONFIG.STATUS_INACTIVE]: '非アクティブ',
-} as const;
+export const ProcessQuotePdfService = (() => {
+  const privateHelper = () => {
+    /* ... */
+  };
+  return {
+    call: () => {
+      /* 公開メソッド */
+    },
+  } as const;
+})();
 ```
 
-### 対象
+### SSR+クライアント更新パターン
 
-1. ステータス値（`'pending'`, `'published'`, `'rejected'`）
-2. 数値設定（ページネーション、タイムアウト、制限値）
-3. UI設定（CSSクラス、カラーコード）
-4. メッセージ（エラー、確認ダイアログ）
-5. 設定値（APIエンドポイント、デフォルト値）
+```typescript
+// +page.server.ts
+export const load: PageServerLoad = async () => {
+  const data = await GetDataServerService.call(); // SSR
+  return { data };
+};
 
-### 使用ルール
+// +page.svelte
+let { data } = $props();
+let items = $state(data.items);
+const handleUpdate = async () => {
+  items = await GetDataService.call(); // クライアント
+};
+```
 
-- ✅ `LIBRARY_STATUS.PENDING`
-- ❌ `'pending'`
-- ✅ `CONFIG.MAX_ITEMS`
-- ❌ `50`
+### 命名規則
 
-**💡 メリット:**
+```yaml
+パターン: 動詞+名詞+Service
+データ取得系:
+  単体: [GetCommentService, PostCommentService, PutCommentService, DeleteCommentService]
+  一覧: GetAllCommentsService
+  条件付: [GetCommentsByUserService, GetProductsByCategoryService]
+```
 
-- 型安全性の向上
-- 保守性の向上（値変更時は1箇所だけ修正）
-- 一貫性の確保
-- IDEの補完機能が活用可能
-- リファクタリングの容易性
+---
 
-## 🎭 Playwright MCP使用ルール
+## スタイリング規約
 
-### 絶対禁止
+### daisyUI v5
 
-1. **コード実行禁止**: Python、JavaScript、Bash等でのブラウザ操作
-2. **直接呼び出しのみ**: MCPツール（browser_navigate、browser_screenshot等）のみ使用
-3. **エラー時即報告**: 回避策禁止、エラーメッセージをそのまま伝達
+```yaml
+絶対原則: btn・card・modal・input等を第一選択
+Usage調査: 不明時はContext7 MCPで公式ドキュメント調査（推測禁止）
+デザイン方針: Outline基本（btn-outline等）、Primary actionのみソリッド
+カスタム: daisyUI対応不可時のみTailwindクラス補完
+例外: padding・margin調整はTailwindクラス推奨
+```
 
-### 環境変数管理
+### Tailwind CSS
 
-- **開発環境**: `.env`（チーム共有設定、Docker PostgreSQL）
-- **新規セットアップ**: `.env.example`を`.env`にコピー
+```yaml
+禁止: '@apply多用'
+推奨: Svelteコンポーネント化
+一貫性: プロジェクト全体でdaisyUI v5設計システム視覚一貫性
+```
+
+### テストコマンド
+
+```yaml
+関連テスト: ./scripts/dev.sh related '<修正ファイルパス>'
+全体テスト: npm run test
+Storybook起動: npm run story
+Test Runner: npm run test:storybook
+```
+
+---
+
+## デバッグ規約
+
+**絶対原則**: UI/画面バグは実動作確認の再現ファーストアプローチ徹底。
+
+### デバッグツール選択
+
+```yaml
+第一選択: /debug-ui（Chrome DevTools MCP統合）
+対象:
+  - UI要素動作異常
+  - データ不整合表示問題
+  - イベントハンドラー不具合
+  - レスポンシブデザイン崩れ
+第二選択: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
+```
+
+### デバッグ実行フロー
+
+```yaml
+基本コマンド: /debug-ui [対象URL]
+詳細: .claude/commands/debug-ui.md参照
+
+手順概要: 1. サーバー起動確認（http://localhost:5173）
+  2. データ整合性確認（src/lib/data/テストデータ）
+  3. バグ再現（Chrome DevTools MCP自動操作）
+  4. インタラクティブデバッグ（AI提案に基づき段階的調査）
+  5. 根本原因特定
+  6. 修正実装
+  7. 自動検証（--verifyオプション）
+  8. 全体テスト（npm run test）
+```
