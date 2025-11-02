@@ -24,10 +24,9 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "story": "storybook dev -p 6006 --no-open",
-    "test:storybook": "dotenv -e .env.test -- start-server-and-test story http://127.0.0.1:6006 test-storybook:run",
-    "test-storybook:run": "dotenv -e .env.test -- test-storybook --url http://127.0.0.1:6006 --index-json",
+    "test:storybook": "NODE_ENV=test start-server-and-test story http://127.0.0.1:6006 test-storybook:run",
+    "test-storybook:run": "NODE_ENV=test test-storybook --url http://127.0.0.1:6006 --index-json",
     "build-story": "storybook build",
-    "build-storybook": "storybook build",
     "paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide"
   },
   "devDependencies": {
@@ -40,6 +39,7 @@
     "@storybook/addon-svelte-csf": "^5.0.10",
     "@storybook/addon-vitest": "^10.0.2",
     "@storybook/sveltekit": "^10.0.2",
+    "@storybook/test-runner": "^0.24.1",
     "@sveltejs/adapter-vercel": "^6.1.1",
     "@sveltejs/kit": "^2.48.4",
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
@@ -62,6 +62,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.1.0",
     "mdsvex": "^0.12.6",
+    "start-server-and-test": "^2.1.2",
     "prettier": "^3.6.2",
     "prettier-plugin-svelte": "^3.4.0",
     "prettier-plugin-tailwindcss": "^0.7.1",
