@@ -1,13 +1,10 @@
 # GAS Library Hub
 
-<https://wywy-llc.github.io/gas-library-hub/>
-
-[![Website](https://img.shields.io/badge/Website-Live-brightgreen)](https://appscripthub.com)
-[![Built with SvelteKit](https://img.shields.io/badge/Built%20with-SvelteKit-ff3e00)](https://kit.svelte.dev/)
-
 ## 📖 サイト概要
 
-**GAS Library Hub** は、Google Apps Script（GAS）の優れたライブラリを発見・共有するためのプラットフォームです。開発者がGASライブラリを効率的に見つけ、プロジェクトに活用できるようサポートします。
+**[GAS Library Hub](https://appscripthub.com/)** は、Google Apps Script（GAS）の優れたライブラリを発見・共有するためのプラットフォームです。開発者が必要なGASライブラリを効率的に見つけ、プロジェクトに活用できるようサポートします。
+
+🌐 **公式サイト**: <https://appscripthub.com/>
 
 ### 🎯 主な機能
 
