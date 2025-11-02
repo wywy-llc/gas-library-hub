@@ -19,61 +19,60 @@
   // 検索結果ページコンポーネント
   // GASライブラリの検索結果を表示し、ページネーション機能を提供
 
-  export let data: PageData;
-
-  $: ({ libraries, totalResults, searchQuery, scriptType, currentPage, itemsPerPage } = data);
-
-  // 検索ボックス用のローカル値（将来の拡張用）
-  // let value = searchQuery;
+  let { data } = $props<{ data: PageData }>();
 
   // 結果件数に基づいてページ数を動的に計算
-  $: totalPages = Math.ceil(totalResults / itemsPerPage);
+  const totalPages = $derived(Math.ceil(data.totalResults / data.itemsPerPage));
 
   // SEO用のmeta情報を動的に生成
-  $: pageTitle = searchQuery
-    ? `${search_results_for({ query: searchQuery, count: totalResults })} - GAS Library Hub`
-    : `${all_libraries_count({ count: totalResults })} - GAS Library Hub`;
+  const pageTitle = $derived(
+    data.searchQuery
+      ? `${search_results_for({ query: data.searchQuery, count: data.totalResults })} - GAS Library Hub`
+      : `${all_libraries_count({ count: data.totalResults })} - GAS Library Hub`
+  );
 
-  $: pageDescription = searchQuery
-    ? `"${searchQuery}"の検索結果を表示中。${totalResults}件のGoogle Apps Scriptライブラリが見つかりました。`
-    : `Google Apps Scriptライブラリの一覧。${totalResults}件の便利なライブラリを検索できます。`;
+  const pageDescription = $derived(
+    data.searchQuery
+      ? `"${data.searchQuery}"の検索結果を表示中。${data.totalResults}件のGoogle Apps Scriptライブラリが見つかりました。`
+      : `Google Apps Scriptライブラリの一覧。${data.totalResults}件の便利なライブラリを検索できます。`
+  );
 
-  $: currentUrl = (() => {
+  const currentUrl = $derived.by(() => {
     const params = new SvelteURLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (scriptType) params.set('scriptType', scriptType);
-    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (data.searchQuery) params.set('q', data.searchQuery);
+    if (data.scriptType) params.set('scriptType', data.scriptType);
+    if (data.currentPage > 1) params.set('page', data.currentPage.toString());
     const queryString = params.toString();
     return createFullUrl(`/user/search${queryString ? `?${queryString}` : ''}`);
-  })();
+  });
 
   // 前のページのURL生成
-  $: prevPageUrl = (() => {
-    if (currentPage <= 1) return '';
+  const prevPageUrl = $derived.by(() => {
+    if (data.currentPage <= 1) return '';
     const params = new SvelteURLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (scriptType) params.set('scriptType', scriptType);
-    if (currentPage - 1 > 1) params.set('page', (currentPage - 1).toString());
+    if (data.searchQuery) params.set('q', data.searchQuery);
+    if (data.scriptType) params.set('scriptType', data.scriptType);
+    if (data.currentPage - 1 > 1) params.set('page', (data.currentPage - 1).toString());
     const queryString = params.toString();
     return `/user/search${queryString ? `?${queryString}` : ''}`;
-  })();
+  });
 
   // 次のページのURL生成
-  $: nextPageUrl = (() => {
-    if (currentPage >= totalPages) return '';
+  const nextPageUrl = $derived.by(() => {
+    if (data.currentPage >= totalPages) return '';
     const params = new SvelteURLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (scriptType) params.set('scriptType', scriptType);
-    params.set('page', (currentPage + 1).toString());
+    if (data.searchQuery) params.set('q', data.searchQuery);
+    if (data.scriptType) params.set('scriptType', data.scriptType);
+    params.set('page', (data.currentPage + 1).toString());
     const queryString = params.toString();
     return `/user/search?${queryString}`;
-  })();
+  });
 
   // 指定ページのURL生成関数
   function getPageUrl(pageNum: number): string {
     const params = new SvelteURLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (scriptType) params.set('scriptType', scriptType);
+    if (data.searchQuery) params.set('q', data.searchQuery);
+    if (data.scriptType) params.set('scriptType', data.scriptType);
     if (pageNum > 1) params.set('page', pageNum.toString());
     const queryString = params.toString();
     return `/user/search${queryString ? `?${queryString}` : ''}`;
@@ -104,10 +103,10 @@
   <link rel="canonical" href={currentUrl} />
 
   <!-- Pagination Meta Tags -->
-  {#if currentPage > 1}
+  {#if data.currentPage > 1}
     <link rel="prev" href={prevPageUrl} />
   {/if}
-  {#if currentPage < totalPages}
+  {#if data.currentPage < totalPages}
     <link rel="next" href={nextPageUrl} />
   {/if}
 </svelte:head>
@@ -116,23 +115,23 @@
   <!-- 検索バーと結果件数 -->
   <header class="mb-8">
     <div class="mx-auto mb-6 max-w-xl">
-      <SearchBox placeholder={search_gas_libraries()} value={searchQuery} />
+      <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
     </div>
-    {#if searchQuery}
+    {#if data.searchQuery}
       <h1 class="text-center text-2xl font-bold text-gray-800">
-        {search_results_for({ query: searchQuery, count: totalResults })}
+        {search_results_for({ query: data.searchQuery, count: data.totalResults })}
       </h1>
     {:else}
       <h1 class="text-center text-2xl font-bold text-gray-800">
-        {all_libraries_count({ count: totalResults })}
+        {all_libraries_count({ count: data.totalResults })}
       </h1>
     {/if}
   </header>
 
   <!-- ライブラリリスト -->
-  {#if libraries.length > 0}
+  {#if data.libraries.length > 0}
     <section class="mx-auto max-w-3xl space-y-6" aria-label="検索結果ライブラリ一覧">
-      {#each libraries as library (library.id)}
+      {#each data.libraries as library (library.id)}
         <article>
           <LibraryCard {library} librarySummary={library.librarySummary} />
         </article>
@@ -145,7 +144,7 @@
       aria-label="ページネーション"
     >
       <div class="-mt-px flex w-0 flex-1">
-        {#if currentPage > 1}
+        {#if data.currentPage > 1}
           <a
             href={prevPageUrl}
             class="inline-flex items-center border-t-2 border-transparent pt-4 pr-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -174,7 +173,7 @@
         {#if totalPages <= 7}
           <!-- 総ページ数が7以下の場合は全ページを表示 -->
           {#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum (pageNum)}
-            {#if pageNum === currentPage}
+            {#if pageNum === data.currentPage}
               <span
                 class="inline-flex items-center border-t-2 border-blue-600 px-4 pt-4 text-sm font-medium text-blue-600"
                 aria-current="page"
@@ -193,8 +192,8 @@
           {/each}
         {:else}
           <!-- 総ページ数が8以上の場合は現在のページを中心とした表示 -->
-          {@const startPage = Math.max(1, currentPage - 2)}
-          {@const endPage = Math.min(totalPages, currentPage + 2)}
+          {@const startPage = Math.max(1, data.currentPage - 2)}
+          {@const endPage = Math.min(totalPages, data.currentPage + 2)}
 
           <!-- 最初のページ -->
           {#if startPage > 1}
@@ -215,7 +214,7 @@
 
           <!-- 現在のページ周辺 -->
           {#each Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i) as pageNum (pageNum)}
-            {#if pageNum === currentPage}
+            {#if pageNum === data.currentPage}
               <span
                 class="inline-flex items-center border-t-2 border-blue-600 px-4 pt-4 text-sm font-medium text-blue-600"
                 aria-current="page"
@@ -252,7 +251,7 @@
         {/if}
       </div>
       <div class="-mt-px flex w-0 flex-1 justify-end">
-        {#if currentPage < totalPages}
+        {#if data.currentPage < totalPages}
           <a
             href={nextPageUrl}
             class="inline-flex items-center border-t-2 border-transparent pt-4 pl-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -295,10 +294,10 @@
         />
       </svg>
       <h2 class="mt-4 text-lg font-medium text-gray-900">
-        {searchQuery ? no_search_results() : search_gas_libraries()}
+        {data.searchQuery ? no_search_results() : search_gas_libraries()}
       </h2>
       <p class="mt-2 text-gray-500">
-        {searchQuery ? try_different_keywords() : search_from_box()}
+        {data.searchQuery ? try_different_keywords() : search_from_box()}
       </p>
     </section>
   {/if}

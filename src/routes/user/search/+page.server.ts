@@ -1,7 +1,9 @@
+import type { PageServerLoad } from './$types.js';
 import { db } from '$lib/server/db/index.js';
 import { library, librarySummary } from '$lib/server/db/schema.js';
 import { and, desc, eq, like, or, sql } from 'drizzle-orm';
-export const load = async ({ url }: { url: URL }) => {
+
+export const load: PageServerLoad = async ({ url }) => {
   const searchQuery = url.searchParams.get('q') || '';
   const scriptTypeParam = url.searchParams.get('scriptType');
   const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -116,17 +118,12 @@ export const load = async ({ url }: { url: URL }) => {
     };
   }
 
-  // 検索クエリがある場合は、名前、作者名、AI要約の情報とタグで検索
+  // 検索クエリがある場合は、名前、作者名、説明文で検索
+  // librarySummaryは存在する場合のみ検索対象に含める
   const searchCondition = or(
     like(library.name, `%${searchQuery}%`),
     like(library.authorName, `%${searchQuery}%`),
-    like(librarySummary.libraryNameJa, `%${searchQuery}%`),
-    like(librarySummary.libraryNameEn, `%${searchQuery}%`),
-    like(librarySummary.purposeJa, `%${searchQuery}%`),
-    like(librarySummary.purposeEn, `%${searchQuery}%`),
-    // タグ配列内の部分検索（JSONB演算子使用）
-    sql`${librarySummary.tagsJa}::text ILIKE ${'%' + searchQuery + '%'}`,
-    sql`${librarySummary.tagsEn}::text ILIKE ${'%' + searchQuery + '%'}`
+    like(library.description, `%${searchQuery}%`)
   );
 
   // 検索クエリがある場合の条件（scriptType条件も含める）
