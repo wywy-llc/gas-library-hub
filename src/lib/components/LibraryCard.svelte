@@ -45,25 +45,25 @@
 
 <div
   data-testid="library-card"
-  class="flex flex-col rounded-lg border border-gray-200 p-6 transition-all hover:border-gray-300 hover:shadow-lg"
+  class="card card-border bg-base-100 p-6 transition-all hover:shadow-lg"
 >
   <div class="grow">
     <div class="flex flex-wrap items-center gap-2">
-      <h3 class="text-xl font-semibold text-blue-600 hover:underline">
+      <h3 class="text-xl font-semibold">
         <a href="/user/libraries/{library.id}">
           {library.name}
         </a>
       </h3>
-      <!-- Script Type Badge -->
+      <!-- Script Type Badge - daisyUI v5準拠 -->
       <span
         class={library.scriptType === 'library'
-          ? 'inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-blue-800'
-          : 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-green-800'}
+          ? 'badge badge-info badge-sm whitespace-nowrap'
+          : 'badge badge-success badge-sm whitespace-nowrap'}
       >
         {library.scriptType === 'library' ? script_type_library() : script_type_web_app()}
       </span>
     </div>
-    <p class="mt-2 text-sm text-gray-600">
+    <p class="mt-2 text-sm opacity-70">
       {librarySummary
         ? currentLocale === 'ja'
           ? librarySummary.seoDescriptionJa || library.description
@@ -77,6 +77,7 @@
         <div class="flex flex-wrap gap-1">
           {#each (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).slice(0, 3) as tag, index (index)}
             <TagButton
+              variant="neutral"
               onclick={() => searchByTag(tag)}
               title={search_by_tag_tooltip({ tag })}
               aria-label={search_by_tag_aria({ tag })}
@@ -89,8 +90,9 @@
     {/if}
   </div>
 
+  <!-- フッター情報 - daisyUI v5準拠 -->
   <div class="mt-4 space-y-2">
-    <div class="flex items-center text-xs text-gray-500">
+    <div class="flex items-center text-xs opacity-70">
       <svg
         class="mr-1 h-3 w-3"
         fill="none"
@@ -105,11 +107,9 @@
           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
         ></path>
       </svg>
-      <a href={library.authorUrl} class="hover:text-gray-700 hover:underline"
-        >{library.authorName}</a
-      >
+      <a href={library.authorUrl} class="link link-hover">{library.authorName}</a>
     </div>
-    <div class="flex items-center justify-between text-xs text-gray-500">
+    <div class="flex items-center justify-between text-xs opacity-70">
       <span>
         {last_updated()}: {currentLocale === 'ja'
           ? new Date(library.lastCommitAt).toLocaleDateString('ja-JP')
@@ -118,7 +118,7 @@
       <div class="flex items-center space-x-3">
         <div class="flex items-center space-x-1">
           <svg
-            class="h-3 w-3 text-yellow-400"
+            class="text-warning h-3 w-3"
             fill="currentColor"
             viewBox="0 0 20 20"
             xmlns="http://www.w3.org/2000/svg"

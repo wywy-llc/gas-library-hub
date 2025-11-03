@@ -50,7 +50,7 @@
   const nextPageUrl = $derived(currentPage < totalPages ? getPageUrl(currentPage + 1) : '');
 </script>
 
-<!-- daisyUI v5 Pagination Component -->
+<!--  Pagination Component -->
 <nav class="flex justify-center" aria-label="ページネーション">
   <div class="join">
     <!-- Previous Button -->

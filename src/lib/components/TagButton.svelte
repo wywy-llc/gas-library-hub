@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * 再利用可能なタグボタンコンポーネント
+   * 再利用可能なタグボタンコンポーネント - daisyUI v5準拠
    * 様々なカラーバリエーションとサイズをサポートし、
    * クリック可能・非クリック可能の両方に対応
    *
@@ -10,7 +10,7 @@
    * <TagButton variant="gray" disabled>無効化</TagButton>
    */
 
-  type Variant = 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray' | 'indigo';
+  type Variant = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'neutral' | 'info';
   type Size = 'xs' | 'sm' | 'md';
 
   interface Props {
@@ -34,7 +34,7 @@
 
   let {
     children,
-    variant = 'blue',
+    variant = 'primary',
     size = 'xs',
     disabled = false,
     onclick,
@@ -43,39 +43,31 @@
     'aria-label': ariaLabel,
   }: Props = $props();
 
-  // カラーバリエーション定義
+  // daisyUI v5カラーバリエーション定義
   const variants = {
-    blue: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-    green: 'bg-green-100 text-green-800 hover:bg-green-200',
-    yellow: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    red: 'bg-red-100 text-red-800 hover:bg-red-200',
-    purple: 'bg-purple-100 text-purple-800 hover:bg-purple-200',
-    gray: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
-    indigo: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200',
+    primary: 'badge-primary',
+    secondary: 'badge-secondary',
+    success: 'badge-success',
+    warning: 'badge-warning',
+    error: 'badge-error',
+    neutral: 'badge-neutral',
+    info: 'badge-info',
   };
 
-  // サイズ定義
+  // daisyUI v5サイズ定義
   const sizes = {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
+    xs: 'badge-xs',
+    sm: 'badge-sm',
+    md: 'badge-md',
   };
 
-  // 動的クラス生成
-  const baseClasses = 'inline-flex items-center rounded-full font-medium transition-colors';
+  // 動的クラス生成（daisyUI v5準拠）
+  const baseClasses = 'badge';
   const variantClasses = variants[variant];
   const sizeClasses = sizes[size];
   const interactiveClasses = onclick && !disabled ? 'cursor-pointer' : '';
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
 
-  const combinedClasses = [
-    baseClasses,
-    variantClasses,
-    sizeClasses,
-    interactiveClasses,
-    disabledClasses,
-    className,
-  ]
+  const combinedClasses = [baseClasses, variantClasses, sizeClasses, interactiveClasses, className]
     .filter(Boolean)
     .join(' ');
 

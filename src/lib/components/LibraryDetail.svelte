@@ -118,9 +118,9 @@
     <div class="mx-auto max-w-3xl">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">{m.library_detail_title()}</h1>
+          <h1 class="text-3xl font-bold">{m.library_detail_title()}</h1>
           <div class="mt-2 flex items-center space-x-3">
-            <p class="text-sm text-gray-500">{library.name}</p>
+            <p class="text-sm opacity-70">{library.name}</p>
             <span class={getStatusBadge(library.status)}>
               {getStatusText(library.status)}
             </span>
@@ -131,15 +131,11 @@
             type="button"
             onclick={onScraping}
             disabled={isScrapingInProgress}
-            class="inline-flex cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn btn-outline btn-sm"
           >
             {isScrapingInProgress ? m.scraping_in_progress() : m.execute_scraping()}
           </button>
-          <button
-            type="button"
-            onclick={onEdit}
-            class="inline-flex cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
+          <button type="button" onclick={onEdit} class="btn btn-outline btn-sm">
             {m.edit()}
           </button>
           <!-- ステータス更新ボタン -->
@@ -149,55 +145,28 @@
         </div>
       </div>
 
-      <!-- スクレイピングメッセージ -->
+      <!-- スクレイピングメッセージ - daisyUI v5準拠 -->
       {#if scrapingMessage}
-        <div class="mb-6 rounded-md bg-blue-50 p-4 text-blue-800">
+        <div class="alert alert-info mb-6">
           {scrapingMessage}
         </div>
       {/if}
 
-      <!-- ステータス更新メッセージ -->
+      <!-- ステータス更新メッセージ - daisyUI v5準拠 -->
       {#if statusMessage}
-        <div
-          class="mb-6 rounded-md p-4 {form?.success
-            ? 'bg-green-50 text-green-800'
-            : 'bg-red-50 text-red-800'}"
-        >
+        <div class="alert mb-6 {form?.success ? 'alert-success' : 'alert-error'}">
           {statusMessage}
         </div>
       {/if}
 
-      <!-- AI要約生成メッセージ -->
+      <!-- AI要約生成メッセージ - daisyUI v5準拠 -->
       {#if aiSummaryMessage}
-        <div class="mb-6 rounded-md bg-purple-50 p-4 text-purple-800">
+        <div class="alert alert-info mb-6">
           <div class="flex items-center">
             {#if isAiSummaryInProgress}
-              <svg
-                class="mr-2 h-5 w-5 animate-spin text-purple-600"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+              <span class="loading loading-spinner loading-md mr-2"></span>
             {:else}
-              <svg
-                class="mr-2 h-5 w-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -218,10 +187,10 @@
     <div class="lg:col-span-9">
       {#if !isAdminMode}
         <div class="mb-6">
-          <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h1 class="text-3xl font-bold sm:text-4xl">
             {library.name}
           </h1>
-          <p class="mt-2 text-gray-500">{library.description}</p>
+          <p class="mt-2 opacity-70">{library.description}</p>
         </div>
       {/if}
 
@@ -231,54 +200,61 @@
       {/if}
 
       {#if isAdminMode}
-        <!-- 管理者モード: 概要セクション -->
+        <!-- 管理者モード: 概要セクション - daisyUI v5準拠 -->
         <div class="mt-12">
-          <h2 class="mb-6 text-2xl font-bold text-gray-900">{m.overview()}</h2>
-          <div class="overflow-hidden rounded-lg bg-white shadow-md">
-            <div class="px-6 py-8">
+          <h2 class="mb-6 text-2xl font-bold">{m.overview()}</h2>
+          <div class="card bg-base-200 shadow-lg">
+            <div class="card-body">
               <dl class="space-y-8">
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.library_name()}</dt>
-                  <dd class="mt-1 text-lg font-semibold text-gray-900">
+                  <dt class="text-sm font-medium opacity-70">{m.library_name()}</dt>
+                  <dd class="mt-1 text-lg font-semibold">
                     {library.name}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.gas_script_id()}</dt>
-                  <dd class="mt-1 font-mono text-base break-all text-gray-900">
+                  <dt class="text-sm font-medium opacity-70">{m.gas_script_id()}</dt>
+                  <dd class="mt-1 font-mono text-base break-all">
                     {library.scriptId}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.github_repository_url()}</dt>
-                  <dd class="mt-1 text-base text-blue-600 hover:underline">
-                    <a href={library.repositoryUrl} target="_blank" rel="noopener noreferrer">
+                  <dt class="text-sm font-medium opacity-70">{m.github_repository_url()}</dt>
+                  <dd class="mt-1 text-base">
+                    <a
+                      href={library.repositoryUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="link link-primary"
+                    >
                       {library.repositoryUrl}
                     </a>
                   </dd>
                 </div>
                 {#if library.scriptType === 'library'}
                   <div>
-                    <dt class="text-sm font-medium text-gray-500">{m.gas_methods()}</dt>
-                    <dd class="mt-1 text-base text-blue-600 hover:underline">
+                    <dt class="text-sm font-medium opacity-70">{m.gas_methods()}</dt>
+                    <dd class="mt-1 text-base">
                       <a
                         href={libraryUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={libraryUrl}
+                        class="link link-primary"
                       >
                         https://script.google.com/macros/library/d/{library.scriptId.slice(-8)}...
                       </a>
                     </dd>
                   </div>
                   <div>
-                    <dt class="text-sm font-medium text-gray-500">{m.gas_project()}</dt>
-                    <dd class="mt-1 text-base text-blue-600 hover:underline">
+                    <dt class="text-sm font-medium opacity-70">{m.gas_project()}</dt>
+                    <dd class="mt-1 text-base">
                       <a
                         href={gasProjectUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={gasProjectUrl}
+                        class="link link-primary"
                       >
                         https://script.google.com/projects/{library.scriptId.slice(-8)}...
                       </a>
@@ -286,13 +262,14 @@
                   </div>
                 {:else if library.scriptType === 'web_app'}
                   <div>
-                    <dt class="text-sm font-medium text-gray-500">{m.web_app_execution_url()}</dt>
-                    <dd class="mt-1 text-base text-blue-600 hover:underline">
+                    <dt class="text-sm font-medium opacity-70">{m.web_app_execution_url()}</dt>
+                    <dd class="mt-1 text-base">
                       <a
                         href={getWebAppUrl()}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={getWebAppUrl()}
+                        class="link link-primary"
                       >
                         {isValidGasWebAppUrl(sampleAppUrl)
                           ? sampleAppUrl
@@ -302,14 +279,14 @@
                   </div>
                 {/if}
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.github_author()}</dt>
+                  <dt class="text-sm font-medium opacity-70">{m.github_author()}</dt>
                   <dd class="mt-1 text-base">
                     {#if library.authorName}
                       <a
                         href={library.authorUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-blue-600 hover:underline"
+                        class="link link-primary"
                       >
                         {library.authorName}
                       </a>
@@ -318,7 +295,7 @@
                         href={library.authorUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-blue-600 hover:underline"
+                        class="link link-primary"
                       >
                         {library.authorUrl}
                       </a>
@@ -327,40 +304,40 @@
                 </div>
                 {#if library.description}
                   <div>
-                    <dt class="text-sm font-medium text-gray-500">{m.description()}</dt>
-                    <dd class="mt-1 text-base text-gray-900">
+                    <dt class="text-sm font-medium opacity-70">{m.description()}</dt>
+                    <dd class="mt-1 text-base">
                       {library.description}
                     </dd>
                   </div>
                 {/if}
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.license()}</dt>
+                  <dt class="text-sm font-medium opacity-70">{m.license()}</dt>
                   <dd class="mt-1 text-base">
                     {#if library.licenseUrl && library.licenseUrl !== 'unknown'}
                       <a
                         href={library.licenseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-blue-600 hover:underline"
+                        class="link link-primary"
                       >
                         {library.licenseType || m.license_info()}
                       </a>
                     {:else}
-                      <span class="text-gray-900">
+                      <span>
                         {library.licenseType || m.unknown()}
                       </span>
                     {/if}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.created_at()}</dt>
-                  <dd class="mt-1 text-base text-gray-900">
+                  <dt class="text-sm font-medium opacity-70">{m.created_at()}</dt>
+                  <dd class="mt-1 text-base">
                     {new Date(library.createdAt).toLocaleString('ja-JP')}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">{m.updated_at()}</dt>
-                  <dd class="mt-1 text-base text-gray-900">
+                  <dt class="text-sm font-medium opacity-70">{m.updated_at()}</dt>
+                  <dd class="mt-1 text-base">
                     {new Date(library.updatedAt).toLocaleString('ja-JP')}
                   </dd>
                 </div>
@@ -369,41 +346,41 @@
           </div>
         </div>
 
-        <!-- SEO情報セクション -->
+        <!-- SEO情報セクション - daisyUI v5準拠 -->
         {#if librarySummary && (librarySummary.seoTitleJa || librarySummary.seoTitleEn || librarySummary.seoDescriptionJa || librarySummary.seoDescriptionEn)}
           <div class="mt-8">
-            <h3 class="mb-4 text-xl font-bold text-gray-900">SEO情報</h3>
-            <div class="overflow-hidden rounded-lg bg-white shadow-md">
-              <div class="px-6 py-6">
+            <h3 class="mb-4 text-xl font-bold">SEO情報</h3>
+            <div class="card bg-base-200shadow-lg">
+              <div class="card-body">
                 <dl class="space-y-6">
                   {#if librarySummary.seoTitleJa}
                     <div>
-                      <dt class="text-sm font-medium text-gray-500">SEOタイトル（日本語）</dt>
-                      <dd class="mt-1 text-base text-gray-900">
+                      <dt class="text-sm font-medium opacity-70">SEOタイトル（日本語）</dt>
+                      <dd class="mt-1 text-base">
                         {librarySummary.seoTitleJa}
                       </dd>
                     </div>
                   {/if}
                   {#if librarySummary.seoTitleEn}
                     <div>
-                      <dt class="text-sm font-medium text-gray-500">SEOタイトル（英語）</dt>
-                      <dd class="mt-1 text-base text-gray-900">
+                      <dt class="text-sm font-medium opacity-70">SEOタイトル（英語）</dt>
+                      <dd class="mt-1 text-base">
                         {librarySummary.seoTitleEn}
                       </dd>
                     </div>
                   {/if}
                   {#if librarySummary.seoDescriptionJa}
                     <div>
-                      <dt class="text-sm font-medium text-gray-500">SEO説明文（日本語）</dt>
-                      <dd class="mt-1 text-base text-gray-900">
+                      <dt class="text-sm font-medium opacity-70">SEO説明文（日本語）</dt>
+                      <dd class="mt-1 text-base">
                         {librarySummary.seoDescriptionJa}
                       </dd>
                     </div>
                   {/if}
                   {#if librarySummary.seoDescriptionEn}
                     <div>
-                      <dt class="text-sm font-medium text-gray-500">SEO説明文（英語）</dt>
-                      <dd class="mt-1 text-base text-gray-900">
+                      <dt class="text-sm font-medium opacity-70">SEO説明文（英語）</dt>
+                      <dd class="mt-1 text-base">
                         {librarySummary.seoDescriptionEn}
                       </dd>
                     </div>
@@ -420,22 +397,22 @@
     <aside class="mt-8 lg:col-span-3 lg:mt-0">
       <div class="sticky top-24 space-y-6">
         {#if library.scriptType === 'library'}
-          <!-- インストールカード -->
-          <div class="rounded-lg border p-4">
-            <h3 class="mb-3 font-semibold text-gray-800">{m.installation()}</h3>
-            <label for="script-id" class="text-sm font-medium text-gray-600">{m.script_id()}</label>
+          <!-- インストールカード - daisyUI v5準拠 -->
+          <div class="card card-border bg-base-200 p-4">
+            <h3 class="mb-3 font-semibold">{m.installation()}</h3>
+            <label for="script-id" class="text-sm font-medium opacity-70">{m.script_id()}</label>
             <div class="mt-1 flex items-center">
               <input
                 id="script-id"
                 type="text"
                 readonly
                 value={library.scriptId}
-                class="w-full rounded-l-md border bg-gray-50 p-2 text-xs"
+                class="input input-bordered input-sm w-full rounded-r-none text-xs"
               />
               <button
                 onclick={() => copyToClipboard('script-id')}
                 aria-label={m.copy_script_id_aria()}
-                class="rounded-r-md border-t border-r border-b bg-gray-200 p-2 hover:bg-gray-300"
+                class="btn btn-sm btn-neutral rounded-l-none"
               >
                 <svg
                   class="h-5 w-5 text-gray-600"
@@ -453,21 +430,22 @@
               </button>
             </div>
 
-            <!-- ライセンス情報 -->
-            <div class="mt-4 border-t border-gray-200 pt-4">
-              <dt class="mb-1 text-sm font-medium text-gray-600">{m.license()}</dt>
+            <!-- ライセンス情報 - daisyUI v5準拠 -->
+            <div class="divider"></div>
+            <div>
+              <dt class="mb-1 text-sm font-medium opacity-70">{m.license()}</dt>
               <dd class="text-sm">
                 {#if library.licenseUrl && library.licenseUrl !== 'unknown'}
                   <a
                     href={library.licenseUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-blue-600 hover:text-blue-900 hover:underline"
+                    class="link link-primary"
                   >
                     {library.licenseType || m.license_info()}
                   </a>
                 {:else}
-                  <span class="text-gray-700">
+                  <span>
                     {library.licenseType || m.unknown()}
                   </span>
                 {/if}
@@ -475,12 +453,12 @@
             </div>
           </div>
         {:else if library.scriptType === 'web_app'}
-          <!-- Webアプリカード -->
-          <div class="rounded-lg border p-4">
-            <h3 class="mb-3 font-semibold text-gray-800">Webアプリ</h3>
+          <!-- Webアプリカード - daisyUI v5準拠 -->
+          <div class="card card-border bg-base-200 p-4">
+            <h3 class="mb-3 font-semibold">Webアプリ</h3>
 
             {#if isValidGasWebAppUrl(sampleAppUrl)}
-              <label for="web-app-url" class="text-sm font-medium text-gray-600"
+              <label for="web-app-url" class="text-sm font-medium opacity-70"
                 >{m.web_app_execution_url()}</label
               >
               <div class="mt-1 flex items-center">
@@ -489,12 +467,12 @@
                   type="text"
                   readonly
                   value={sampleAppUrl}
-                  class="w-full rounded-l-md border bg-gray-50 p-2 text-xs"
+                  class="input input-bordered input-sm w-full rounded-r-none text-xs"
                 />
                 <button
                   onclick={() => copyToClipboard('web-app-url')}
                   aria-label={`${m.web_app_execution_url()}をコピー`}
-                  class="rounded-r-md border-t border-r border-b bg-gray-200 p-2 hover:bg-gray-300"
+                  class="btn btn-sm btn-neutral rounded-l-none"
                 >
                   <svg
                     class="h-5 w-5 text-gray-600"
@@ -512,18 +490,18 @@
                 </button>
               </div>
             {:else}
-              <p class="rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-gray-500">
+              <div class="alert alert-warning text-sm">
                 {m.invalid_web_app_url_notice()}
-              </p>
+              </div>
             {/if}
 
-            <!-- 実行リンク -->
+            <!-- 実行リンク - daisyUI v5準拠 -->
             <div class="mt-3">
               <a
                 href={getWebAppUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                class="btn btn-primary btn-sm w-full"
               >
                 {#if isValidGasWebAppUrl(sampleAppUrl)}
                   <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -549,21 +527,22 @@
               </a>
             </div>
 
-            <!-- ライセンス情報 -->
-            <div class="mt-4 border-t border-gray-200 pt-4">
-              <dt class="mb-1 text-sm font-medium text-gray-600">{m.license()}</dt>
+            <!-- ライセンス情報 - daisyUI v5準拠 -->
+            <div class="divider"></div>
+            <div>
+              <dt class="mb-1 text-sm font-medium opacity-70">{m.license()}</dt>
               <dd class="text-sm">
                 {#if library.licenseUrl && library.licenseUrl !== 'unknown'}
                   <a
                     href={library.licenseUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-blue-600 hover:text-blue-900 hover:underline"
+                    class="link link-primary"
                   >
                     {library.licenseType || m.license_info()}
                   </a>
                 {:else}
-                  <span class="text-gray-700">
+                  <span>
                     {library.licenseType || m.unknown()}
                   </span>
                 {/if}
@@ -572,13 +551,13 @@
           </div>
         {/if}
 
-        <!-- Aboutカード -->
-        <div class="rounded-lg border p-4">
+        <!-- Aboutカード - daisyUI v5準拠 -->
+        <div class="card card-border bg-base-200 p-4">
           <dl>
-            <dt class="font-semibold text-gray-800">{m.github_stars()}</dt>
+            <dt class="font-semibold">{m.github_stars()}</dt>
             <dd class="mb-3">
               <span class="inline-flex items-center">
-                <svg class="mr-1 h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="text-warning mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                   ></path>
@@ -587,36 +566,36 @@
               </span>
             </dd>
 
-            <dt class="font-semibold text-gray-800">{m.last_updated_detail()}</dt>
+            <dt class="font-semibold">{m.last_updated_detail()}</dt>
             <dd class="mb-3">{formatDate(library.lastCommitAt)}</dd>
 
             {#if !isAdminMode}
-              <dt class="font-semibold text-gray-800">{m.script_id_copy_count()}</dt>
+              <dt class="font-semibold">{m.script_id_copy_count()}</dt>
               <dd class="mb-3">
                 {displayCopyCount}回
               </dd>
             {/if}
 
-            <dt class="font-semibold text-gray-800">{m.author()}</dt>
+            <dt class="font-semibold">{m.author()}</dt>
             <dd class="mb-3">
               <a
                 href={library.authorUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-blue-600 hover:underline"
+                class="link link-primary"
               >
                 {library.authorName}
               </a>
             </dd>
 
             {#if library.scriptType === 'library'}
-              <dt class="font-semibold text-gray-800">{m.script_reference()}</dt>
+              <dt class="font-semibold">{m.script_reference()}</dt>
               <dd class="mb-3">
                 <a
                   href={libraryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-blue-600 hover:underline"
+                  class="link link-primary"
                   title={libraryUrl}
                 >
                   {truncateUrl(libraryUrl)}
@@ -624,26 +603,26 @@
               </dd>
 
               <!-- GASプロジェクトを追加 -->
-              <dt class="font-semibold text-gray-800">{m.gas_project()}</dt>
+              <dt class="font-semibold">{m.gas_project()}</dt>
               <dd class="mb-3">
                 <a
                   href={gasProjectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-blue-600 hover:underline"
+                  class="link link-primary"
                   title={gasProjectUrl}
                 >
                   {truncateUrl(gasProjectUrl)}
                 </a>
               </dd>
             {:else if library.scriptType === 'web_app' && isValidGasWebAppUrl(sampleAppUrl)}
-              <dt class="font-semibold text-gray-800">{m.web_app_execution_url()}</dt>
+              <dt class="font-semibold">{m.web_app_execution_url()}</dt>
               <dd class="mb-3">
                 <a
                   href={sampleAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-blue-600 hover:underline"
+                  class="link link-primary"
                   title={sampleAppUrl}
                 >
                   {truncateUrl(sampleAppUrl)}
@@ -651,13 +630,13 @@
               </dd>
             {/if}
 
-            <dt class="font-semibold text-gray-800">{m.github_repository()}</dt>
+            <dt class="font-semibold">{m.github_repository()}</dt>
             <dd class="mb-3">
               <a
                 href={library.repositoryUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-blue-600 hover:underline"
+                class="link link-primary"
                 title={library.repositoryUrl}
               >
                 {truncateUrl(library.repositoryUrl)}

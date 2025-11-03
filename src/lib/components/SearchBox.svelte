@@ -22,11 +22,11 @@
     }
   }
 
-  // サイズによるスタイル切り替え
+  // サイズによるdaisyUIクラス切り替え
   $: inputClasses =
     size === 'large'
-      ? 'block w-full rounded-full border-0 bg-white py-5 pl-12 pr-4 text-gray-900 shadow-md ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-base leading-6'
-      : 'block w-full rounded-full border-0 bg-white py-3 pl-10 pr-4 text-gray-900 shadow-md ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-sm leading-6';
+      ? 'input input-bordered w-full pl-12 input-lg'
+      : 'input input-bordered w-full pl-10';
 
   $: iconContainerClasses =
     size === 'large'
