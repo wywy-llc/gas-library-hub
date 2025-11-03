@@ -4,20 +4,27 @@ import type { ScraperConfig } from '$lib/types/github-scraper.js';
  * Google Apps Script スクリプトID抽出パターン
  *
  * Google Apps ScriptのスクリプトIDは以下の特徴があります：
- * - 長さ: 通常25-70文字（実際の範囲に基づいて調整）
- * - 文字種: 英数字、ハイフン、アンダースコア（ただしハイフンは稀）
- * - 先頭: 必ず「1」で始まる
+ * - 長さ: 通常25-70文字（実際の範囲: 25-69文字）
+ * - 文字種: 英数字、ハイフン、アンダースコア（ハイフンは稀）
+ * - 先頭: 必ず「1」で始まる（重要：全パターンで強制）
  * - 構造: 連続するハイフンやアンダースコアは含まない（--や__は無効）
  *
  * パターンの優先順位（上から順に適用）:
  * 1. ライブラリキー明示記載（最高精度）
  * 2. コードブロック内のライブラリID（高精度）
  * 3. Google Script URL形式（高精度）
- * 4. 明示的な「スクリプトID」「Script ID」ラベル付き
- * 5. script.google.comドメインの一般URL
- * 6. GAS特有のコンテキストでの文字列リテラル
+ *    - /macros/d/ エディタURL
+ *    - /macros/s/ Web App公開URL
+ *    - /home/projects/ 新UI形式
+ * 4. 明示的な「スクリプトID」「Script ID」ラベル付き（高精度）
+ *    - Resources > Libraries での記載も含む
+ *    - appsscript.json内のdependencies/libraryId
+ * 5. script.google.comドメインの一般URL（中精度）
+ * 6. GAS特有のコンテキストでの文字列リテラル（中精度）
+ *    - library_id, clasp, ScriptApp.getProjectKey() 等
+ * 7. 基本的な1で始まる文字列（低精度・最終フォールバック）
  *
- * 注意: 誤検出を防ぐため、JSON形式のemail_idやその他のIDと区別
+ * 注意: 誤検出を防ぐため、JSON形式のemail_idやAWSキー等を除外パターンで排除
  */
 export const DEFAULT_SCRIPT_ID_PATTERNS: RegExp[] = [
   // 1. ライブラリキー明示記載（最高精度）
@@ -27,29 +34,44 @@ export const DEFAULT_SCRIPT_ID_PATTERNS: RegExp[] = [
   // 2. コードブロック内のライブラリID（高精度）
   // Markdownコードブロック内の1で始まる長い文字列（AWSキー等を除外）
   // 単体の値、またはコメント付きで明示的にGAS IDとして言及される場合のみ
-  /```[^`]*?(1[A-Za-z0-9_-]{57,69})[^`]*?```/gs,
+  /```[^`]*?(1[A-Za-z0-9_-]{24,69})[^`]*?```/gs,
 
   // 3. Google Script URL形式（高精度）
-  /https:\/\/script\.google\.com\/macros\/d\/([A-Za-z0-9_-]{25,70})\/edit/gi,
-  /https:\/\/script\.google\.com\/macros\/d\/([A-Za-z0-9_-]{25,70})/gi,
+  // /macros/d/ 形式
+  /https:\/\/script\.google\.com\/macros\/d\/(1[A-Za-z0-9_-]{24,69})\/edit/gi,
+  /https:\/\/script\.google\.com\/macros\/d\/(1[A-Za-z0-9_-]{24,69})/gi,
+  // /macros/s/ 形式（Web App公開URL）
+  /https:\/\/script\.google\.com\/macros\/s\/(1[A-Za-z0-9_-]{24,69})/gi,
+  // /home/projects/ 形式（新UI）
+  /https:\/\/script\.google\.com\/home\/projects\/(1[A-Za-z0-9_-]{24,69})/gi,
 
   // 4. 明示的ラベル付き（高精度）
-  /(?:スクリプト|script)\s*(?:id|ID)[：:\s=]*['"`]?([A-Za-z0-9_-]{25,70})['"`]?/gi,
-  /(?:gas|GAS)\s*(?:id|ID)[：:\s=]*['"`]?([A-Za-z0-9_-]{25,70})['"`]?/gi,
+  /(?:スクリプト|script)\s*(?:id|ID)[：:\s=]*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+  /(?:gas|GAS)\s*(?:id|ID)[：:\s=]*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
 
   // 4.1. ライブラリインストール手順でのスクリプトID（高精度）
-  /(?:library|ライブラリ).*?(?:script\s*id|スクリプトID)[：:\s]*['"`]?([A-Za-z0-9_-]{25,70})['"`]?/gi,
-  /(?:find\s*a\s*library|ライブラリ.*?検索).*?['"`]?([A-Za-z0-9_-]{25,70})['"`]?/gi,
+  /(?:library|ライブラリ).*?(?:script\s*id|スクリプトID)[：:\s]*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+  /(?:find\s*a\s*library|ライブラリ.*?検索).*?['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+
+  // 4.2. Resources > Libraries での記載（高精度）
+  /(?:resources?|リソース).*?(?:libraries|ライブラリ).*?['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+  /(?:add\s*(?:a\s*)?library|ライブラリ.*?追加).*?['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+
+  // 4.3. appsscript.json内のdependencies（高精度）
+  /["']dependencies["'].*?["'](?:libraries|userSymbol)["'].*?(1[A-Za-z0-9_-]{24,69})/gis,
+  /["']libraryId["']\s*:\s*["'](1[A-Za-z0-9_-]{24,69})["']/gi,
 
   // 5. script.google.comドメインの一般URL（中精度）
-  /script\.google\.com\/.*?\/([A-Za-z0-9_-]{25,70})/gi,
+  /script\.google\.com\/.*?\/(1[A-Za-z0-9_-]{24,69})/gi,
 
   // 6. GAS特有のコンテキストでの文字列リテラル（中精度）
   // 'library_id'や'clasp'等のコンテキストの近くにある場合のみ
-  // キャプチャグループに先頭の「1」も含める
-  /(?:library_id|clasp|apps.?script)[^a-zA-Z0-9_-]*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+  /(?:library_id|libraryId|clasp|apps.?script)[^a-zA-Z0-9_-]*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
 
-  // 7. 基本的な1で始まる文字列（キャプチャグループに先頭の「1」も含める）
+  // 6.1. ScriptApp.getProjectKey()やPropertiesServiceでの定数定義（中精度）
+  /(?:ScriptApp\.getProjectKey|PropertiesService|SCRIPT_ID|PROJECT_KEY)[^=]*=\s*['"`]?(1[A-Za-z0-9_-]{24,69})['"`]?/gi,
+
+  // 7. 基本的な1で始まる文字列（低精度・最終フォールバック）
   /\b(1[A-Za-z0-9_-]{24,69})\b/g,
 ];
 
@@ -76,9 +98,16 @@ export const SCRIPT_ID_EXCLUSION_PATTERNS: RegExp[] = [
   // UUID形式（ハイフン区切り）を除外
   /1[a-f0-9]{7}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,
 
+  // GitHubアクション/ワークフローID等を除外（runs/数字のパターン）
+  /github\.com\/.*?\/(?:runs|actions)\/\d+/gi,
+
+  // gitコミットハッシュ（40文字の16進数）を除外
+  /\b[a-f0-9]{40}\b/gi,
+
   // JSON配列やオブジェクト内の一般的な値を除外（GAS関連フィールド以外）
-  // userSymbol、versionなどのGAS以外のフィールドのみ除外
-  /["'](?:userSymbol|version|name|type|description)["']\s*:\s*["'][A-Za-z0-9_-]+["']/gi,
+  // version、nameなどのGAS以外のフィールドのみ除外
+  // 注意: userSymbolはGASライブラリの識別子なので除外しない
+  /["'](?:version|developmentMode|name|type|description)["']\s*:\s*["'][A-Za-z0-9_-]+["']/gi,
 ];
 
 /**
