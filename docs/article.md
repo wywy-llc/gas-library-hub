@@ -289,8 +289,8 @@ export class GenerateLibrarySummaryService {
 
       // OpenAI API呼び出し
       const response = await openai.chat.completions.create({
-        model: 'o3', // 最新のo3モデル使用
-        reasoning_effort: 'medium',
+        model: 'gpt-5', // 最新のo3モデル使用
+        reasoning_effort: {'medium'},
         response_format: {
           type: 'json_schema',
           json_schema: LIBRARY_SUMMARY_JSON_SCHEMA,
@@ -426,4 +426,4 @@ GAS Library Hubの開発を通じて、**正規表現エンジニアリング**�
 
 ### タグ
 
-#GoogleAppsScript #GAS #SvelteKit #TypeScript #個人開発 #PostgreSQL #OpenAI #Vercel #正規表現 #AI要約
+# GoogleAppsScript #GAS #SvelteKit #TypeScript #個人開発 #PostgreSQL #OpenAI #Vercel #正規表現 #AI要約

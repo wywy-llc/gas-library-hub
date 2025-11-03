@@ -120,7 +120,7 @@ describe('GenerateLibrarySummaryService', () => {
       // 検証
       expect(mockedOpenAIUtils.getClient).toHaveBeenCalled();
       expect(mockChatCompletionsCreate).toHaveBeenCalledWith({
-        model: 'o3',
+        model: 'gpt-5',
         messages: [
           {
             role: 'user',

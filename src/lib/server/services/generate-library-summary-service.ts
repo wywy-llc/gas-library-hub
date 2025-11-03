@@ -463,7 +463,7 @@ export class GenerateLibrarySummaryService {
 
     // 最適化されたAPI呼び出し（事前定義されたJSON Schema使用）
     const response = await client.chat.completions.create({
-      model: 'o3',
+      model: 'gpt-5',
       messages: [
         {
           role: 'user',
