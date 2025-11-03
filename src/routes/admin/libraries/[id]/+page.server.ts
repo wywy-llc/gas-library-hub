@@ -14,43 +14,38 @@ export const load: PageServerLoad = async ({ params }) => {
     throw error(404, 'ライブラリが見つかりません。');
   }
 
-  // ライブラリ情報を取得
-  const libraryResult = await db
-    .select({
-      id: library.id,
-      name: library.name,
-      scriptId: library.scriptId,
-      repositoryUrl: library.repositoryUrl,
-      authorUrl: library.authorUrl,
-      authorName: library.authorName,
-      description: library.description,
-      starCount: library.starCount,
-      copyCount: library.copyCount,
-      licenseType: library.licenseType,
-      licenseUrl: library.licenseUrl,
-      lastCommitAt: library.lastCommitAt,
-      status: library.status,
-      scriptType: library.scriptType,
-      createdAt: library.createdAt,
-      updatedAt: library.updatedAt,
-    })
-    .from(library)
-    .where(eq(library.id, libraryId))
-    .limit(1);
+  // ライブラリ情報とサマリーを並列取得（パフォーマンス最適化）
+  const [libraryResult, summaryResult] = await Promise.all([
+    db
+      .select({
+        id: library.id,
+        name: library.name,
+        scriptId: library.scriptId,
+        repositoryUrl: library.repositoryUrl,
+        authorUrl: library.authorUrl,
+        authorName: library.authorName,
+        description: library.description,
+        starCount: library.starCount,
+        copyCount: library.copyCount,
+        licenseType: library.licenseType,
+        licenseUrl: library.licenseUrl,
+        lastCommitAt: library.lastCommitAt,
+        status: library.status,
+        scriptType: library.scriptType,
+        createdAt: library.createdAt,
+        updatedAt: library.updatedAt,
+      })
+      .from(library)
+      .where(eq(library.id, libraryId))
+      .limit(1),
+    db.select().from(librarySummary).where(eq(librarySummary.libraryId, libraryId)).limit(1),
+  ]);
 
   if (libraryResult.length === 0) {
     throw error(404, 'ライブラリが見つかりません。');
   }
 
   const libraryData = libraryResult[0];
-
-  // ライブラリ要約情報を取得（存在しない場合はnull）
-  const summaryResult = await db
-    .select()
-    .from(librarySummary)
-    .where(eq(librarySummary.libraryId, libraryId))
-    .limit(1);
-
   const librarySummaryData = summaryResult.length > 0 ? summaryResult[0] : null;
 
   return {
