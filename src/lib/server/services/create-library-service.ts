@@ -81,15 +81,13 @@ export const CreateLibraryService = (() => {
       starCount: createdLibrary.starCount,
     });
 
-    // AI要約生成をバックグラウンドで実行（awaitしない）
-    // エラーは内部でキャッチされるため、ライブラリ作成プロセスはブロックされない
-    GenerateAiSummaryService.call({
+    // AI要約生成をバックグラウンドで実行（Fire-and-Forget）
+    // callBackgroundメソッドを使用することで、Vercel環境でも確実にバックグラウンド実行される
+    GenerateAiSummaryService.callBackground({
       libraryId,
       githubUrl: repositoryUrl,
       skipOnError: true,
       logContext: '新規ライブラリのAI要約を生成',
-    }).catch(err => {
-      console.error('🔴 バックグラウンドAI要約生成エラー:', err);
     });
 
     console.log('⚡ ライブラリ登録完了（AI要約はバックグラウンドで生成中）');
