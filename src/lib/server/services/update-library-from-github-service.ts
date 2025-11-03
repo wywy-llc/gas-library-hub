@@ -212,7 +212,8 @@ export class UpdateLibraryFromGithubService {
           ? 'lastCommitAtが変更されたため'
           : 'スクリプト情報が変更されたため';
 
-      await GenerateAiSummaryService.call({
+      // バックグラウンドでAI要約生成（更新処理をブロックしない）
+      GenerateAiSummaryService.callBackground({
         libraryId,
         githubUrl: repoInfo.repositoryUrl,
         skipOnError: true,

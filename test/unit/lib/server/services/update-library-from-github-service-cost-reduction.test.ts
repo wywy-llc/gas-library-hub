@@ -29,6 +29,7 @@ vi.mock('../../../../../src/lib/server/services/fetch-github-repo-data-service.j
 vi.mock('../../../../../src/lib/server/services/generate-ai-summary-service.js', () => ({
   GenerateAiSummaryService: {
     call: vi.fn(),
+    callBackground: vi.fn(),
   },
 }));
 
@@ -138,6 +139,7 @@ describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
     } as unknown as Awaited<ReturnType<typeof ScrapeGASLibraryService.call>>);
     mockLibrarySummaryRepository.exists.mockResolvedValue(false);
     mockGenerateAiSummaryService.call.mockResolvedValue(undefined);
+    mockGenerateAiSummaryService.callBackground.mockReturnValue(undefined);
     mockServiceErrorUtil.assertCondition.mockImplementation(() => {});
   });
 
@@ -164,7 +166,7 @@ describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
     await UpdateLibraryFromGithubService.call(libraryId);
 
     // AI要約生成サービスが呼び出されないことを確認
-    expect(mockGenerateAiSummaryService.call).not.toHaveBeenCalled();
+    expect(mockGenerateAiSummaryService.callBackground).not.toHaveBeenCalled();
   });
 
   test('lastCommitAtが異なる場合、AI要約生成を実行する', async () => {
@@ -180,8 +182,8 @@ describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
 
     await UpdateLibraryFromGithubService.call(libraryId);
 
-    // AI要約生成サービスが呼び出されることを確認
-    expect(mockGenerateAiSummaryService.call).toHaveBeenCalledWith({
+    // AI要約生成サービスがバックグラウンドで呼び出されることを確認
+    expect(mockGenerateAiSummaryService.callBackground).toHaveBeenCalledWith({
       libraryId,
       githubUrl: repoDataForTest.repoInfo.repositoryUrl,
       skipOnError: true,
@@ -202,8 +204,8 @@ describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
 
     await UpdateLibraryFromGithubService.call(libraryId);
 
-    // AI要約生成サービスが呼び出されることを確認
-    expect(mockGenerateAiSummaryService.call).toHaveBeenCalledWith({
+    // AI要約生成サービスがバックグラウンドで呼び出されることを確認
+    expect(mockGenerateAiSummaryService.callBackground).toHaveBeenCalledWith({
       libraryId,
       githubUrl: repoDataForTest.repoInfo.repositoryUrl,
       skipOnError: true,

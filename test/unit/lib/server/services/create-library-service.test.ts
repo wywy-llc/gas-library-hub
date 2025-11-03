@@ -28,6 +28,7 @@ vi.mock('../../../../../src/lib/server/services/validate-library-uniqueness-serv
 vi.mock('../../../../../src/lib/server/services/generate-ai-summary-service.js', () => ({
   GenerateAiSummaryService: {
     call: vi.fn(),
+    callBackground: vi.fn(),
   },
 }));
 
@@ -116,6 +117,7 @@ describe('CreateLibraryService', () => {
     mockFetchGitHubRepoDataService.call.mockResolvedValue(mockRepoData);
     mockValidateLibraryUniquenessService.call.mockResolvedValue(undefined);
     mockGenerateAiSummaryService.call.mockResolvedValue(undefined);
+    mockGenerateAiSummaryService.callBackground.mockReturnValue(undefined);
     mockLibraryRepository.create.mockResolvedValue(mockCreatedLibrary);
     mockNanoid.mockReturnValue('mock-library-id');
     mockServiceErrorUtil.assertCondition.mockImplementation((condition, message) => {
@@ -142,8 +144,8 @@ describe('CreateLibraryService', () => {
       'https://github.com/owner/repo'
     );
 
-    // AI要約生成が呼び出されたことを確認
-    expect(mockGenerateAiSummaryService.call).toHaveBeenCalledWith({
+    // AI要約生成がバックグラウンドで呼び出されたことを確認
+    expect(mockGenerateAiSummaryService.callBackground).toHaveBeenCalledWith({
       libraryId: 'mock-library-id',
       githubUrl: 'https://github.com/owner/repo',
       skipOnError: true,
@@ -155,15 +157,8 @@ describe('CreateLibraryService', () => {
   });
 
   test('AI要約生成でエラーが発生してもライブラリ作成は続行される', async () => {
-    // AI要約生成でエラーを発生させる（但し、skipOnError: trueのため例外は投げられない）
-    mockGenerateAiSummaryService.call.mockImplementation(async params => {
-      if (params.skipOnError) {
-        // skipOnError: trueの場合は例外を投げない
-        console.warn('AI要約生成エラー（スキップ）');
-        return;
-      }
-      throw new Error('AI要約生成エラー');
-    });
+    // callBackgroundは内部でエラーをキャッチするため、エラーが外部に伝播しない
+    mockGenerateAiSummaryService.callBackground.mockReturnValue(undefined);
 
     // ライブラリ作成を実行
     const result = await CreateLibraryService.call(mockParams);
@@ -172,7 +167,7 @@ describe('CreateLibraryService', () => {
     expect(result).toBe('mock-library-id');
 
     // AI要約生成が試行されたことを確認
-    expect(mockGenerateAiSummaryService.call).toHaveBeenCalledWith({
+    expect(mockGenerateAiSummaryService.callBackground).toHaveBeenCalledWith({
       libraryId: 'mock-library-id',
       githubUrl: 'https://github.com/owner/repo',
       skipOnError: true,
@@ -181,15 +176,8 @@ describe('CreateLibraryService', () => {
   });
 
   test('AI要約保存でエラーが発生してもライブラリ作成は続行される', async () => {
-    // AI要約生成でエラーを発生させる（保存時のエラーをシミュレート、但し、skipOnError: trueのため例外は投げられない）
-    mockGenerateAiSummaryService.call.mockImplementation(async params => {
-      if (params.skipOnError) {
-        // skipOnError: trueの場合は例外を投げない
-        console.warn('AI要約保存エラー（スキップ）');
-        return;
-      }
-      throw new Error('AI要約保存エラー');
-    });
+    // callBackgroundは内部でエラーをキャッチするため、エラーが外部に伝播しない
+    mockGenerateAiSummaryService.callBackground.mockReturnValue(undefined);
 
     // ライブラリ作成を実行
     const result = await CreateLibraryService.call(mockParams);
@@ -198,7 +186,7 @@ describe('CreateLibraryService', () => {
     expect(result).toBe('mock-library-id');
 
     // AI要約生成が試行されたことを確認
-    expect(mockGenerateAiSummaryService.call).toHaveBeenCalledWith({
+    expect(mockGenerateAiSummaryService.callBackground).toHaveBeenCalledWith({
       libraryId: 'mock-library-id',
       githubUrl: 'https://github.com/owner/repo',
       skipOnError: true,
@@ -214,7 +202,7 @@ describe('CreateLibraryService', () => {
     );
 
     // AI要約生成は呼び出されないことを確認
-    expect(mockGenerateAiSummaryService.call).not.toHaveBeenCalled();
+    expect(mockGenerateAiSummaryService.callBackground).not.toHaveBeenCalled();
   });
 
   test('重複するscriptIdが存在する場合はエラーをスローする', async () => {
@@ -228,7 +216,7 @@ describe('CreateLibraryService', () => {
     );
 
     // AI要約生成は呼び出されないことを確認
-    expect(mockGenerateAiSummaryService.call).not.toHaveBeenCalled();
+    expect(mockGenerateAiSummaryService.callBackground).not.toHaveBeenCalled();
   });
 
   test('最終コミット日時の取得に失敗した場合はエラーをスローする', async () => {
@@ -242,6 +230,6 @@ describe('CreateLibraryService', () => {
     );
 
     // AI要約生成は呼び出されないことを確認
-    expect(mockGenerateAiSummaryService.call).not.toHaveBeenCalled();
+    expect(mockGenerateAiSummaryService.callBackground).not.toHaveBeenCalled();
   });
 });

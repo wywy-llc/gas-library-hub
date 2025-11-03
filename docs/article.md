@@ -290,7 +290,7 @@ export class GenerateLibrarySummaryService {
       // OpenAI API呼び出し
       const response = await openai.chat.completions.create({
         model: 'gpt-5', // 最新のo3モデル使用
-        reasoning_effort: {'medium'},
+        reasoning_effort: 'medium',
         response_format: {
           type: 'json_schema',
           json_schema: LIBRARY_SUMMARY_JSON_SCHEMA,
