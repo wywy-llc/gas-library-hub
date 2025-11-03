@@ -51,11 +51,11 @@
 
 <svelte:window on:click={handleClickOutside} />
 
-<div class="language-selector relative inline-block">
+<div class="dropdown language-selector">
   <!-- ヘッダー部分 (クリックで開閉) -->
   <button
     type="button"
-    class="flex cursor-pointer items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors select-none hover:bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+    class="btn btn-outline btn-sm flex items-center justify-between"
     onclick={toggleDropdown}
     aria-expanded={isOpen}
     aria-haspopup="listbox"
@@ -64,7 +64,7 @@
       <!-- 地球儀アイコン -->
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="mr-2 h-5 w-5 text-gray-600"
+        class="mr-2 h-5 w-5"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -77,14 +77,14 @@
         />
       </svg>
       <!-- 選択中の言語を表示 -->
-      <span class="text-sm font-medium text-gray-800">
+      <span class="text-sm font-medium">
         {LANGUAGE_NAMES[currentLocale] || currentLocale}
       </span>
     </div>
     <!-- 開閉を示す矢印アイコン -->
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      class="h-4 w-4 text-gray-600 transition-transform duration-200 {isOpen ? 'rotate-180' : ''}"
+      class="h-4 w-4 transition-transform duration-200 {isOpen ? 'rotate-180' : ''}"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -96,29 +96,24 @@
 
   <!-- 言語リスト -->
   {#if isOpen}
-    <div
-      class="absolute top-full left-0 z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-lg"
+    <ul
+      class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-52 border shadow-lg"
       role="listbox"
     >
-      <ul class="text-gray-700">
-        {#each locales as locale (locale)}
-          <li>
-            <button
-              type="button"
-              class="w-full cursor-pointer border-b border-gray-100 px-3 py-2 text-left text-sm transition-colors last:border-b-0 hover:bg-gray-100
-                {currentLocale === locale
-                ? 'bg-blue-600 font-medium text-white hover:bg-blue-700'
-                : ''}"
-              onclick={() => switchLanguage(locale)}
-              role="option"
-              aria-selected={currentLocale === locale}
-            >
-              {LANGUAGE_NAMES[locale as Locale] || locale}
-            </button>
-          </li>
-        {/each}
-      </ul>
-    </div>
+      {#each locales as locale (locale)}
+        <li>
+          <button
+            type="button"
+            class="text-sm {currentLocale === locale ? 'active' : ''}"
+            onclick={() => switchLanguage(locale)}
+            role="option"
+            aria-selected={currentLocale === locale}
+          >
+            {LANGUAGE_NAMES[locale as Locale] || locale}
+          </button>
+        </li>
+      {/each}
+    </ul>
   {/if}
 </div>
 

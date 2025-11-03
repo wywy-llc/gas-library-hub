@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -25,44 +25,56 @@ export const session = pgTable('session', {
   }).notNull(),
 });
 
-export const library = pgTable('library', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  scriptId: text('script_id').notNull().unique(),
-  repositoryUrl: text('repository_url').notNull().unique(),
-  authorUrl: text('author_url').notNull(),
-  authorName: text('author_name').notNull(),
-  description: text('description').notNull(),
-  starCount: integer('star_count').default(0).notNull(),
-  copyCount: integer('copy_count').default(0).notNull(),
-  licenseType: text('license_type').notNull(),
-  licenseUrl: text('license_url').notNull(),
-  lastCommitAt: timestamp('last_commit_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).notNull(),
-  status: text('status', { enum: ['pending', 'published', 'rejected'] })
-    .notNull()
-    .default('pending'),
-  scriptType: text('script_type', { enum: ['library', 'web_app'] })
-    .notNull()
-    .default('library'),
-  // 申請者情報（ユーザー申請の場合のみ）
-  requesterId: text('requester_id').references(() => user.id),
-  requestNote: text('request_note'), // 申請時のメモ
-  createdAt: timestamp('created_at', {
-    withTimezone: true,
-    mode: 'date',
+export const library = pgTable(
+  'library',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    scriptId: text('script_id').notNull().unique(),
+    repositoryUrl: text('repository_url').notNull().unique(),
+    authorUrl: text('author_url').notNull(),
+    authorName: text('author_name').notNull(),
+    description: text('description').notNull(),
+    starCount: integer('star_count').default(0).notNull(),
+    copyCount: integer('copy_count').default(0).notNull(),
+    licenseType: text('license_type').notNull(),
+    licenseUrl: text('license_url').notNull(),
+    lastCommitAt: timestamp('last_commit_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+    status: text('status', { enum: ['pending', 'published', 'rejected'] })
+      .notNull()
+      .default('pending'),
+    scriptType: text('script_type', { enum: ['library', 'web_app'] })
+      .notNull()
+      .default('library'),
+    // 申請者情報（ユーザー申請の場合のみ）
+    requesterId: text('requester_id').references(() => user.id),
+    requestNote: text('request_note'), // 申請時のメモ
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  table => ({
+    // パフォーマンス最適化: status + scriptType + starCount + copyCount の複合インデックス
+    statusScriptTypeStarCountIdx: index('library_status_script_type_star_count_idx').on(
+      table.status,
+      table.scriptType,
+      table.starCount,
+      table.copyCount
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp('updated_at', {
-    withTimezone: true,
-    mode: 'date',
-  })
-    .notNull()
-    .defaultNow(),
-});
+);
 
 export const librarySummary = pgTable('library_summary', {
   id: text('id').primaryKey(),

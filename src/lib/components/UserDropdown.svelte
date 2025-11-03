@@ -22,12 +22,9 @@
   }
 </script>
 
-<div class="relative">
+<div class="dropdown dropdown-end">
   <!-- ユーザー名ボタン -->
-  <button
-    on:click={toggleDropdown}
-    class="flex items-center space-x-2 rounded-md px-2 py-1 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
-  >
+  <button on:click={toggleDropdown} class="btn btn-ghost btn-sm">
     <span>{user.name || user.email}</span>
     <svg
       class="h-4 w-4 transition-transform {isOpen ? 'rotate-180' : ''}"
@@ -41,35 +38,30 @@
 
   <!-- ドロップダウンメニュー -->
   {#if isOpen}
-    <div
+    <ul
       use:clickOutside={closeDropdown}
-      class="ring-opacity-5 absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black focus:outline-none"
+      class="dropdown-content menu bg-base-100 rounded-box z-50 mt-2 w-52 border shadow-lg"
     >
-      <div class="py-1">
-        {#if showAdminLink}
-          <a
-            href="/admin"
-            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-            on:click={closeDropdown}
-          >
+      {#if showAdminLink}
+        <li>
+          <a href="/admin" on:click={closeDropdown}>
             {admin_dashboard()}
           </a>
-        {/if}
-        <a
-          href="/user/search"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          on:click={closeDropdown}
-        >
+        </li>
+      {/if}
+      <li>
+        <a href="/user/search" on:click={closeDropdown}>
           {library_search()}
         </a>
-        <hr class="my-1 border-gray-200" />
-        <button
-          on:click={handleSignOut}
-          class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-        >
+      </li>
+      <li class="menu-title">
+        <hr />
+      </li>
+      <li>
+        <button on:click={handleSignOut} class="w-full text-left">
           {logout()}
         </button>
-      </div>
-    </div>
+      </li>
+    </ul>
   {/if}
 </div>

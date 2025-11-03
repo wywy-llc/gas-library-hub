@@ -28,29 +28,22 @@
   }
 </script>
 
+<!-- AI要約セクション - daisyUI v5準拠 -->
 <div class="mt-8">
-  <h2
-    class="mb-6 {isAdminMode
-      ? 'text-2xl font-bold'
-      : 'border-b border-gray-200 pb-3 text-2xl font-semibold text-gray-900'}"
-  >
+  <h2 class="mb-6 {isAdminMode ? 'text-2xl font-bold' : 'border-b pb-3 text-2xl font-semibold'}">
     {m.ai_summary()}
   </h2>
-  <div
-    class={isAdminMode
-      ? 'overflow-hidden rounded-lg bg-white shadow-md'
-      : 'rounded-lg border border-gray-200 bg-white'}
-  >
-    <div class={isAdminMode ? 'px-6 py-8' : 'px-6 py-6'}>
+  <div class={isAdminMode ? 'card bg-base-100 shadow-lg' : 'card card-border bg-base-100'}>
+    <div class={isAdminMode ? 'card-body' : 'card-body'}>
       <!-- ライブラリ名 -->
       <div class="mb-8">
-        <h3 class="mb-3 text-lg font-bold text-gray-900">
+        <h3 class="mb-3 text-lg font-bold">
           {currentLocale === 'ja'
             ? librarySummary.libraryNameJa || libraryName
             : librarySummary.libraryNameEn || libraryName}
         </h3>
         {#if librarySummary.purposeJa || librarySummary.purposeEn}
-          <p class="text-sm leading-relaxed text-gray-700">
+          <p class="text-sm leading-relaxed opacity-80">
             {#if currentLocale === 'ja'}
               {librarySummary.purposeJa?.includes('公開情報が不足')
                 ? librarySummary.seoDescriptionJa
@@ -65,53 +58,63 @@
       </div>
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <!-- 対象ユーザー -->
+        <!-- 対象ユーザー - daisyUI v5準拠 -->
         {#if librarySummary.targetUsersJa || librarySummary.targetUsersEn}
-          <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <h4 class="mb-3 flex items-center text-base font-semibold text-blue-900">
-              <svg
-                class="mr-2 h-5 w-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                ></path>
-              </svg>
-              {m.target_users()}
-            </h4>
-            <p class="text-sm leading-relaxed text-blue-800">
-              {currentLocale === 'ja' ? librarySummary.targetUsersJa : librarySummary.targetUsersEn}
-            </p>
+          <div class="card card-bordered bg-base-200 shadow-sm">
+            <div class="card-body p-4">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="font-semibold">
+                    {m.target_users()}
+                  </h4>
+                  <p class="text-sm leading-relaxed opacity-80">
+                    {currentLocale === 'ja'
+                      ? librarySummary.targetUsersJa
+                      : librarySummary.targetUsersEn}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         {/if}
 
-        <!-- 解決する課題 -->
+        <!-- 解決する課題 - daisyUI v5準拠 -->
         {#if librarySummary.coreProblemJa || librarySummary.coreProblemEn}
-          <div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4 shadow-sm">
-            <h4 class="mb-3 flex items-center text-base font-semibold text-yellow-900">
-              <svg
-                class="mr-2 h-5 w-5 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                ></path>
-              </svg>
-              {m.problems_solved()}
-            </h4>
-            <p class="text-sm leading-relaxed text-yellow-800">
-              {currentLocale === 'ja' ? librarySummary.coreProblemJa : librarySummary.coreProblemEn}
-            </p>
+          <div class="card card-bordered bg-base-200 shadow-sm">
+            <div class="card-body p-4">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="font-semibold">
+                    {m.problems_solved()}
+                  </h4>
+                  <p class="text-sm leading-relaxed opacity-80">
+                    {currentLocale === 'ja'
+                      ? librarySummary.coreProblemJa
+                      : librarySummary.coreProblemEn}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         {/if}
       </div>
@@ -119,13 +122,8 @@
       <!-- タグ -->
       {#if (currentLocale === 'ja' ? librarySummary.tagsJa : librarySummary.tagsEn) && (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).length > 0}
         <div class="my-4">
-          <h4 class="mb-3 flex items-center text-base font-semibold text-blue-800">
-            <svg
-              class="mr-2 h-5 w-5 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <h4 class="mb-3 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -154,13 +152,8 @@
       <!-- 主な特徴 -->
       {#if librarySummary.mainBenefits && librarySummary.mainBenefits.length > 0}
         <div class="mb-8">
-          <h4 class="mb-4 flex items-center text-base font-semibold text-emerald-800">
-            <svg
-              class="mr-2 h-5 w-5 text-emerald-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <h4 class="mb-4 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -172,20 +165,20 @@
           </h4>
           <div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
             {#each librarySummary.mainBenefits as benefit, index (index)}
-              <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                <div class="mb-2 flex items-center">
-                  <div
-                    class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600"
-                  >
-                    <span class="text-sm font-semibold text-white">{index + 1}</span>
+              <div class="card card-bordered bg-base-200 shadow-sm">
+                <div class="card-body p-4">
+                  <div class="mb-2 flex items-center">
+                    <div class="mr-3 flex h-8 w-8 items-center justify-center">
+                      <span class="text-sm font-semibold">{index + 1}</span>
+                    </div>
+                    <h5 class="text-base font-semibold">
+                      {currentLocale === 'ja' ? benefit.title.ja : benefit.title.en}
+                    </h5>
                   </div>
-                  <h5 class="text-base font-semibold text-emerald-900">
-                    {currentLocale === 'ja' ? benefit.title.ja : benefit.title.en}
-                  </h5>
+                  <p class="text-sm leading-relaxed opacity-80">
+                    {currentLocale === 'ja' ? benefit.description.ja : benefit.description.en}
+                  </p>
                 </div>
-                <p class="text-sm leading-relaxed text-emerald-800">
-                  {currentLocale === 'ja' ? benefit.description.ja : benefit.description.en}
-                </p>
               </div>
             {/each}
           </div>
@@ -195,13 +188,8 @@
       <!-- 使用例 -->
       {#if usageExample}
         <div class="mb-6">
-          <h4 class="mb-4 flex items-center text-base font-semibold text-indigo-800">
-            <svg
-              class="mr-2 h-5 w-5 text-indigo-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <h4 class="mb-4 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"

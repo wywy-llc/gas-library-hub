@@ -95,17 +95,17 @@
 </svelte:head>
 
 <main class="container mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-  <!-- 検索バーと結果件数 -->
+  <!-- 検索バーと結果件数 - daisyUI v5準拠 -->
   <header class="mb-8">
     <div class="mx-auto mb-6 max-w-xl">
       <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
     </div>
     {#if data.searchQuery}
-      <h1 class="text-center text-2xl font-bold text-gray-800">
+      <h1 class="text-center text-2xl font-bold">
         {search_results_for({ query: data.searchQuery, count: data.totalResults })}
       </h1>
     {:else}
-      <h1 class="text-center text-2xl font-bold text-gray-800">
+      <h1 class="text-center text-2xl font-bold">
         {all_libraries_count({ count: data.totalResults })}
       </h1>
     {/if}
@@ -126,9 +126,10 @@
       <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
     </div>
   {:else}
+    <!-- 検索結果なし - daisyUI v5準拠 -->
     <section class="mx-auto max-w-3xl py-12 text-center" aria-label="検索結果なし">
       <svg
-        class="mx-auto h-12 w-12 text-gray-400"
+        class="mx-auto h-12 w-12 opacity-50"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -142,10 +143,10 @@
           d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
         />
       </svg>
-      <h2 class="mt-4 text-lg font-medium text-gray-900">
+      <h2 class="mt-4 text-lg font-medium">
         {data.searchQuery ? no_search_results() : search_gas_libraries()}
       </h2>
-      <p class="mt-2 text-gray-500">
+      <p class="mt-2 opacity-70">
         {data.searchQuery ? try_different_keywords() : search_from_box()}
       </p>
     </section>

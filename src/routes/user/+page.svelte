@@ -43,28 +43,28 @@
   <link rel="canonical" href={createAppUrl('/user')} />
 </svelte:head>
 
-<!-- GASライブラリ検索ヘッダー -->
-<section class="bg-gray-50 py-12">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <header class="text-center">
-      <h1 class="text-3xl font-bold tracking-tight text-gray-900">{gas_library_search()}</h1>
+<!-- GASライブラリ検索ヘッダー -  Hero -->
+<div class="hero bg-base-200 py-12">
+  <div class="hero-content w-full max-w-4xl text-center">
+    <div class="w-full">
+      <h1 class="text-3xl font-bold">{gas_library_search()}</h1>
       {#if data.session?.user}
-        <p class="mt-4 text-lg text-gray-600">
+        <p class="mt-4 text-lg">
           {welcome_user({ userName: data.session.user.name || data.session.user.email || '' })}
         </p>
       {/if}
-    </header>
-    <div class="mx-auto mt-8 max-w-xl" role="search">
-      <SearchBox />
+      <div class="mx-auto mt-8 max-w-xl" role="search">
+        <SearchBox />
+      </div>
     </div>
   </div>
-</section>
+</div>
 
-<!-- 注目のライブラリセクション -->
-<section class="bg-white py-16 sm:py-24">
+<!-- 注目のライブラリセクション - 準拠 -->
+<section class="bg-base-100 py-16 sm:py-24">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <header class="mb-12 text-center">
-      <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+      <h2 class="text-3xl font-bold sm:text-4xl">
         {featured_libraries()}
       </h2>
     </header>
@@ -89,12 +89,12 @@
   </div>
 </section>
 
-<!-- 注目のWebアプリセクション -->
+<!-- 注目のWebアプリセクション - 準拠 -->
 {#if data.featuredWebApps && data.featuredWebApps.length > 0}
-  <section class="bg-gray-50 py-16 sm:py-24">
+  <section class="bg-base-200 py-16 sm:py-24">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <header class="mb-12 text-center">
-        <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+        <h2 class="text-3xl font-bold sm:text-4xl">
           {featured_web_apps()}
         </h2>
       </header>

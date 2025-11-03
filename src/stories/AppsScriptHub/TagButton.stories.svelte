@@ -14,7 +14,7 @@
     argTypes: {
       variant: {
         control: 'select',
-        options: ['blue', 'green', 'yellow', 'red', 'purple', 'gray', 'indigo'],
+        options: ['primary', 'secondary', 'success', 'warning', 'error', 'neutral', 'info'],
         description: 'カラーバリエーション',
       },
       size: {
@@ -60,13 +60,13 @@
 <!-- カラーバリエーション -->
 <Story name="Color Variants">
   <div class="flex flex-wrap gap-2">
-    <TagButton variant="blue">Blue</TagButton>
-    <TagButton variant="green">Green</TagButton>
-    <TagButton variant="yellow">Yellow</TagButton>
-    <TagButton variant="red">Red</TagButton>
-    <TagButton variant="purple">Purple</TagButton>
-    <TagButton variant="gray">Gray</TagButton>
-    <TagButton variant="indigo">Indigo</TagButton>
+    <TagButton variant="primary">Primary</TagButton>
+    <TagButton variant="secondary">Secondary</TagButton>
+    <TagButton variant="success">Success</TagButton>
+    <TagButton variant="warning">Warning</TagButton>
+    <TagButton variant="error">Error</TagButton>
+    <TagButton variant="neutral">Neutral</TagButton>
+    <TagButton variant="info">Info</TagButton>
   </div>
 </Story>
 
@@ -86,13 +86,13 @@
       JavaScript
     </TagButton>
     <TagButton
-      variant="green"
+      variant="success"
       onclick={() => handleTagClick('TypeScript')}
       title="「TypeScript」で検索"
     >
       TypeScript
     </TagButton>
-    <TagButton variant="yellow" onclick={() => handleTagClick('React')} title="「React」で検索">
+    <TagButton variant="warning" onclick={() => handleTagClick('React')} title="「React」で検索">
       React
     </TagButton>
   </div>
@@ -102,7 +102,7 @@
 <Story name="Disabled">
   <div class="flex flex-wrap gap-2">
     <TagButton disabled>無効化タグ</TagButton>
-    <TagButton variant="green" disabled onclick={() => handleTagClick('無効')}>
+    <TagButton variant="success" disabled onclick={() => handleTagClick('無効')}>
       クリック無効化
     </TagButton>
   </div>
@@ -115,16 +115,20 @@
     <div class="flex flex-wrap gap-2">
       <TagButton onclick={() => handleTagClick('GAS')} title="「GAS」で検索">GAS</TagButton>
       <TagButton
-        variant="green"
+        variant="success"
         onclick={() => handleTagClick('Utility')}
         title="「Utility」で検索"
       >
         Utility
       </TagButton>
-      <TagButton variant="purple" onclick={() => handleTagClick('Date')} title="「Date」で検索">
+      <TagButton variant="secondary" onclick={() => handleTagClick('Date')} title="「Date」で検索">
         Date
       </TagButton>
-      <TagButton variant="yellow" onclick={() => handleTagClick('Format')} title="「Format」で検索">
+      <TagButton
+        variant="warning"
+        onclick={() => handleTagClick('Format')}
+        title="「Format」で検索"
+      >
         Format
       </TagButton>
     </div>
@@ -141,7 +145,7 @@
     >
       アクセシブル
     </TagButton>
-    <TagButton variant="green" aria-label="読み取り専用タグ">読み取り専用</TagButton>
+    <TagButton variant="success" aria-label="読み取り専用タグ">読み取り専用</TagButton>
   </div>
 </Story>
 
@@ -149,6 +153,6 @@
 <Story name="Custom Class">
   <div class="flex flex-wrap gap-2">
     <TagButton class="shadow-lg ring-2 ring-blue-300">カスタムスタイル</TagButton>
-    <TagButton variant="red" class="tracking-wider uppercase">大文字</TagButton>
+    <TagButton variant="error" class="tracking-wider uppercase">大文字</TagButton>
   </div>
 </Story>
