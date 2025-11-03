@@ -768,6 +768,7 @@ export const GenerateLibrarySummaryService = (() => {
     // 最適化されたAPI呼び出し（textタイプのみ使用）
     const response = await client.chat.completions.create({
       model: 'gpt-5',
+      reasoning_effort: 'medium',
       messages: [
         {
           role: 'user',
@@ -778,7 +779,6 @@ export const GenerateLibrarySummaryService = (() => {
         type: 'json_schema',
         json_schema: LIBRARY_SUMMARY_JSON_SCHEMA,
       },
-      reasoning_effort: 'medium',
     });
 
     const content = response.choices[0]?.message?.content;
