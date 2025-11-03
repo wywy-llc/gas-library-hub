@@ -17,7 +17,9 @@ export const ValidateLibraryPatternsService = (() => {
    * @param repositoryUrl GitHubリポジトリURL
    * @returns 検証結果オブジェクト
    */
-  const call = async (repositoryUrl: string): Promise<{
+  const call = async (
+    repositoryUrl: string
+  ): Promise<{
     isValid: boolean;
     hasScriptId: boolean;
     hasWebAppPattern: boolean;

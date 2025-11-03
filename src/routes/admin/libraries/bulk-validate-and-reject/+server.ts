@@ -47,15 +47,16 @@ export const POST: RequestHandler = async () => {
 
       // バッチ内のライブラリを並列処理
       const batchResults = await Promise.allSettled(
-        batch.map(async (lib) => {
+        batch.map(async lib => {
           try {
             // パターン検証を実行
             const validationResult = await ValidateLibraryPatternsService.call(lib.repositoryUrl);
 
             if (!validationResult.isValid) {
               const reason =
-                validationResult.error || 'スクリプトIDまたはWebアプリパターンが検出されませんでした';
-              
+                validationResult.error ||
+                'スクリプトIDまたはWebアプリパターンが検出されませんでした';
+
               // 却下対象として記録
               librariesToReject.push({ id: lib.id, reason });
               rejectedLibraries.push({
@@ -103,11 +104,11 @@ export const POST: RequestHandler = async () => {
     // 却下対象のライブラリをバッチで一括更新
     if (librariesToReject.length > 0) {
       console.log(`📝 ${librariesToReject.length}件のライブラリを却下ステータスに更新中...`);
-      
+
       // Drizzle ORMでバッチ更新を実行
       // 注: Drizzle ORMではバッチ更新が直接サポートされていないため、
       // トランザクション内で複数の更新を実行
-      await db.transaction(async (tx) => {
+      await db.transaction(async tx => {
         for (const { id } of librariesToReject) {
           await tx
             .update(library)
@@ -150,4 +151,4 @@ export const POST: RequestHandler = async () => {
       { status: 500 }
     );
   }
-};;
+};
