@@ -43,7 +43,7 @@
   {#if isOpen}
     <div
       use:clickOutside={closeDropdown}
-      class="ring-opacity-5 absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black focus:outline-none"
+      class="ring-opacity-5 absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg focus:outline-none"
     >
       <div class="py-1">
         {#if showAdminLink}
