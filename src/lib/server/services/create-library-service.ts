@@ -12,13 +12,13 @@ import { ValidateLibraryUniquenessService } from './validate-library-uniqueness-
  * ライブラリを新規作成するサービス
  * GitHub APIから情報を取得してデータベースに保存する
  */
-export class CreateLibraryService {
+export const CreateLibraryService = (() => {
   /**
    * ライブラリを新規作成する
    * @param params 作成パラメータ
    * @returns 作成されたライブラリのID
    */
-  static async call(params: { scriptId: string; repoUrl: string }): Promise<string> {
+  const call = async (params: { scriptId: string; repoUrl: string }): Promise<string> => {
     // GitHub URLを正規化
     const repositoryUrl = params.repoUrl.startsWith('https://github.com/')
       ? params.repoUrl
@@ -81,14 +81,21 @@ export class CreateLibraryService {
       starCount: createdLibrary.starCount,
     });
 
-    // 新規ライブラリにAIによる要約を生成してDBに保存
-    await GenerateAiSummaryService.call({
+    // AI要約生成をバックグラウンドで実行（awaitしない）
+    // エラーは内部でキャッチされるため、ライブラリ作成プロセスはブロックされない
+    GenerateAiSummaryService.call({
       libraryId,
       githubUrl: repositoryUrl,
       skipOnError: true,
       logContext: '新規ライブラリのAI要約を生成',
+    }).catch(err => {
+      console.error('🔴 バックグラウンドAI要約生成エラー:', err);
     });
 
+    console.log('⚡ ライブラリ登録完了（AI要約はバックグラウンドで生成中）');
+
     return libraryId;
-  }
-}
+  };
+
+  return { call } as const;
+})();

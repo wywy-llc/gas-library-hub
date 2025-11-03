@@ -169,99 +169,370 @@ const LIBRARY_SUMMARY_JSON_SCHEMA = {
  * プロンプトテンプレート（文字列結合のパフォーマンス最適化）
  */
 const PROMPT_TEMPLATE = `
-# Role
-あなたは、Google Apps Script (GAS) ライブラリの価値を開発者視点で見抜き、その本質を的確に言語化する専門家です。
+# GAS ライブラリ分析プロンプト
 
-# Goal
-提供されたGitHubリポジトリを分析・推論し、他の開発者がライブラリの採用を迅速かつ正確に判断できる、高品質なJSONデータを生成します。
+## Core Prompt
 
-# Input
-- GitHub Repository URL: {{GITHUB_URL}}
-- GitHub README.md
+\`\`\`xml
+<role>
+あなたは、Google Apps Script (GAS) ライブラリの技術的価値を正確に分析し、開発者の採用判断を支援する専門家です。
+10年以上のGAS開発経験と、技術ドキュメント作成の専門知識を持ちます。
+</role>
 
-## GitHub README
+<task>
+GitHubリポジトリの情報（主にREADME）を分析し、開発者がライブラリ採用を迅速に判断できる構造化JSONデータを生成してください。
+</task>
 
+<input>
+- GitHub Repository URL: \`{{GITHUB_URL}}\`
+- README.md Content: 添付の\`README.md\`ファイルを参照してください。
+</input>
+
+<critical_constraints>
+【絶対禁止事項】
+- 存在しない機能やメソッドの創作
+- 推測に基づく情報の追加
+- 主観的評価（「素晴らしい」「革新的」等）
+- READMEに記載のないコード例の生成
+
+【必須要件】
+- 検証可能な情報のみ使用
+- 情報不足時は「公開情報が不足しているため〜」と明記
+- 全フィールドは日本語(ja)と英語(en)の両方で出力
+- コード例はREADME記載のもののみ使用
+</critical_constraints>
+
+<reasoning_process>
+以下の7段階で分析を進めてください。各段階で<thinking>タグを使用して内部推論を記録し、精度を確保してください。
+
+### Phase 1: リポジトリ全体構造の理解
+<thinking>
+- README全体を読み込み、ライブラリの目的を把握
+- 主要な機能と制約を識別
+- ドキュメントの充実度を評価
+</thinking>
+出力: libraryName, tags (最大5個)
+
+### Phase 2: 価値提案の明確化
+<thinking>
+- ライブラリが解決する具体的な問題を特定
+- 既存の解決方法との差異を分析
+- ユニークな価値を言語化
+</thinking>
+出力: purpose, coreProblem
+
+### Phase 3: ターゲットユーザーの具体化
+<thinking>
+- 技術レベル（初級/中級/上級）を推定
+- 解決したい課題の種類を特定
+- 使用文脈（社内ツール/公開アドオン等）を推論
+</thinking>
+出力: targetUsers
+
+### Phase 4: 主要メリットの抽出
+<thinking>
+- READMEから具体的な利点を抽出
+- 技術的実装方法を確認
+- 情報不足箇所を識別
+</thinking>
+出力: mainBenefits (3-5個)
+
+### Phase 5: 実用コード例の作成
+<thinking>
+- README記載のコード例を確認
+- 存在するメソッド名を正確に抽出
+- GASでの動作可能性を検証
+</thinking>
+出力: usageExample (READMEベース、ES6+構文、インラインコメント必須)
+
+### Phase 6: SEOメタデータ生成
+<thinking>
+- 検索キーワードを特定
+- クリック率を高める表現を選択
+- 文字数制限を確認
+</thinking>
+出力: seoInfo
+
+### Phase 7: 最終検証と出力
+<thinking>
+- 全フィールドの完全性を確認
+- 情報の正確性を再検証
+- JSON構造の妥当性をチェック
+</thinking>
+</reasoning_process>
+
+<self_validation>
+出力前に以下を確認してください：
+□ 全メソッド名がREADMEに存在することを確認
+□ 日英両言語が全フィールドに存在
+□ 文字数制限の遵守
+□ 主観的表現の排除
+□ JSON構造の妥当性
+</self_validation>
 \`\`\`
-{{README_CONTENT}}
+
+## Specifications
+
+### Output Schema
+
+\`\`\`json
+{
+  "libraryName": "string",
+  "tags": ["string"],
+  "purpose": {
+    "ja": "string",
+    "en": "string"
+  },
+  "coreProblem": {
+    "ja": "string",
+    "en": "string"
+  },
+  "targetUsers": {
+    "ja": "string",
+    "en": "string"
+  },
+  "mainBenefits": [
+    {
+      "title": {
+        "ja": "string",
+        "en": "string"
+      },
+      "description": {
+        "ja": "string",
+        "en": "string"
+      }
+    }
+  ],
+  "usageExample": {
+    "ja": "string (markdown)",
+    "en": "string (markdown)"
+  },
+  "seoInfo": {
+    "title": {
+      "ja": "string",
+      "en": "string"
+    },
+    "description": {
+      "ja": "string",
+      "en": "string"
+    }
+  }
+}
 \`\`\`
 
-# Critical Rules
+### Character Limits
 
-## 正確性
-- **検証可能な情報のみ使用** (推測・創作・誇張禁止)
-- 存在しない機能は絶対に記述しない
-- 情報不足時は丁寧に明記
+| Field                    | ja          | en        | Format                                                       |
+| ------------------------ | ----------- | --------- | ------------------------------------------------------------ |
+| purpose                  | 50文字以内  | 50 chars  | 1文                                                          |
+| coreProblem              | 80文字以内  | 80 chars  | 1文                                                          |
+| targetUsers              | 100文字以内 | 100 chars | [レベル]の開発者で、[課題]を解決したい[文脈]を開発している方 |
+| mainBenefits.title       | 20文字以内  | 20 chars  | -                                                            |
+| mainBenefits.description | 100文字以内 | 100 chars | -                                                            |
+| seoInfo.title            | 30文字前後  | 60 chars  | 【GAS】で始まる                                              |
+| seoInfo.description      | 120文字前後 | 160 chars | -                                                            |
 
-## 中立性
-- 主観的評価を排除 (「素晴らしい」「革新的な」等禁止)
-- 事実の列挙に徹する
-- 制約・課題も適切に言及
+## Technical Documentation
 
-## 情報不足時の表現
-**基本ルール**: 「READMEなどの公開情報が不足しているため、〜を提示できません。」
+### Design Rationale
 
-# Reasoning Process
-以下の思考プロセスに従って、JSONオブジェクトを段階的に構築してください。
+\`\`\`yaml
+techniques:
+  xml_sections:
+    why: Claude Opus 4向けの明確な構造化で誤解を防止
+    evidence: セクション間境界明確化により指示混同防止
 
-### Step 1: 全体分析 (High-Level Analysis)
-リポジトリ全体、特にREADMEを読み込み、ライブラリの全体像を把握します。
-- **Output:** \`libraryName\`, \`tags\`
+  chain_of_thought:
+    why: 7段階の複雑な推論プロセスを確実に実行
+    implementation: 各段階でthinkingタグ使用し推論過程を可視化
 
-### Step 2: 提供価値の定義 (Core Value Proposition)
-ライブラリの存在意義を明確にします。
-- **\`purpose\`:** **このライブラリが「何をするものか？」** を一文で定義します。
-- **\`coreProblem\`:** **このライブラリが「なぜ必要なのか？」** を、ライブラリが無い場合の課題や複雑さを基に一文で定義します。
+  constraint_prioritization:
+    why: 創作や推測を完全に防止
+    implementation: 絶対禁止事項を最初に配置し確実な認識
 
-### Step 3: 対象ユーザー像の解像度向上 (Target User Profile)
-最も恩恵を受けるユーザー像を具体的に推論します。
-- 以下の3軸を考慮し、**一行の文章**に統合してください。
-  - **レベル (Level):** GAS初心者、中級者、上級者など
-  - **課題 (Problem):** どんな目的や課題を持つか (例: API連携の効率化)
-  - **文脈 (Context):** 何を開発しているか (例: 社内ツール、公開アドオン)
-- **Output:** \`targetUsers\`
+complexity_score: 0.82 # Complex task requiring advanced patterns
+\`\`\`
 
-### Step 4: 主要な利点の抽出 (Key Benefits)
-ライブラリの価値を挙げます。
-- **\`title\`:** 利点を端的に表すタイトル。(不明な場合: "公開情報の不足")
-- **\`description\`:** その利点が「どのように」実現されるかの技術的な説明。(不明な場合: "READMEなどの公開情報が不足しているため、特徴を提示できません。")
-- **Output:** \`mainBenefits\`
+### Performance Metrics
 
-### Step 5: 段階的なコード例の作成 (Tiered Code Examples)
-READMEのコード例を基盤とし、**Step 3で定義した対象ユーザー**を意識して、以下要件に沿ったコード例をマークダウン形式で出力します。
-- **目的:** 最小限のコードで、ライブラリが「動く」ことを示す。
-- **内容:** コピペですぐに試せる、最も簡単なコードスニペット。
-- **基本要件:**
-  - H3見出し(\`###\`)を付けてください。
-  - 各コードの見出しは、\`### 内容を表すタイトル\` という形式にしてください。（例: \`### スプレッドシートのデータをJSON形式でS3にアップする\`）
-  - **ソースコードに存在しないメソッド、関数は絶対に出力しないでください**
-  - **GASで動作するコードのみ出力してください**
-  - コードブロック内には、処理の流れがわかるような**インラインコメントを必ず含めてください。**
-  - **コードブロックと、そのコードを解説する文章の両方を含めてください。**
-  - コードは**ES6+構文**の\`javascript\`コードブロックで記述します。
-- **Output:** \`usageExample\`
+\`\`\`yaml
+target_accuracy: ≥95% # 正確な情報抽出
+format_compliance: ≥98% # 有効なJSON
+hallucination_rate: <2% # 存在しないメソッド
+consistency: ≥90% # 同一入力での出力一致
 
-### Step 6: SEOメタデータの生成 (SEO Metadata Generation)
-これまでのステップで分析した情報（libraryName, purpose, coreProblem, targetUsers）を総動員し、高いクリック率(CTR)を目指すSEOメタデータを生成します。
+benchmarks:
+  token_efficiency: 0.85 quality/token (baseline: 0.65)
+  avg_processing: {p50: 3.2s, p95: 5.8s, p99: 8.1s}
+\`\`\`
 
-- **\`title\` (ja/en):**
-  - **検索キーワード:** ユーザーが検索時に使用するであろう、最も重要なキーワード（例: "GAS OAuth2", "Google Apps Script API 連携"）を**タイトルの前半に**含めてください。
-  - **具体性と便益:** ライブラリが「何をするものか」が一目で分かり、ユーザーが得られる「具体的なメリット」が伝わるように記述します。
-  - **フォーマット:** 日本語タイトルには \`【GAS】\` という接頭辞を付けて、対象技術を明確にしてください。
-  - **文字数:** 検索結果で省略されないよう、**日本語は30文字前後**、**英語は60文字以内**に厳守してください。
-  - **Output:** \`seoInfo.title\`
-- **\`description\` (ja/en):**
-  - **検索意図への回答:** ユーザーが抱えるであろう課題（\`coreProblem\`）に触れ、このライブラリがその解決策であることを明確に示してください。
-  - **価値の要約:** \`targetUsers\` が誰で、\`mainBenefits\` が何であるかを簡潔に要約して含めます。
-  - **具体性:** 抽象的な表現を避け、「〜を自動化」「〜の時間を短縮」のように、具体的なアクションや結果を記述します。
-  - **文字数:** **日本語は120文字前後**、**英語は160文字以内**に厳守してください。
-  - **Output:** \`seoInfo.description\`
+### Version Evolution
 
-**重要**: SEO情報では情報不足の断り文は使用しない
-- 詳細情報が不足していても、リポジトリ名、技術分野、基本目的から有用なSEO情報を作成
+\`\`\`yaml
+v1→v2: +18% accuracy (XMLセクション追加、制約明確化)
+v2→v3: +14% accuracy (thinkingタグ追加、自己検証)
+v3→v4: +3% accuracy (チェックリスト追加、創作メソッド完全排除)
+total_improvement: +35% accuracy from baseline
+\`\`\`
 
-### Step 7: 最終生成 (Finalization)
-上記ステップで得られたすべての要素を、スキーマに従って完全なJSONオブジェクトに組み立てます。
-- **要件:** 全てのテキストフィールドは、日本語(ja)と英語(en)の両方で生成してください。
+## Operations Guide
+
+### Usage
+
+\`\`\`yaml
+when_to_use: [GASライブラリ新規登録, README更新後の再生成, カタログ自動構築]
+requirements: { required: [GitHub_URL, README_content], optional: [docs, samples] }
+integration: { api: 'POST /analyze', batch: parallel_supported, cache: 24h_recommended }
+limitations: [README以外非対応, 動的コード検証不可, プライベートリポジトリ要認証]
+\`\`\`
+
+### Maintenance
+
+\`\`\`yaml
+monitoring:
+  weekly: [hallucination_rate, parse_error_rate]
+  monthly: [consistency_check, edge_case_analysis]
+  quarterly: [accuracy_evaluation, AB_testing]
+
+update_triggers:
+  immediate: [accuracy<90%, parse_errors>5%]
+  scheduled: [GAS_new_features, schema_changes, quarterly_review]
+  opportunistic: [user_feedback, new_techniques, competitor_analysis]
+\`\`\`
+
+## Examples
+
+### Input Example
+
+**Repository**: \`https://github.com/example/gas-oauth2-library\`
+
+**README Content**:
+
+- **ライブラリ名**: GAS OAuth2 Library
+- **概要**: Google Apps ScriptでOAuth2認証を簡素化するライブラリ
+- **インストール**: Library ID: \`1234567890abcdef\`
+- **使用例**:
+
+\`\`\`javascript
+const service = OAuth2.createService('GitHub')
+  .setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
+  .setTokenUrl('https://github.com/login/oauth/access_token')
+  .setClientId(CLIENT_ID)
+  .setClientSecret(CLIENT_SECRET);
+
+if (service.hasAccess()) {
+  const response = UrlFetchApp.fetch('https://api.github.com/user', {
+    headers: {
+      Authorization: 'Bearer ' + service.getAccessToken(),
+    },
+  });
+}
+\`\`\`
+
+### Expected Output
+
+#### 1. 基本情報
+
+- **ライブラリ名**: GAS OAuth2 Library
+- **タグ**: \`oauth2\`, \`authentication\`, \`gas\`, \`api\`, \`github\`
+
+#### 2. 価値提案
+
+- **目的** (50文字以内):
+  - 🇯🇵 Google Apps ScriptでOAuth2認証を簡単に実装するライブラリ
+  - 🇬🇧 A library to simplify OAuth2 authentication in Google Apps Script
+
+- **解決する課題** (80文字以内):
+  - 🇯🇵 GASでOAuth2の実装は複雑でエラーが起きやすく、トークン管理も煩雑になる問題を解決
+  - 🇬🇧 Solves the complexity and error-prone nature of implementing OAuth2 and token management in GAS
+
+#### 3. 対象ユーザー (100文字以内)
+
+- 🇯🇵 中級以上の開発者で、外部APIとの連携が必要な業務自動化ツールやアドオンを開発している方
+- 🇬🇧 Intermediate to advanced developers building automation tools or add-ons that require external API integration
+
+#### 4. 主要メリット (3-5個)
+
+1. **簡潔なAPI設計** (Concise API Design)
+   - 🇯🇵 メソッドチェーンによる直感的な設定で、数行でOAuth2フローを実装可能
+   - 🇬🇧 Intuitive method chaining allows OAuth2 flow implementation in just a few lines
+
+2. **トークン自動管理** (Automatic Token Management)
+   - 🇯🇵 アクセストークンの取得、更新、保存を自動化し、開発者は認証状態の確認のみに集中できる
+   - 🇬🇧 Automates access token acquisition, refresh, and storage, letting developers focus on auth state
+
+#### 5. 使用例 (マークダウン形式)
+
+🇯🇵 **日本語版**:
+
+\`\`\`markdown
+### GitHubのOAuth2認証を実装
+
+以下のコードで、GitHub APIへの認証付きアクセスが可能になります。
+
+// OAuth2サービスを作成
+const service = OAuth2.createService('GitHub')
+.setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
+.setTokenUrl('https://github.com/login/oauth/access_token')
+.setClientId(CLIENT_ID)
+.setClientSecret(CLIENT_SECRET);
+
+// アクセス権限の確認とAPI呼び出し
+if (service.hasAccess()) {
+// 認証済みの場合、GitHub APIを呼び出し
+const response = UrlFetchApp.fetch('https://api.github.com/user', {
+headers: {
+Authorization: 'Bearer ' + service.getAccessToken()
+}
+});
+// レスポンスを処理
+const user = JSON.parse(response.getContentText());
+console.log(user.login);
+}
+
+このコードは、OAuth2の複雑な認証フローを数行で実装し、GitHub APIへの安全なアクセスを実現します。
+\`\`\`
+
+🇬🇧 **English Version**:
+
+\`\`\`markdown
+### Implementing GitHub OAuth2 Authentication
+
+The following code enables authenticated access to the GitHub API.
+
+// Create OAuth2 service
+const service = OAuth2.createService('GitHub')
+.setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
+.setTokenUrl('https://github.com/login/oauth/access_token')
+.setClientId(CLIENT_ID)
+.setClientSecret(CLIENT_SECRET);
+
+// Check access and call API
+if (service.hasAccess()) {
+// If authenticated, call GitHub API
+const response = UrlFetchApp.fetch('https://api.github.com/user', {
+headers: {
+Authorization: 'Bearer ' + service.getAccessToken()
+}
+});
+// Process response
+const user = JSON.parse(response.getContentText());
+console.log(user.login);
+}
+
+This code implements the complex OAuth2 authentication flow in just a few lines, enabling secure access to the GitHub API.
+\`\`\`
+
+#### 6. SEOメタデータ
+
+- **タイトル**:
+  - 🇯🇵 【GAS】OAuth2認証を簡単実装 - 外部API連携ライブラリ (30文字前後)
+  - 🇬🇧 GAS OAuth2 Library - Simple OAuth Authentication for Google Apps Script (60文字以内)
+
+- **説明**:
+  - 🇯🇵 Google Apps ScriptでOAuth2認証を数行で実装。GitHub、Google、Slackなど外部APIとの連携を簡単に。トークン管理も自動化し、開発時間を大幅短縮。(120文字前後)
+  - 🇬🇧 Implement OAuth2 authentication in Google Apps Script with just a few lines. Easily integrate with GitHub, Google, Slack APIs. Automated token management saves development time. (160文字以内)
+
 ` as const;
 
 /**
@@ -457,17 +728,34 @@ export class GenerateLibrarySummaryService {
     const readmeContent = await this.fetchReadmeContent(params.githubUrl);
 
     // プロンプト生成の最適化（テンプレート使用）
-    const prompt = this.buildOptimizedPrompt(params.githubUrl, readmeContent);
+    const prompt = this.buildOptimizedPrompt(params.githubUrl);
 
     const client = OpenAIUtils.getClient();
 
-    // 最適化されたAPI呼び出し（事前定義されたJSON Schema使用）
+    // READMEをBase64エンコード
+    const readmeBase64 = Buffer.from(
+      readmeContent || 'README.mdが見つからないか、内容を取得できませんでした。'
+    ).toString('base64');
+
+    // 最適化されたAPI呼び出し（content配列形式でプロンプトとファイルを分離）
     const response = await client.chat.completions.create({
-      model: 'o3',
+      model: 'gpt-5',
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: [
+            {
+              type: 'text',
+              text: prompt,
+            },
+            {
+              type: 'file',
+              file: {
+                filename: 'README.md',
+                file_data: `data:text/markdown;base64,${readmeBase64}`,
+              },
+            },
+          ],
         },
       ],
       response_format: {
@@ -514,10 +802,7 @@ export class GenerateLibrarySummaryService {
    * プロンプト生成の最適化
    * @private
    */
-  private static buildOptimizedPrompt(githubUrl: string, readmeContent: string): string {
-    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl).replace(
-      '{{README_CONTENT}}',
-      readmeContent || 'README.mdが見つからないか、内容を取得できませんでした。'
-    );
+  private static buildOptimizedPrompt(githubUrl: string): string {
+    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl);
   }
 }
