@@ -180,12 +180,12 @@ const PROMPT_TEMPLATE = `
 </role>
 
 <task>
-GitHubリポジトリの情報（主にREADME）を分析し、開発者がライブラリ採用を迅速に判断できる構造化JSONデータを生成してください。
+GitHubリポジトリの情報（主に\`README.md\`）を分析し、開発者がライブラリ採用を迅速に判断できる構造化JSONデータを生成してください。
 </task>
 
 <input>
 - GitHub Repository URL: \`{{GITHUB_URL}}\`
-- README.md Content: 添付の\`README.md\`ファイルを参照してください。
+- README.md Content: 以下のセクションに記載されたREADME.mdの内容を参照してください。
 </input>
 
 <critical_constraints>
@@ -709,13 +709,41 @@ const result = testLib.runTest();`,
  * 4. 事前定義されたJSON Schemaでメモリ使用量を削減
  * 5. OpenAI o3モデルで高品質なライブラリ要約を生成
  */
-export class GenerateLibrarySummaryService {
+export const GenerateLibrarySummaryService = (() => {
+  /**
+   * README取得の最適化
+   * @private
+   */
+  const fetchReadmeContent = async (githubUrl: string): Promise<string> => {
+    const ownerAndRepo = GitHubApiUtils.parseGitHubUrl(githubUrl);
+
+    if (!ownerAndRepo) {
+      return '';
+    }
+
+    try {
+      const readme = await GitHubApiUtils.fetchReadme(ownerAndRepo.owner, ownerAndRepo.repo);
+      return readme || '';
+    } catch (error) {
+      console.warn('README取得に失敗しました:', error);
+      return '';
+    }
+  };
+
+  /**
+   * プロンプト生成の最適化
+   * @private
+   */
+  const buildOptimizedPrompt = (githubUrl: string): string => {
+    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl);
+  };
+
   /**
    * GitHubリポジトリの情報からライブラリ要約を生成する
    * @param params ライブラリ要約生成パラメータ
    * @returns 生成されたライブラリ要約
    */
-  static async call(params: LibrarySummaryParams): Promise<LibrarySummary> {
+  const call = async (params: LibrarySummaryParams): Promise<LibrarySummary> => {
     // E2Eテストモードの場合はモックデータを返す
     if (env.PLAYWRIGHT_TEST_MODE === 'true') {
       console.log('🤖 [E2E Mock] AI要約を生成中... (モックデータを使用)');
@@ -725,37 +753,25 @@ export class GenerateLibrarySummaryService {
     }
 
     // README取得の最適化（1回の取得で完了）
-    const readmeContent = await this.fetchReadmeContent(params.githubUrl);
+    const readmeContent = await fetchReadmeContent(params.githubUrl);
 
     // プロンプト生成の最適化（テンプレート使用）
-    const prompt = this.buildOptimizedPrompt(params.githubUrl);
+    const prompt = buildOptimizedPrompt(params.githubUrl);
 
     const client = OpenAIUtils.getClient();
 
-    // READMEをBase64エンコード
-    const readmeBase64 = Buffer.from(
-      readmeContent || 'README.mdが見つからないか、内容を取得できませんでした。'
-    ).toString('base64');
+    // README内容を直接プロンプトに埋め込む形式に変更（OpenAI API互換性向上）
+    const readmeSection = readmeContent
+      ? `\n\n---\n\n## README.md Content\n\n${readmeContent}\n\n---`
+      : '\n\n---\n\n## README.md Content\n\nREADME.mdが見つからないか、内容を取得できませんでした。\n\n---';
 
-    // 最適化されたAPI呼び出し（content配列形式でプロンプトとファイルを分離）
+    // 最適化されたAPI呼び出し（textタイプのみ使用）
     const response = await client.chat.completions.create({
       model: 'gpt-5',
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt,
-            },
-            {
-              type: 'file',
-              file: {
-                filename: 'README.md',
-                file_data: `data:text/markdown;base64,${readmeBase64}`,
-              },
-            },
-          ],
+          content: prompt + readmeSection,
         },
       ],
       response_format: {
@@ -776,33 +792,9 @@ export class GenerateLibrarySummaryService {
     } catch {
       throw new Error('OpenAI API からの応答をJSONとして解析できませんでした');
     }
-  }
+  };
 
-  /**
-   * README取得の最適化
-   * @private
-   */
-  private static async fetchReadmeContent(githubUrl: string): Promise<string> {
-    const ownerAndRepo = GitHubApiUtils.parseGitHubUrl(githubUrl);
-
-    if (!ownerAndRepo) {
-      return '';
-    }
-
-    try {
-      const readme = await GitHubApiUtils.fetchReadme(ownerAndRepo.owner, ownerAndRepo.repo);
-      return readme || '';
-    } catch (error) {
-      console.warn('README取得に失敗しました:', error);
-      return '';
-    }
-  }
-
-  /**
-   * プロンプト生成の最適化
-   * @private
-   */
-  private static buildOptimizedPrompt(githubUrl: string): string {
-    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl);
-  }
-}
+  return {
+    call,
+  } as const;
+})();

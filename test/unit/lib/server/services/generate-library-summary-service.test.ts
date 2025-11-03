@@ -124,19 +124,7 @@ describe('GenerateLibrarySummaryService', () => {
         messages: [
           {
             role: 'user',
-            content: expect.arrayContaining([
-              expect.objectContaining({
-                type: 'text',
-                text: expect.stringContaining(mockParams.githubUrl),
-              }),
-              expect.objectContaining({
-                type: 'file',
-                file: expect.objectContaining({
-                  filename: 'README.md',
-                  file_data: expect.stringMatching(/^data:text\/markdown;base64,/),
-                }),
-              }),
-            ]),
+            content: expect.stringContaining(mockParams.githubUrl),
           },
         ],
         response_format: {
@@ -228,13 +216,8 @@ describe('GenerateLibrarySummaryService', () => {
 
       // プロンプトの内容を検証
       const calledWith = mockChatCompletionsCreate.mock.calls[0][0];
-      const content = calledWith.messages[0].content as Array<{
-        type: string;
-        text?: string;
-        file?: { filename: string; file_data: string };
-      }>;
-      const textPart = content.find(part => part.type === 'text');
-      expect(textPart?.text).toContain(mockParams.githubUrl);
+      const content = calledWith.messages[0].content as string;
+      expect(content).toContain(mockParams.githubUrl);
     });
 
     test('JSONスキーマが適切に定義されている', async () => {

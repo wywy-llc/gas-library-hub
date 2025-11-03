@@ -32,47 +32,95 @@ export const POST: RequestHandler = async () => {
     let validCount = 0;
     let errorCount = 0;
     const rejectedLibraries: Array<{ id: string; name: string; reason: string }> = [];
+    const librariesToReject: Array<{ id: string; reason: string }> = [];
 
-    for (const lib of libraries) {
-      try {
-        console.log(`🔍 検証中 (${processedCount + 1}/${libraries.length}): ${lib.name}`);
+    // バッチサイズを設定（GitHub API Rate Limitを考慮）
+    const BATCH_SIZE = 10;
+    const DELAY_BETWEEN_BATCHES = 2000; // バッチ間の待機時間（ミリ秒）
 
-        // パターン検証を実行
-        const validationResult = await ValidateLibraryPatternsService.call(lib.repositoryUrl);
+    // ライブラリをバッチに分割
+    for (let i = 0; i < libraries.length; i += BATCH_SIZE) {
+      const batch = libraries.slice(i, i + BATCH_SIZE);
+      console.log(
+        `🔄 バッチ処理中 (${i + 1}-${Math.min(i + BATCH_SIZE, libraries.length)}/${libraries.length})`
+      );
 
-        if (!validationResult.isValid) {
-          // パターンに適合しない場合は却下ステータスに更新
-          await db
+      // バッチ内のライブラリを並列処理
+      const batchResults = await Promise.allSettled(
+        batch.map(async lib => {
+          try {
+            // パターン検証を実行
+            const validationResult = await ValidateLibraryPatternsService.call(lib.repositoryUrl);
+
+            if (!validationResult.isValid) {
+              const reason =
+                validationResult.error ||
+                'スクリプトIDまたはWebアプリパターンが検出されませんでした';
+
+              // 却下対象として記録
+              librariesToReject.push({ id: lib.id, reason });
+              rejectedLibraries.push({
+                id: lib.id,
+                name: lib.name,
+                reason,
+              });
+
+              console.log(`❌ 却下: ${lib.name} - ${reason}`);
+              return { status: 'rejected', lib, reason };
+            } else {
+              console.log(`✅ 有効: ${lib.name}`);
+              return { status: 'valid', lib };
+            }
+          } catch (error) {
+            console.error(`❌ 検証エラー: ${lib.name}`, error);
+            return { status: 'error', lib, error };
+          }
+        })
+      );
+
+      // 結果を集計
+      for (const result of batchResults) {
+        processedCount++;
+        if (result.status === 'fulfilled') {
+          const value = result.value;
+          if (value.status === 'rejected') {
+            rejectedCount++;
+          } else if (value.status === 'valid') {
+            validCount++;
+          } else if (value.status === 'error') {
+            errorCount++;
+          }
+        } else {
+          errorCount++;
+        }
+      }
+
+      // 次のバッチまで待機（最後のバッチは待機不要）
+      if (i + BATCH_SIZE < libraries.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+      }
+    }
+
+    // 却下対象のライブラリをバッチで一括更新
+    if (librariesToReject.length > 0) {
+      console.log(`📝 ${librariesToReject.length}件のライブラリを却下ステータスに更新中...`);
+
+      // Drizzle ORMでバッチ更新を実行
+      // 注: Drizzle ORMではバッチ更新が直接サポートされていないため、
+      // トランザクション内で複数の更新を実行
+      await db.transaction(async tx => {
+        for (const { id } of librariesToReject) {
+          await tx
             .update(library)
             .set({
               status: LIBRARY_STATUS.REJECTED,
               updatedAt: new Date(),
             })
-            .where(eq(library.id, lib.id));
-
-          rejectedCount++;
-          const reason =
-            validationResult.error || 'スクリプトIDまたはWebアプリパターンが検出されませんでした';
-          rejectedLibraries.push({
-            id: lib.id,
-            name: lib.name,
-            reason,
-          });
-
-          console.log(`❌ 却下: ${lib.name} - ${reason}`);
-        } else {
-          validCount++;
-          console.log(`✅ 有効: ${lib.name}`);
+            .where(eq(library.id, id));
         }
+      });
 
-        processedCount++;
-
-        // リクエスト間隔を制御（GitHub API制限対策）
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        errorCount++;
-        console.error(`❌ 検証エラー: ${lib.name}`, error);
-      }
+      console.log(`✅ ${librariesToReject.length}件のライブラリを更新完了`);
     }
 
     const response = {
