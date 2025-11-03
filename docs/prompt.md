@@ -13,8 +13,8 @@ GitHubリポジトリの情報（主にREADME）を分析し、開発者がラ�
 </task>
 
 <input>
-- GitHub Repository URL: {{GITHUB_URL}}
-- README.md Content: {{README_CONTENT}}
+- GitHub Repository URL: `{{GITHUB_URL}}`
+- README.md Content: 添付の`README.md`ファイルを参照してください。
 </input>
 
 <critical_constraints>
@@ -252,8 +252,8 @@ const service = OAuth2.createService('GitHub')
 if (service.hasAccess()) {
   const response = UrlFetchApp.fetch('https://api.github.com/user', {
     headers: {
-      Authorization: 'Bearer ' + service.getAccessToken()
-    }
+      Authorization: 'Bearer ' + service.getAccessToken(),
+    },
   });
 }
 ```
@@ -301,22 +301,22 @@ if (service.hasAccess()) {
 
 // OAuth2サービスを作成
 const service = OAuth2.createService('GitHub')
-  .setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
-  .setTokenUrl('https://github.com/login/oauth/access_token')
-  .setClientId(CLIENT_ID)
-  .setClientSecret(CLIENT_SECRET);
+.setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
+.setTokenUrl('https://github.com/login/oauth/access_token')
+.setClientId(CLIENT_ID)
+.setClientSecret(CLIENT_SECRET);
 
 // アクセス権限の確認とAPI呼び出し
 if (service.hasAccess()) {
-  // 認証済みの場合、GitHub APIを呼び出し
-  const response = UrlFetchApp.fetch('https://api.github.com/user', {
-    headers: {
-      Authorization: 'Bearer ' + service.getAccessToken()
-    }
-  });
-  // レスポンスを処理
-  const user = JSON.parse(response.getContentText());
-  console.log(user.login);
+// 認証済みの場合、GitHub APIを呼び出し
+const response = UrlFetchApp.fetch('https://api.github.com/user', {
+headers: {
+Authorization: 'Bearer ' + service.getAccessToken()
+}
+});
+// レスポンスを処理
+const user = JSON.parse(response.getContentText());
+console.log(user.login);
 }
 
 このコードは、OAuth2の複雑な認証フローを数行で実装し、GitHub APIへの安全なアクセスを実現します。
@@ -331,22 +331,22 @@ The following code enables authenticated access to the GitHub API.
 
 // Create OAuth2 service
 const service = OAuth2.createService('GitHub')
-  .setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
-  .setTokenUrl('https://github.com/login/oauth/access_token')
-  .setClientId(CLIENT_ID)
-  .setClientSecret(CLIENT_SECRET);
+.setAuthorizationBaseUrl('https://github.com/login/oauth/authorize')
+.setTokenUrl('https://github.com/login/oauth/access_token')
+.setClientId(CLIENT_ID)
+.setClientSecret(CLIENT_SECRET);
 
 // Check access and call API
 if (service.hasAccess()) {
-  // If authenticated, call GitHub API
-  const response = UrlFetchApp.fetch('https://api.github.com/user', {
-    headers: {
-      Authorization: 'Bearer ' + service.getAccessToken()
-    }
-  });
-  // Process response
-  const user = JSON.parse(response.getContentText());
-  console.log(user.login);
+// If authenticated, call GitHub API
+const response = UrlFetchApp.fetch('https://api.github.com/user', {
+headers: {
+Authorization: 'Bearer ' + service.getAccessToken()
+}
+});
+// Process response
+const user = JSON.parse(response.getContentText());
+console.log(user.login);
 }
 
 This code implements the complex OAuth2 authentication flow in just a few lines, enabling secure access to the GitHub API.

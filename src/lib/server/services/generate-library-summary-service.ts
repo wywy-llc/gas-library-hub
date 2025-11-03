@@ -181,9 +181,7 @@ const PROMPT_TEMPLATE = `
 
 ## GitHub README
 
-\`\`\`
-{{README_CONTENT}}
-\`\`\`
+添付のREADME.mdファイルを参照してください。
 
 # Critical Rules
 
@@ -457,17 +455,34 @@ export class GenerateLibrarySummaryService {
     const readmeContent = await this.fetchReadmeContent(params.githubUrl);
 
     // プロンプト生成の最適化（テンプレート使用）
-    const prompt = this.buildOptimizedPrompt(params.githubUrl, readmeContent);
+    const prompt = this.buildOptimizedPrompt(params.githubUrl);
 
     const client = OpenAIUtils.getClient();
 
-    // 最適化されたAPI呼び出し（事前定義されたJSON Schema使用）
+    // READMEをBase64エンコード
+    const readmeBase64 = Buffer.from(
+      readmeContent || 'README.mdが見つからないか、内容を取得できませんでした。'
+    ).toString('base64');
+
+    // 最適化されたAPI呼び出し（content配列形式でプロンプトとファイルを分離）
     const response = await client.chat.completions.create({
       model: 'gpt-5',
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: [
+            {
+              type: 'text',
+              text: prompt,
+            },
+            {
+              type: 'file',
+              file: {
+                filename: 'README.md',
+                file_data: `data:text/markdown;base64,${readmeBase64}`,
+              },
+            },
+          ],
         },
       ],
       response_format: {
@@ -514,10 +529,7 @@ export class GenerateLibrarySummaryService {
    * プロンプト生成の最適化
    * @private
    */
-  private static buildOptimizedPrompt(githubUrl: string, readmeContent: string): string {
-    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl).replace(
-      '{{README_CONTENT}}',
-      readmeContent || 'README.mdが見つからないか、内容を取得できませんでした。'
-    );
+  private static buildOptimizedPrompt(githubUrl: string): string {
+    return PROMPT_TEMPLATE.replace('{{GITHUB_URL}}', githubUrl);
   }
 }

@@ -124,7 +124,19 @@ describe('GenerateLibrarySummaryService', () => {
         messages: [
           {
             role: 'user',
-            content: expect.stringContaining(mockParams.githubUrl),
+            content: expect.arrayContaining([
+              expect.objectContaining({
+                type: 'text',
+                text: expect.stringContaining(mockParams.githubUrl),
+              }),
+              expect.objectContaining({
+                type: 'file',
+                file: expect.objectContaining({
+                  filename: 'README.md',
+                  file_data: expect.stringMatching(/^data:text\/markdown;base64,/),
+                }),
+              }),
+            ]),
           },
         ],
         response_format: {
@@ -216,8 +228,13 @@ describe('GenerateLibrarySummaryService', () => {
 
       // プロンプトの内容を検証
       const calledWith = mockChatCompletionsCreate.mock.calls[0][0];
-      const prompt = calledWith.messages[0].content;
-      expect(prompt).toContain(mockParams.githubUrl);
+      const content = calledWith.messages[0].content as Array<{
+        type: string;
+        text?: string;
+        file?: { filename: string; file_data: string };
+      }>;
+      const textPart = content.find(part => part.type === 'text');
+      expect(textPart?.text).toContain(mockParams.githubUrl);
     });
 
     test('JSONスキーマが適切に定義されている', async () => {
@@ -294,7 +311,7 @@ describe('GenerateLibrarySummaryService', () => {
 
       // API呼び出し設定の検証
       const calledWith = mockChatCompletionsCreate.mock.calls[0][0];
-      expect(calledWith.model).toBe('o3');
+      expect(calledWith.model).toBe('gpt-5');
       expect(calledWith.reasoning_effort).toBe('medium');
       expect(calledWith.response_format.type).toBe('json_schema');
       expect(calledWith.response_format.json_schema.strict).toBe(true);
