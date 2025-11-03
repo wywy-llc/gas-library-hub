@@ -1,51 +1,95 @@
 import { db } from '$lib/server/db';
 import { library, librarySummary } from '$lib/server/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
   // セッション情報を取得
   const session = await locals.auth();
 
-  // 注目のライブラリとWebアプリを一度のクエリで取得
-  const allFeaturedResult = await db
-    .select({
-      id: library.id,
-      name: library.name,
-      scriptId: library.scriptId,
-      repositoryUrl: library.repositoryUrl,
-      authorUrl: library.authorUrl,
-      authorName: library.authorName,
-      description: library.description,
-      licenseType: library.licenseType,
-      licenseUrl: library.licenseUrl,
-      starCount: library.starCount,
-      copyCount: library.copyCount,
-      lastCommitAt: library.lastCommitAt,
-      status: library.status,
-      scriptType: library.scriptType,
-      requesterId: library.requesterId,
-      requestNote: library.requestNote,
-      createdAt: library.createdAt,
-      updatedAt: library.updatedAt,
-      // 必要なフィールドのみ取得（LibraryCard.svelteで使用される4フィールドのみ）
-      summary: {
-        id: librarySummary.id,
-        libraryId: librarySummary.libraryId,
-        tagsJa: librarySummary.tagsJa,
-        tagsEn: librarySummary.tagsEn,
-        seoDescriptionJa: librarySummary.seoDescriptionJa,
-        seoDescriptionEn: librarySummary.seoDescriptionEn,
-      },
-    })
-    .from(library)
-    .leftJoin(librarySummary, eq(library.id, librarySummary.libraryId))
-    .where(eq(library.status, 'published'))
-    .orderBy(desc(library.starCount), desc(library.copyCount))
-    .limit(12);
+  // パフォーマンス最適化: scriptType別に別々のクエリで並列取得
+  // - インデックス (status, scriptType, starCount, copyCount) を活用
+  // - 各クエリで正確に6件のみ取得（インメモリフィルタリング不要）
+  // - 必要なフィールドのみSELECT（LibraryCard.svelteで使用される4フィールドのみ）
+  const [featuredLibrariesResult, featuredWebAppsResult] = await Promise.all([
+    // Library型のみ取得
+    db
+      .select({
+        id: library.id,
+        name: library.name,
+        scriptId: library.scriptId,
+        repositoryUrl: library.repositoryUrl,
+        authorUrl: library.authorUrl,
+        authorName: library.authorName,
+        description: library.description,
+        licenseType: library.licenseType,
+        licenseUrl: library.licenseUrl,
+        starCount: library.starCount,
+        copyCount: library.copyCount,
+        lastCommitAt: library.lastCommitAt,
+        status: library.status,
+        scriptType: library.scriptType,
+        requesterId: library.requesterId,
+        requestNote: library.requestNote,
+        createdAt: library.createdAt,
+        updatedAt: library.updatedAt,
+        // LibraryCard.svelteで使用される4フィールドのみ
+        summary: {
+          id: librarySummary.id,
+          libraryId: librarySummary.libraryId,
+          tagsJa: librarySummary.tagsJa,
+          tagsEn: librarySummary.tagsEn,
+          seoDescriptionJa: librarySummary.seoDescriptionJa,
+          seoDescriptionEn: librarySummary.seoDescriptionEn,
+        },
+      })
+      .from(library)
+      .leftJoin(librarySummary, eq(library.id, librarySummary.libraryId))
+      .where(and(eq(library.status, 'published'), eq(library.scriptType, 'library')))
+      .orderBy(desc(library.starCount), desc(library.copyCount))
+      .limit(6),
+    // WebApp型のみ取得
+    db
+      .select({
+        id: library.id,
+        name: library.name,
+        scriptId: library.scriptId,
+        repositoryUrl: library.repositoryUrl,
+        authorUrl: library.authorUrl,
+        authorName: library.authorName,
+        description: library.description,
+        licenseType: library.licenseType,
+        licenseUrl: library.licenseUrl,
+        starCount: library.starCount,
+        copyCount: library.copyCount,
+        lastCommitAt: library.lastCommitAt,
+        status: library.status,
+        scriptType: library.scriptType,
+        requesterId: library.requesterId,
+        requestNote: library.requestNote,
+        createdAt: library.createdAt,
+        updatedAt: library.updatedAt,
+        // LibraryCard.svelteで使用される4フィールドのみ
+        summary: {
+          id: librarySummary.id,
+          libraryId: librarySummary.libraryId,
+          tagsJa: librarySummary.tagsJa,
+          tagsEn: librarySummary.tagsEn,
+          seoDescriptionJa: librarySummary.seoDescriptionJa,
+          seoDescriptionEn: librarySummary.seoDescriptionEn,
+        },
+      })
+      .from(library)
+      .leftJoin(librarySummary, eq(library.id, librarySummary.libraryId))
+      .where(and(eq(library.status, 'published'), eq(library.scriptType, 'web_app')))
+      .orderBy(desc(library.starCount), desc(library.copyCount))
+      .limit(6),
+  ]);
 
   // データ整形用のヘルパー関数
-  const formatLibraryData = (row: (typeof allFeaturedResult)[0]) => ({
+  const formatLibraryData = (
+    row: (typeof featuredLibrariesResult)[0] | (typeof featuredWebAppsResult)[0]
+  ) => ({
     id: row.id,
     name: row.name,
     scriptId: row.scriptId,
@@ -67,21 +111,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     librarySummary: row.summary?.id ? row.summary : null,
   });
 
-  // scriptType で分離（インメモリフィルタリング）
-  const featuredLibraries = allFeaturedResult
-    .filter(row => row.scriptType === 'library')
-    .slice(0, 6)
-    .map(formatLibraryData);
-
-  const featuredWebApps = allFeaturedResult
-    .filter(row => row.scriptType === 'web_app')
-    .slice(0, 6)
-    .map(formatLibraryData);
-
   return {
     session,
     user: locals.user,
-    featuredLibraries,
-    featuredWebApps,
+    featuredLibraries: featuredLibrariesResult.map(formatLibraryData),
+    featuredWebApps: featuredWebAppsResult.map(formatLibraryData),
   };
 };

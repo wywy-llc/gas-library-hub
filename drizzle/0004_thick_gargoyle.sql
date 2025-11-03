@@ -1,0 +1,1 @@
+CREATE INDEX "library_status_script_type_star_count_idx" ON "library" USING btree ("status","script_type","star_count","copy_count");

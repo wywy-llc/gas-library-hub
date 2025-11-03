@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ params }) => {
     error(404, 'ライブラリが見つかりません');
   }
 
-  // ライブラリ要約情報を取得（存在しない場合はnull）
+  // ライブラリ要約情報を取得
   const summaryResult = await db
     .select()
     .from(librarySummary)

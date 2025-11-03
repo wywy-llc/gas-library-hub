@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { copyright, terms, privacy, about_us } from '$lib/paraglide/messages.js';
+  import { about_us, copyright, privacy, terms } from '$lib/paraglide/messages.js';
 
   // フッターコンポーネント
   // GAS Library Hubのメインフッターで、コピーライトとリンクを表示
@@ -14,21 +14,19 @@
 
 {#if variant === 'admin'}
   <!-- 管理画面用のシンプルなフッター -->
-  <footer class="mt-12 border-t border-gray-200 bg-gray-50">
-    <div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div class="text-center text-sm text-gray-500">
-        {copyright()}
-      </div>
+  <footer class="footer footer-center bg-base-200 mt-12 p-8">
+    <div class="text-sm opacity-70">
+      {copyright()}
     </div>
   </footer>
 {:else}
   <!-- 通常ページ用のフッター（リンク付き） -->
-  <footer class="border-t border-gray-200 bg-white">
-    <div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+  <footer class="footer bg-base-100 p-8">
+    <div class="container mx-auto">
       <div class="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
         <!-- コピーライト -->
         <div class="flex flex-col items-center sm:items-start">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm opacity-70">
             {copyright()}
           </p>
         </div>
@@ -37,22 +35,16 @@
         <nav class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:justify-end">
           <a
             href="https://wywy.jp/members"
-            class="rounded-sm px-1 text-sm text-gray-500 transition-colors hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+            class="link link-hover text-sm"
             target="_blank"
             rel="noopener noreferrer"
           >
             {about_us()}
           </a>
-          <a
-            href="/terms"
-            class="rounded-sm px-1 text-sm text-gray-500 transition-colors hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
-          >
+          <a href="/terms" class="link link-hover text-sm">
             {terms()}
           </a>
-          <a
-            href="/privacy"
-            class="rounded-sm px-1 text-sm text-gray-500 transition-colors hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
-          >
+          <a href="/privacy" class="link link-hover text-sm">
             {privacy()}
           </a>
         </nav>
