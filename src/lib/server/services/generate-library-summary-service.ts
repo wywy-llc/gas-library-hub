@@ -339,7 +339,7 @@ GitHubリポジトリの情報（主にREADME）を分析し、開発者がラ�
 \`\`\`yaml
 techniques:
   xml_sections:
-    why: Claude Opus 4向けの明確な構造化で誤解を防止
+    why: 明確な構造化で誤解を防止
     evidence: セクション間境界明確化により指示混同防止
 
   chain_of_thought:
