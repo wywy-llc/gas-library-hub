@@ -2,5 +2,3 @@
 @plugin 'daisyui' {
   themes: winter --default;
 }
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
