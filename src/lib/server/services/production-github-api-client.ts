@@ -23,6 +23,15 @@ interface CacheItem<T> {
 }
 
 /**
+ * タグ検証結果
+ */
+interface TagValidationResult {
+  isValid: boolean;
+  validTags: string[];
+  errorResult?: TagSearchResult;
+}
+
+/**
  * 本番環境用のGitHub API クライアント
  * 実際のGitHub APIを呼び出す実装
  *
@@ -38,6 +47,7 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
   private static readonly RATE_LIMIT_CACHE_TTL = 60 * 1000; // 1分（レート制限時）
   private static readonly MAX_RETRIES = 3;
   private static readonly BASE_RETRY_DELAY = 1000; // 1秒
+  private static readonly MAX_CACHE_SIZE = 1000;
 
   // インメモリキャッシュ（静的プロパティで全インスタンス共有）
   private static cache = new Map<string, CacheItem<unknown>>();
@@ -70,8 +80,8 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       ttl,
     });
 
-    // キャッシュサイズが1000を超えた場合、古いエントリを削除
-    if (this.cache.size > 1000) {
+    // キャッシュサイズが上限を超えた場合、古いエントリを削除
+    if (this.cache.size > this.MAX_CACHE_SIZE) {
       const oldestKey = this.cache.keys().next().value;
       if (oldestKey) {
         this.cache.delete(oldestKey);
@@ -188,7 +198,7 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
     // キャッシュから取得を試行
     const cached = ProductionGitHubApiClient.getFromCache<string>(cacheKey);
     if (cached !== null) {
-      return cached || undefined; // 空文字列の場合もundefinedとして返す
+      return cached || undefined;
     }
 
     try {
@@ -198,7 +208,6 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       const response = await ProductionGitHubApiClient.fetchWithRetry(url, { headers });
 
       if (!response.ok) {
-        // 404の場合もキャッシュして重複リクエストを防ぐ
         ProductionGitHubApiClient.setCache(
           cacheKey,
           '',
@@ -208,22 +217,15 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       }
 
       const readmeData: GitHubReadmeResponse = await response.json();
+      const content = ProductionGitHubApiClient.decodeBase64Content(
+        readmeData.content,
+        readmeData.encoding
+      );
 
-      let content: string;
-      // Base64デコード
-      if (readmeData.encoding === 'base64') {
-        content = atob(readmeData.content.replace(/\n/g, ''));
-      } else {
-        content = readmeData.content;
-      }
-
-      // 成功時はキャッシュに保存
       ProductionGitHubApiClient.setCache(cacheKey, content);
-
       return content;
     } catch (error) {
       console.warn('README取得に失敗:', error);
-      // エラーの場合は短時間キャッシュして連続エラーを防ぐ
       ProductionGitHubApiClient.setCache(
         cacheKey,
         '',
@@ -244,43 +246,27 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
     maxResults: number = 10
   ): Promise<TagSearchResult> {
     try {
-      const tagsToUse =
-        config.gasTags && config.gasTags.length > 0
-          ? config.gasTags
-          : ['google-apps-script', 'apps-script'];
-
-      const validTags = tagsToUse.filter(tag => tag && tag.trim().length > 0);
-      if (validTags.length === 0) {
-        return {
-          success: false,
-          repositories: [],
-          totalFound: 0,
-          processedCount: 0,
-          error: '有効なGASタグが指定されていません',
-        };
+      const validation = ProductionGitHubApiClient.validateAndBuildQuery(config);
+      if (!validation.isValid) {
+        return validation.errorResult!;
       }
 
-      const limitedTags = validTags.slice(0, 5);
-      let query: string;
-      if (limitedTags.length === 1) {
-        query = `${limitedTags[0].trim()} in:topics`;
-      } else {
-        const tagTerms = limitedTags.map(tag => tag.trim()).join(' OR ');
-        query = `${tagTerms} in:topics`;
-      }
-
+      const query = ProductionGitHubApiClient.buildSearchQuery(validation.validTags);
       const apiMaxResults = Math.min(maxResults, 1000);
       const perPage = 100;
       const totalPages = Math.ceil(apiMaxResults / perPage);
 
-      if (config.verbose) {
-        console.log('Original gasTags:', config.gasTags);
-        console.log('Tags to use:', tagsToUse);
-        console.log('Valid tags:', validTags);
-        console.log('Limited tags:', limitedTags);
-        console.log('GitHub Search Query:', query);
-        console.log(`取得予定件数: ${apiMaxResults}件 (${totalPages}ページ)`);
-      }
+      ProductionGitHubApiClient.logVerbose(config.verbose, 'Original gasTags:', config.gasTags);
+      ProductionGitHubApiClient.logVerbose(
+        config.verbose,
+        'Valid tags:',
+        validation.validTags.slice(0, 5)
+      );
+      ProductionGitHubApiClient.logVerbose(config.verbose, 'GitHub Search Query:', query);
+      ProductionGitHubApiClient.logVerbose(
+        config.verbose,
+        `取得予定件数: ${apiMaxResults}件 (${totalPages}ページ)`
+      );
 
       let allRepositories: GitHubRepository[] = [];
       let totalFound = 0;
@@ -293,29 +279,16 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
           query
         )}&sort=stars&order=desc&per_page=${pageSize}&page=${page}`;
 
-        if (config.verbose) {
-          console.log(`ページ ${page}/${totalPages} を検索中: ${searchUrl}`);
-        }
+        ProductionGitHubApiClient.logVerbose(
+          config.verbose,
+          `ページ ${page}/${totalPages} を検索中: ${searchUrl}`
+        );
 
         const headers = this.createHeaders();
         const response = await fetch(searchUrl, { headers });
 
         if (!response.ok) {
-          let errorDetails = `${response.status} ${response.statusText}`;
-          try {
-            const errorBody = await response.text();
-            if (errorBody) {
-              const errorData = JSON.parse(errorBody);
-              if (errorData.message) {
-                errorDetails += `: ${errorData.message}`;
-              }
-              if (errorData.errors) {
-                errorDetails += ` - ${JSON.stringify(errorData.errors)}`;
-              }
-            }
-          } catch {
-            // JSONパースエラーは無視
-          }
+          const errorDetails = await ProductionGitHubApiClient.parseApiError(response);
           throw new Error(`GitHub Search API Error: ${errorDetails}`);
         }
 
@@ -327,17 +300,12 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
 
         allRepositories.push(...searchResult.items);
 
-        if (config.verbose) {
-          console.log(
-            `ページ ${page}: ${searchResult.items.length}件取得 (累計: ${allRepositories.length}件)`
-          );
-        }
+        ProductionGitHubApiClient.logVerbose(
+          config.verbose,
+          `ページ ${page}: ${searchResult.items.length}件取得 (累計: ${allRepositories.length}件)`
+        );
 
-        if (allRepositories.length >= apiMaxResults) {
-          break;
-        }
-
-        if (searchResult.items.length === 0) {
+        if (allRepositories.length >= apiMaxResults || searchResult.items.length === 0) {
           break;
         }
       }
@@ -356,9 +324,7 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       console.error('GitHub Search エラー:', error);
 
       if (error instanceof Error && error.message.includes('422')) {
-        if (config.verbose) {
-          console.log('フォールバック検索を実行中...');
-        }
+        ProductionGitHubApiClient.logVerbose(config.verbose, 'フォールバック検索を実行中...');
         return this.fallbackSearch(maxResults, config.verbose);
       }
 
@@ -389,31 +355,12 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
     sortOption?: GitHubSearchSortOption
   ): Promise<TagSearchResult> {
     try {
-      const tagsToUse =
-        config.gasTags && config.gasTags.length > 0
-          ? config.gasTags
-          : ['google-apps-script', 'apps-script'];
-
-      const validTags = tagsToUse.filter(tag => tag && tag.trim().length > 0);
-      if (validTags.length === 0) {
-        return {
-          success: false,
-          repositories: [],
-          totalFound: 0,
-          processedCount: 0,
-          error: '有効なGASタグが指定されていません',
-        };
+      const validation = ProductionGitHubApiClient.validateAndBuildQuery(config);
+      if (!validation.isValid) {
+        return validation.errorResult!;
       }
 
-      const limitedTags = validTags.slice(0, 5);
-      let query: string;
-      if (limitedTags.length === 1) {
-        query = `${limitedTags[0].trim()} in:topics`;
-      } else {
-        const tagTerms = limitedTags.map(tag => tag.trim()).join(' OR ');
-        query = `${tagTerms} in:topics`;
-      }
-
+      const query = ProductionGitHubApiClient.buildSearchQuery(validation.validTags);
       const sortParams = sortOption
         ? GITHUB_SEARCH_SORT_OPTIONS[sortOption]
         : GITHUB_SEARCH_SORT_OPTIONS.UPDATED_DESC;
@@ -422,46 +369,34 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       const allRepositories: GitHubRepository[] = [];
       let totalFound = 0;
 
-      if (config.verbose) {
-        console.log('Original gasTags:', config.gasTags);
-        console.log('Tags to use:', tagsToUse);
-        console.log('Valid tags:', validTags);
-        console.log('Limited tags:', limitedTags);
-        console.log('GitHub Search Query:', query);
-        console.log('Sort params:', sortParams);
-        console.log(
-          `ページ範囲指定検索: ${startPage} - ${endPage} (${perPage}件/ページ, ${totalPages}ページ)`
-        );
-      }
+      ProductionGitHubApiClient.logVerbose(config.verbose, 'Original gasTags:', config.gasTags);
+      ProductionGitHubApiClient.logVerbose(
+        config.verbose,
+        'Valid tags:',
+        validation.validTags.slice(0, 5)
+      );
+      ProductionGitHubApiClient.logVerbose(config.verbose, 'GitHub Search Query:', query);
+      ProductionGitHubApiClient.logVerbose(config.verbose, 'Sort params:', sortParams);
+      ProductionGitHubApiClient.logVerbose(
+        config.verbose,
+        `ページ範囲指定検索: ${startPage} - ${endPage} (${perPage}件/ページ, ${totalPages}ページ)`
+      );
 
       for (let page = startPage; page <= endPage; page++) {
         const searchUrl = `${ProductionGitHubApiClient.GITHUB_API_BASE}/search/repositories?q=${encodeURIComponent(
           query
         )}&sort=${sortParams.value}&order=${sortParams.order}&per_page=${perPage}&page=${page}`;
 
-        if (config.verbose) {
-          console.log(`ページ ${page}/${endPage} を検索中: ${searchUrl}`);
-        }
+        ProductionGitHubApiClient.logVerbose(
+          config.verbose,
+          `ページ ${page}/${endPage} を検索中: ${searchUrl}`
+        );
 
         const headers = this.createHeaders();
         const response = await fetch(searchUrl, { headers });
 
         if (!response.ok) {
-          let errorDetails = `${response.status} ${response.statusText}`;
-          try {
-            const errorBody = await response.text();
-            if (errorBody) {
-              const errorData = JSON.parse(errorBody);
-              if (errorData.message) {
-                errorDetails += `: ${errorData.message}`;
-              }
-              if (errorData.errors) {
-                errorDetails += ` - ${JSON.stringify(errorData.errors)}`;
-              }
-            }
-          } catch {
-            // JSONパースエラーは無視
-          }
+          const errorDetails = await ProductionGitHubApiClient.parseApiError(response);
           throw new Error(`GitHub Search API Error: ${errorDetails}`);
         }
 
@@ -473,16 +408,16 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
 
         allRepositories.push(...searchResult.items);
 
-        if (config.verbose) {
-          console.log(
-            `ページ ${page}: ${searchResult.items.length}件取得 (累計: ${allRepositories.length}件)`
-          );
-        }
+        ProductionGitHubApiClient.logVerbose(
+          config.verbose,
+          `ページ ${page}: ${searchResult.items.length}件取得 (累計: ${allRepositories.length}件)`
+        );
 
         if (searchResult.items.length === 0) {
-          if (config.verbose) {
-            console.log(`ページ ${page} で検索結果が0件のため処理を終了します`);
-          }
+          ProductionGitHubApiClient.logVerbose(
+            config.verbose,
+            `ページ ${page} で検索結果が0件のため処理を終了します`
+          );
           break;
         }
       }
@@ -497,9 +432,7 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
       console.error('GitHub Search エラー:', error);
 
       if (error instanceof Error && error.message.includes('422')) {
-        if (config.verbose) {
-          console.log('フォールバック検索を実行中...');
-        }
+        ProductionGitHubApiClient.logVerbose(config.verbose, 'フォールバック検索を実行中...');
         return this.fallbackSearch(perPage * (endPage - startPage + 1), config.verbose);
       }
 
@@ -619,13 +552,10 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
         return undefined;
       }
 
-      let content: string;
-      // Base64デコード
-      if (fileData.encoding === 'base64') {
-        content = atob(fileData.content.replace(/\n/g, ''));
-      } else {
-        content = fileData.content;
-      }
+      const content = ProductionGitHubApiClient.decodeBase64Content(
+        fileData.content,
+        fileData.encoding
+      );
 
       // 成功時はキャッシュに保存
       ProductionGitHubApiClient.setCache(cacheKey, content);
@@ -696,6 +626,92 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
         ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
       );
       return undefined;
+    }
+  }
+
+  /**
+   * Base64エンコードされたコンテンツをデコード
+   * @private
+   */
+  private static decodeBase64Content(content: string, encoding: string): string {
+    if (encoding === 'base64') {
+      return atob(content.replace(/\n/g, ''));
+    }
+    return content;
+  }
+
+  /**
+   * APIエラーレスポンスを解析して詳細なエラーメッセージを生成
+   * @private
+   */
+  private static async parseApiError(response: Response): Promise<string> {
+    let errorDetails = `${response.status} ${response.statusText}`;
+    try {
+      const errorBody = await response.text();
+      if (errorBody) {
+        const errorData = JSON.parse(errorBody);
+        if (errorData.message) {
+          errorDetails += `: ${errorData.message}`;
+        }
+        if (errorData.errors) {
+          errorDetails += ` - ${JSON.stringify(errorData.errors)}`;
+        }
+      }
+    } catch {
+      // JSONパースエラーは無視
+    }
+    return errorDetails;
+  }
+
+  /**
+   * タグを検証し、検索クエリを構築
+   * @private
+   */
+  private static validateAndBuildQuery(config: ScraperConfig): TagValidationResult {
+    const tagsToUse =
+      config.gasTags && config.gasTags.length > 0
+        ? config.gasTags
+        : ['google-apps-script', 'apps-script'];
+
+    const validTags = tagsToUse.filter(tag => tag && tag.trim().length > 0);
+
+    if (validTags.length === 0) {
+      return {
+        isValid: false,
+        validTags: [],
+        errorResult: {
+          success: false,
+          repositories: [],
+          totalFound: 0,
+          processedCount: 0,
+          error: '有効なGASタグが指定されていません',
+        },
+      };
+    }
+
+    return { isValid: true, validTags };
+  }
+
+  /**
+   * タグリストから検索クエリを構築
+   * @private
+   */
+  private static buildSearchQuery(validTags: string[], maxTags: number = 5): string {
+    const limitedTags = validTags.slice(0, maxTags);
+    if (limitedTags.length === 1) {
+      return `${limitedTags[0].trim()} in:topics`;
+    }
+    const tagTerms = limitedTags.map(tag => tag.trim()).join(' OR ');
+    return `${tagTerms} in:topics`;
+  }
+
+  /**
+   * 詳細ログ出力（verbose有効時のみ）
+   * @private
+   */
+  private static logVerbose(verbose: boolean | undefined, ...messages: unknown[]): void {
+    if (verbose) {
+      console.log(...messages);
     }
   }
 

@@ -18,6 +18,7 @@ import { RateLimitUtil } from '$lib/server/utils/rate-limit-util.js';
 import { XaiUtils } from '$lib/server/utils/xai-utils.js';
 import type { LibrarySummary } from '$lib/types/library-summary.js';
 import type {
+  PublicApi,
   RepositoryAnalysis,
   ValidationError,
   ValidationResult,
@@ -56,7 +57,88 @@ export interface ValidatedSummaryResult {
  */
 const DEFAULT_MAX_ATTEMPTS = 3;
 
+/**
+ * API呼び出しリトライ設定
+ */
+const API_RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+} as const;
+
+/**
+ * レート制限エラー時のバックオフ設定
+ */
+const RATE_LIMIT_BACKOFF_CONFIG = {
+  baseDelayMs: 2000,
+  maxDelayMs: 30000,
+} as const;
+
+/** バリデーション可能な分析結果の型 */
+type ValidatedAnalysis = RepositoryAnalysis & {
+  success: true;
+  publicApis: PublicApi[];
+};
+
+/**
+ * 分析結果がバリデーション可能かを判定（Type Guard）
+ */
+const hasValidPublicApis = (
+  analysis: RepositoryAnalysis | undefined
+): analysis is ValidatedAnalysis => {
+  return Boolean(analysis?.success && analysis.publicApis && analysis.publicApis.length > 0);
+};
+
+/**
+ * レート制限エラーかどうかを判定
+ */
+const isRateLimitError = (error: unknown): boolean => {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('rate limit') ||
+      message.includes('429') ||
+      message.includes('too many requests')
+    );
+  }
+  return false;
+};
+
 export const ValidatedSummaryGeneratorService = (() => {
+  /**
+   * ソースコード分析を実行
+   */
+  const analyzeSourceCode = async (
+    enableSourceAnalysis: boolean,
+    owner: string,
+    repo: string,
+    log: (msg: string) => void
+  ): Promise<{ analysis: RepositoryAnalysis | undefined; sourceSummary: string }> => {
+    if (!enableSourceAnalysis) {
+      return { analysis: undefined, sourceSummary: '' };
+    }
+
+    log('ソースコード分析を開始...');
+    const analysis = await SourceCodeAnalyzerService.analyzeRepository(owner, repo);
+
+    if (hasValidPublicApis(analysis)) {
+      const sourceSummary = SourceCodeAnalyzerService.generateSourceSummary(analysis);
+      log(`公開API ${analysis.publicApis!.length}件を抽出`);
+      return { analysis, sourceSummary };
+    }
+
+    log(`ソースコード分析失敗または公開APIなし: ${analysis.error || '不明'}`);
+    return { analysis, sourceSummary: '' };
+  };
+
+  /**
+   * README セクションを取得
+   */
+  const fetchReadmeSection = async (owner: string, repo: string): Promise<string> => {
+    const readme = await GitHubApiUtils.fetchReadme(owner, repo);
+    return readme
+      ? `\n\n---\n\n## README.md Content\n\n${readme}\n\n---`
+      : '\n\n---\n\n## README.md Content\n\nREADME.mdが見つかりません。\n\n---';
+  };
   /**
    * バリデーション付きでライブラリ要約を生成
    * @param githubUrl GitHubリポジトリのURL
@@ -84,27 +166,16 @@ export const ValidatedSummaryGeneratorService = (() => {
     const { owner, repo } = parsed;
 
     // Step 1: ソースコード分析（オプション）
-    let analysis: RepositoryAnalysis | undefined;
-    let sourceSummary = '';
-
-    if (enableSourceAnalysis) {
-      log('ソースコード分析を開始...');
-      analysis = await SourceCodeAnalyzerService.analyzeRepository(owner, repo);
-
-      if (analysis.success && analysis.publicApis && analysis.publicApis.length > 0) {
-        sourceSummary = SourceCodeAnalyzerService.generateSourceSummary(analysis);
-        log(`公開API ${analysis.publicApis.length}件を抽出`);
-      } else {
-        log(`ソースコード分析失敗または公開APIなし: ${analysis.error || '不明'}`);
-      }
-    }
+    const { analysis, sourceSummary } = await analyzeSourceCode(
+      enableSourceAnalysis,
+      owner,
+      repo,
+      log
+    );
 
     // Step 2: README取得
     log('README取得...');
-    const readme = await GitHubApiUtils.fetchReadme(owner, repo);
-    const readmeSection = readme
-      ? `\n\n---\n\n## README.md Content\n\n${readme}\n\n---`
-      : '\n\n---\n\n## README.md Content\n\nREADME.mdが見つかりません。\n\n---';
+    const readmeSection = await fetchReadmeSection(owner, repo);
 
     // Step 3: 生成→検証ループ
     let attempts = 0;
@@ -135,16 +206,11 @@ export const ValidatedSummaryGeneratorService = (() => {
         lastSummary = summary;
 
         // バリデーション（オプション）
-        if (
-          enableValidation &&
-          analysis?.success &&
-          analysis.publicApis &&
-          analysis.publicApis.length > 0
-        ) {
+        if (enableValidation && hasValidPublicApis(analysis)) {
           log('バリデーション実行...');
           const validationResult = UsageExampleValidatorService.validate(
             summary.functionality.usageExample,
-            analysis.publicApis
+            analysis!.publicApis!
           );
           lastValidationResult = validationResult;
 
@@ -189,7 +255,11 @@ export const ValidatedSummaryGeneratorService = (() => {
         // エラー種別に応じた処理
         if (isRateLimitError(error)) {
           log('レート制限エラー - 待機後に再試行...');
-          await RateLimitUtil.exponentialBackoff(attempts - 1, 2000, 30000);
+          await RateLimitUtil.exponentialBackoff(
+            attempts - 1,
+            RATE_LIMIT_BACKOFF_CONFIG.baseDelayMs,
+            RATE_LIMIT_BACKOFF_CONFIG.maxDelayMs
+          );
         }
 
         if (attempts >= maxAttempts) {
@@ -214,21 +284,6 @@ export const ValidatedSummaryGeneratorService = (() => {
   };
 
   /**
-   * レート制限エラーかどうかを判定
-   */
-  const isRateLimitError = (error: unknown): boolean => {
-    if (error instanceof Error) {
-      const message = error.message.toLowerCase();
-      return (
-        message.includes('rate limit') ||
-        message.includes('429') ||
-        message.includes('too many requests')
-      );
-    }
-    return false;
-  };
-
-  /**
    * プロンプトからAI要約を生成（内部ヘルパー）
    * 指数バックオフ付きリトライ機能を含む
    * @param fullPrompt 完全なプロンプト
@@ -248,8 +303,8 @@ export const ValidatedSummaryGeneratorService = (() => {
             json_schema: LIBRARY_SUMMARY_JSON_SCHEMA,
           },
         }),
-      3, // maxRetries
-      1000 // baseDelay
+      API_RETRY_CONFIG.maxRetries,
+      API_RETRY_CONFIG.baseDelayMs
     );
 
     const content = response.choices[0]?.message?.content;
