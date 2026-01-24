@@ -1,0 +1,1 @@
+ALTER TABLE "library_summary" ADD COLUMN "usage_example" jsonb;
