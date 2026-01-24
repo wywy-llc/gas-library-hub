@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
             setupFiles: ['./vitest-setup-server.ts'],
           },
         },
+        './vitest.config.storybook.ts',
       ],
     },
   };
