@@ -1,16 +1,15 @@
-# CLAUDE.md - Svelte 5
+# CLAUDE.md - GAS Library Hub
 
 ## §0 Identity
 
 ```yaml
-identity:
-  name: GAS Library Hub
-  role: Google Apps Script ライブラリ管理プラットフォーム
-  mission: GASライブラリの検索・登録・AI要約を提供
-  tech_foundation: Svelte 5 + SvelteKit + PostgreSQL
+name: GAS Library Hub
+role: Google Apps Script ライブラリ管理プラットフォーム
+mission: GASライブラリの検索・登録・AI要約を提供
+tech_foundation: Svelte 5 + SvelteKit + PostgreSQL
 ```
 
----
+* * *
 
 ## §1 Tech Stack
 
@@ -32,7 +31,7 @@ testing:
   component: Storybook
 ```
 
----
+* * *
 
 ## §2 Svelte 5 Conventions
 
@@ -41,18 +40,18 @@ runes:
   principle: リアクティブ状態管理はRunes第一選択
 
   ALWAYS:
-    - 状態宣言: $state()
-    - 算出プロパティ: $derived()
-    - 副作用: $effect()
-    - Props: $props()
-    - イベント: Propsコールバック
+    - $state(): 状態宣言
+    - $derived(): 算出プロパティ
+    - $effect(): 副作用
+    - $props(): Props定義
+    - Propsコールバック: イベント処理
 
   NEVER:
     - letリアクティブ宣言
     - export let（レガシー）
     - createEventDispatcher
 
-legacy_components:
+legacy_migration:
   note: 以下は$props()への移行が必要
   files:
     - src/lib/components/Button.svelte
@@ -67,43 +66,27 @@ page_tests:
   constraint: play関数使用禁止
 ```
 
----
+* * *
 
 ## §3 Architecture Patterns
 
+### §3.1 Service Layer
+
 ```yaml
-service_layer:
-  patterns:
-    iife_as_const:
-      use_when: 複雑な内部状態・ヘルパー関数が必要
-      examples: [GenerateAiSummaryService, CreateLibraryService]
-    class_static:
-      use_when: シンプルなCRUD操作
-      examples: [UpdateLibraryFromGithubService, FetchGitHubRepoDataService]
+patterns:
+  iife_as_const:
+    use_when: 複雑な内部状態・ヘルパー関数が必要
+    examples: [GenerateAiSummaryService, CreateLibraryService]
 
-dependency_injection:
-  ALWAYS:
-    - インターフェース定義: src/lib/types/
-    - 本番実装: Production[Name]
-    - モック実装: Mock[Name]
-    - テスト時: ファクトリ経由でモック注入
+  class_static:
+    use_when: シンプルなCRUD操作
+    examples: [UpdateLibraryFromGithubService, FetchGitHubRepoDataService]
 
-repository:
-  location: src/lib/server/repositories/
-  naming: "[Entity]Repository"
-  responsibility: データアクセス層の抽象化
-
-ssr_client_pattern:
-  server: "+page.server.ts → GetDataServerService.call()"
-  client: "+page.svelte → $state() + クライアントサービス呼び出し"
-
-naming_conventions:
-  service: 動詞+名詞+Service
+naming:
+  service: 動詞 + 名詞 + Service
   crud: [Get, Post, Put, Delete] + 名詞 + Service
   list: GetAll + 名詞複数形 + Service
   conditional: Get + 名詞複数形 + By + 条件 + Service
-  repository: 名詞 + Repository
-  factory: 名詞 + Factory
 ```
 
 **コード例（IIFE+as const）:**
@@ -118,70 +101,116 @@ export const GenerateAiSummaryService = (() => {
 })();
 ```
 
----
+### §3.2 Repository Layer
+
+```yaml
+location: src/lib/server/repositories/
+naming: "[Entity]Repository"
+responsibility: データアクセス層の抽象化
+```
+
+### §3.3 Dependency Injection
+
+```yaml
+ALWAYS:
+  - インターフェース定義: src/lib/types/
+  - 本番実装: Production[Name]
+  - モック実装: Mock[Name]
+  - テスト時: ファクトリ経由でモック注入
+```
+
+### §3.4 SSR/Client Pattern
+
+```yaml
+server: "+page.server.ts → GetDataServerService.call()"
+client: "+page.svelte → $state() + クライアントサービス呼び出し"
+```
+
+* * *
 
 ## §4 Resilience Patterns
 
-```yaml
-retry:
-  ALWAYS:
-    - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
-    - 指数バックオフ: baseDelay * 2^attempt
-    - 最大リトライ回数: 3回
-  implementation: src/lib/server/utils/retry-util.ts
-
-caching:
-  ALWAYS:
-    - 高頻度API呼び出しにTTL付きキャッシュ適用
-    - キャッシュキー: 一意識別子（owner/repo等）
-  example: ProductionGitHubApiClient（インメモリキャッシュ、TTL 5分）
-
-error_handling:
-  ALWAYS:
-    - ServiceErrorUtil使用
-    - 構造化エラーレスポンス
-    - ログ出力
-  implementation: src/lib/server/utils/service-error-util.ts
-
-background:
-  pattern: Fire-and-Forget
-  example: GenerateAiSummaryService.callBackground(libraryId)
-  behavior: レスポンス待機なし、エラーはログ出力のみ
-
-parallel:
-  ALWAYS:
-    - 独立した処理: Promise.all()
-    - 部分失敗許容: Promise.allSettled()
-  NEVER:
-    - 順次処理可能な場合のPromise.all（エラー時全体失敗リスク）
-```
-
----
-
-## §5 Styling Conventions
+### §4.1 Retry
 
 ```yaml
-daisyui_v5:
-  ALWAYS:
-    - btn・card・modal・input等を第一選択
-    - 不明時はContext7 MCPで公式ドキュメント調査（推測禁止）
-  design:
-    default: Outline（btn-outline等）
-    primary_action: ソリッド
-    custom: daisyUI対応不可時のみTailwindクラス補完
-    exception: padding・margin調整はTailwindクラス推奨
+ALWAYS:
+  - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
+  - 指数バックオフ: baseDelay * 2^attempt
+  - 最大リトライ回数: 3回
 
-tailwind:
-  NEVER:
-    - "@apply多用"
-  ALWAYS:
-    - Svelteコンポーネント化
-    - daisyUI v5設計システムで視覚一貫性
+implementation: src/lib/server/utils/retry-util.ts
 ```
 
----
+### §4.2 Caching
 
-## §6 I18n Conventions
+```yaml
+ALWAYS:
+  - 高頻度API呼び出しにTTL付きキャッシュ適用
+  - キャッシュキー: 一意識別子（owner/repo等）
+
+example: ProductionGitHubApiClient（インメモリキャッシュ、TTL 5分）
+```
+
+### §4.3 Error Handling
+
+```yaml
+ALWAYS:
+  - ServiceErrorUtil使用
+  - 構造化エラーレスポンス
+  - ログ出力
+
+implementation: src/lib/server/utils/service-error-util.ts
+```
+
+### §4.4 Background Processing
+
+```yaml
+pattern: Fire-and-Forget
+example: GenerateAiSummaryService.callBackground(libraryId)
+behavior: レスポンス待機なし、エラーはログ出力のみ
+```
+
+### §4.5 Parallel Execution
+
+```yaml
+ALWAYS:
+  - 独立した処理: Promise.all()
+  - 部分失敗許容: Promise.allSettled()
+
+NEVER:
+  - 順次処理可能な場合のPromise.all（エラー時全体失敗リスク）
+```
+
+* * *
+
+## §5 UI Conventions
+
+### §5.1 daisyUI v5
+
+```yaml
+ALWAYS:
+  - btn・card・modal・input等を第一選択
+  - 不明時: Context7 MCPで公式ドキュメント調査（推測禁止）
+
+design:
+  default: Outline（btn-outline等）
+  primary_action: ソリッド
+  custom: daisyUI対応不可時のみTailwindクラス補完
+```
+
+### §5.2 Tailwind
+
+```yaml
+ALWAYS:
+  - Svelteコンポーネント化
+  - daisyUI v5設計システムで視覚一貫性
+  - padding・margin調整はTailwindクラス使用
+
+NEVER:
+  - "@apply多用"
+```
+
+### §5.3 I18n
 
 ```yaml
 ALWAYS:
@@ -197,9 +226,11 @@ usage: |
   <p>{m.welcome_message()}</p>
 ```
 
----
+* * *
 
-## §7 Testing Conventions
+## §6 Testing & Quality
+
+### §6.1 Test Commands
 
 ```yaml
 commands:
@@ -207,49 +238,21 @@ commands:
   all: npm run test
   storybook: npm run story
   test_runner: npm run test:storybook
-
-factory:
-  library: fishery
-  location: test/factories/
-  naming: "[entity].factory.ts"
-  ALWAYS:
-    - テストデータ生成にファクトリ使用
-    - 一貫したテストデータ構造
 ```
 
----
-
-## §8 Debugging Conventions
+### §6.2 Test Factory
 
 ```yaml
-principle: UI/画面バグは実動作確認の再現ファーストアプローチ徹底
+library: fishery
+location: test/factories/
+naming: "[entity].factory.ts"
 
-tool_selection:
-  primary: /debug-ui（Chrome DevTools MCP統合）
-  targets:
-    - UI要素動作異常
-    - データ不整合表示問題
-    - イベントハンドラー不具合
-    - レスポンシブデザイン崩れ
-  fallback: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
-
-execution_flow:
-  command: "/debug-ui [対象URL]"
-  reference: .claude/commands/debug-ui.md
-  steps:
-    1: サーバー起動確認（http://localhost:5173）
-    2: データ整合性確認（src/lib/data/テストデータ）
-    3: バグ再現（Chrome DevTools MCP自動操作）
-    4: インタラクティブデバッグ
-    5: 根本原因特定
-    6: 修正実装
-    7: 自動検証（--verifyオプション）
-    8: 全体テスト（npm run test）
+ALWAYS:
+  - テストデータ生成にファクトリ使用
+  - 一貫したテストデータ構造
 ```
 
----
-
-## §9 E2E Database Management
+### §6.3 E2E Database
 
 ```yaml
 config:
@@ -262,8 +265,20 @@ warning: |
   新テーブル追加時はtest/scripts/clear-test-data.jsのDELETE文も追加
   （外部キー制約順序に注意）
 
-current_delete_order:
+delete_order:
   - DELETE FROM "library_summary"
   - DELETE FROM "library"
   - DELETE FROM "user"
+```
+
+* * *
+
+## §7 Debugging
+
+```yaml
+principle: UI/画面バグは実動作確認の再現ファーストアプローチ徹底
+
+command: /debug-ui [対象URL]
+skill: ~/.claude/skills/debugging-browser-ui/SKILL.md
+fallback: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
 ```
