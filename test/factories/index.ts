@@ -5,14 +5,15 @@
 
 // 基底クラスとユーティリティ
 export {
-  closeDbConnection,
-  createDbConnection,
   createFactoryWrapper,
   generateUniqueId,
-  POSTGRES_CONFIG,
+  getDbConnection,
   type DatabaseFactoryWrapper,
   type FactoryWrapper,
 } from './base.factory';
+
+// DB接続プール（E2Eテスト用）
+export { clearTestData, closePool, getDb, getPool } from '../scripts/db-pool';
 
 // ライブラリ関連のfactory
 export {
