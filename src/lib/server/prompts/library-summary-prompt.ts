@@ -69,7 +69,7 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
             properties: {
               functions: {
                 type: 'array',
-                description: '主要関数一覧（3-5個）',
+                description: '主要関数一覧（1-3個）',
                 items: {
                   type: 'object',
                   properties: {
@@ -238,8 +238,8 @@ github_url: {{GITHUB_URL}}
 | 1 | リポジトリ構造理解 | libraryName, tags (max 5) |
 | 2 | 価値提案明確化 | purpose, coreProblem |
 | 3 | ターゲットユーザー具体化 | targetUsers |
-| 4 | 主要メリット抽出 | mainBenefits (3-5個) |
-| 5 | 主要関数と使用例作成 | usageExample.functions (3-5個) + usageExample.examples (1-3個) |
+| 4 | 主要メリット抽出 | mainBenefits (1-3個) |
+| 5 | 主要関数と使用例作成 | usageExample.functions (1-3個) + usageExample.examples (1-3個) |
 | 6 | SEOメタデータ生成 | seoInfo |
 | 7 | 最終検証 | JSON構造妥当性、全フィールド完全性 |
 
@@ -249,7 +249,7 @@ github_url: {{GITHUB_URL}}
 
 ### functions（主要関数一覧）
 
-- README記載の主要関数/メソッドを3-5個抽出
+- README記載の主要関数/メソッドを1-3個抽出
 - 各関数に1行要約（ja: 20字以内, en: 30字以内）
 
 ### examples（使用例）
@@ -257,6 +257,16 @@ github_url: {{GITHUB_URL}}
 - README記載のコード例を1-3個抽出
 - 各例に title, code, explanation を含める
 - codeは言語タグなしの純粋なJavaScript（コメント付き可）
+
+### examples間の一貫性ルール（必須）
+
+- 複数の使用例がある場合、**後の例が前の例で定義した関数を参照する場合は、必ず同じ関数名を使用**
+- 例: 例1で \`getService_()\` を呼ぶなら、別の例で \`getService_()\` を定義
+- **禁止**: 例1で \`getService_()\` を呼び、例2で \`getDriveService_()\` を定義するような不整合
+- 使用例の構成パターン:
+  1. **サービス作成**（必須）: OAuth2.createService等でサービスを作成する関数を定義
+  2. **サービス利用**（任意）: 例1で定義した関数を呼び出して使用
+  3. **コールバック処理**（任意）: フローの完結処理
 
 ---
 
@@ -282,9 +292,11 @@ github_url: {{GITHUB_URL}}
 - [ ] Character Limitsを遵守
 - [ ] 主観的表現を排除
 - [ ] JSON構造が妥当
-- [ ] usageExample.functions に3-5個の関数が含まれる
+- [ ] usageExample.functions に1-3個の関数が含まれる
 - [ ] usageExample.examples に1-3個の例が含まれる
 - [ ] **出力テキストに「（XX字）」「(XX chars)」等の文字数表記が含まれていない**
+- [ ] **usageExample.examples内の関数呼び出しが他の例の関数定義と一致**
+- [ ] 使用例間で未定義の関数を呼び出していない（READMEに定義がある場合を除く）
 ` as const;
 
 /**
