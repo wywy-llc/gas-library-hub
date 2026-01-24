@@ -24,7 +24,7 @@ export interface UsageExampleAnnotated {
   examples: Array<{
     title: BilingualText;
     code: string;
-    explanation: BilingualText;
+    explanation?: BilingualText;
   }>;
 }
 

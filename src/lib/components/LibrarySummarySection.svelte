@@ -247,11 +247,13 @@
             <div class="card bg-base-200 mb-4 shadow-sm">
               <div class="card-body p-4">
                 <h5 class="mb-2 text-sm font-semibold">
-                  {currentLocale === 'ja' ? example.title.ja : example.title.en}
+                  {currentLocale === 'ja' ? (example.title?.ja ?? '') : (example.title?.en ?? '')}
                 </h5>
                 <CodeBlock code={example.code} class="mb-3" />
                 <p class="text-sm leading-relaxed whitespace-pre-line opacity-80">
-                  {currentLocale === 'ja' ? example.explanation.ja : example.explanation.en}
+                  {currentLocale === 'ja'
+                    ? (example.explanation?.ja ?? '')
+                    : (example.explanation?.en ?? '')}
                 </p>
               </div>
             </div>

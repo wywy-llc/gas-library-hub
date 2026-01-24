@@ -109,27 +109,11 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
                     },
                     code: {
                       type: 'string',
-                      description: 'JavaScriptコード（言語タグなし、コメント付き）',
-                    },
-                    explanation: {
-                      type: 'object',
-                      properties: {
-                        ja: {
-                          type: 'string',
-                          description:
-                            'コード例のJSDocとして記載する実装ポイント3点（例: "・認証サービスの初期化\\n・スコープの設定\\n・コールバックURLの指定"）',
-                        },
-                        en: {
-                          type: 'string',
-                          description:
-                            '3 implementation points as JSDoc for the code example (e.g., "・Initialize auth service\\n・Configure scopes\\n・Set callback URL")',
-                        },
-                      },
-                      required: ['ja', 'en'],
-                      additionalProperties: false,
+                      description:
+                        'JSDocコメント（実装ポイント3点）で始まるJavaScriptコード（例: "/**\\n * タイトル\\n * ・ポイント1\\n * ・ポイント2\\n * ・ポイント3\\n */\\nfunction example() {}"）',
                     },
                   },
-                  required: ['title', 'code', 'explanation'],
+                  required: ['title', 'code'],
                   additionalProperties: false,
                 },
               },
@@ -201,14 +185,14 @@ export const CHARACTER_LIMITS = {
 export const LIBRARY_SUMMARY_PROMPT_TEMPLATE = `
 # GAS Library Analyzer
 
-## §1 Role
+## §1 Identity
 
-Google Apps Script (GAS) ライブラリの技術分析専門家。
-開発者のライブラリ採用判断を支援する構造化データを生成する。
-
-## §2 Task
-
-GitHubリポジトリのREADME.mdを分析し、構造化JSONを生成する。
+\`\`\`yaml
+role: GASライブラリ技術分析専門家
+mission: 開発者のライブラリ採用判断を支援する構造化データ生成
+input: GitHubリポジトリのREADME.md
+output: 構造化JSON（ja/en両言語）
+\`\`\`
 
 ### Input
 
@@ -216,30 +200,26 @@ GitHubリポジトリのREADME.mdを分析し、構造化JSONを生成する。
 github_url: {{GITHUB_URL}}
 \`\`\`
 
----
+## §2 Constraints
 
-## §3 Constraints
-
-### NEVER（絶対禁止）
+### NEVER
 
 - 存在しない機能・メソッドの創作
 - 推測に基づく情報追加
 - 主観的評価（「素晴らしい」「革新的」等）
 - README未記載のコード例生成
-- **文字数カウントの出力**（「〜（38字）」「〜(50 chars)」は厳禁）
+- 文字数カウントの出力（「〜（38字）」「〜(50 chars)」）
 
-### ALWAYS（必須）
+### ALWAYS
 
 - 検証可能な情報のみ使用
 - 情報不足時は「公開情報が不足しているため〜」と明記
 - 全フィールドをja/en両言語で出力
 - コード例はREADME記載のもののみ使用
 
----
+## §3 Output Schema
 
-## §4 Character Limits
-
-全フィールドの文字数制限（単一定義）。
+### 3.1 Character Limits
 
 | Field | ja | en | Format |
 |-------|-----|-----|--------|
@@ -252,102 +232,66 @@ github_url: {{GITHUB_URL}}
 | seoInfo.title | 30字前後 | 60 chars | 【GAS】で始まる |
 | seoInfo.description | 120字前後 | 160 chars | - |
 
----
+### 3.2 usageExample Structure
 
-## §5 Analysis Process
+\`\`\`yaml
+functions: # 1-3個
+  - name: "関数名（例: OAuth2.createService）"
+    summary: { ja: "1行要約（20字）", en: "Summary（30 chars）" }
 
-7段階で分析を実行。各段階で推論を記録する。
-
-### Phase 1: リポジトリ構造理解
-
-**Output:** libraryName, tags (max 5)
-
-### Phase 2: 価値提案明確化
-
-**Output:** purpose, coreProblem
-**Limits:** §4参照
-
-### Phase 3: ターゲットユーザー具体化
-
-**Output:** targetUsers
-**Limits:** §4参照
-
-### Phase 4: 主要メリット抽出
-
-**Output:** mainBenefits (1-3個)
-**Limits:** §4参照
-
-### Phase 5: 使用例作成
-
-**Output:** usageExample.functions (1-3個) + usageExample.examples (1-3個)
-
-#### §5.1 functions（主要関数一覧）
-
-- README記載の主要関数/メソッドを1-3個抽出
-- 各関数に1行要約（§4参照: ja 20字, en 30字）
-
-#### §5.2 examples（使用例）
-
-- README記載のコード例を1-3個抽出
-- 各例に title, code, explanation を含める
-- codeは言語タグなしの純粋なJavaScript（コメント付き可）
-- **explanation形式**: コード例のJSDocとして記載する実装ポイント3点
-  - 形式: \`"・ポイント1\\n・ポイント2\\n・ポイント3"\`
-  - 内容: 設定意図、API使用法、注意点など
-  - 用途: UIでコード例の上部にJSDocコメントとして表示される
-
-**code + explanation の出力イメージ:**
-\`\`\`javascript
-/**
- * OAuth2サービスの作成
- * ・認証サービスの初期化
- * ・スコープの設定
- * ・コールバックURLの指定
- */
-function getService_() {
-  return OAuth2.createService('drive')
-    .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
-    .setTokenUrl('https://oauth2.googleapis.com/token')
-    .setClientId(CLIENT_ID)
-    .setClientSecret(CLIENT_SECRET)
-    .setCallbackFunction('authCallback')
-    .setPropertyStore(PropertiesService.getUserProperties())
-    .setScope('https://www.googleapis.com/auth/drive');
-}
+examples: # 1-3個
+  - title: { ja: "例のタイトル", en: "Example title" }
+    code: | # JSDocコメント（実装ポイント3点）で始まるJavaScriptコード
+      /**
+       * [title.jaの内容]
+       * ・[実装ポイント1]
+       * ・[実装ポイント2]
+       * ・[実装ポイント3]
+       */
+      function example() {
+        // 実際のコード
+      }
 \`\`\`
 
-#### §5.3 一貫性ルール（必須）
+> **重要**: codeフィールドは必ずJSDocコメント（実装ポイント3点を含む）で始めること。
 
-- 複数の使用例がある場合、**後の例が前の例で定義した関数を参照する場合は、必ず同じ関数名を使用**
-- 例: 例1で \`getService_()\` を呼ぶなら、別の例で \`getService_()\` を定義
-- **禁止**: 例1で \`getService_()\` を呼び、例2で \`getDriveService_()\` を定義するような不整合
-- 使用例の構成パターン:
-  1. **サービス作成**（必須）: OAuth2.createService等でサービスを作成する関数を定義
-  2. **サービス利用**（任意）: 前の例で定義した関数を呼び出して使用
-  3. **コールバック処理**（任意）: フローの完結処理
+### 3.3 examples一貫性ルール
 
-### Phase 6: SEOメタデータ生成
+- 複数例で同一関数を参照する場合、関数名を統一
+- 例: 例1で \`getService_()\` を呼ぶなら、例2で同名の関数を定義
+- 禁止: 例1で \`getService_()\`、例2で \`getDriveService_()\` のような不整合
 
-**Output:** seoInfo
-**Limits:** §4参照
+## §4 Analysis Process
 
-### Phase 7: 最終検証
+| Phase | Output | Limits |
+|-------|--------|--------|
+| 1. リポジトリ構造理解 | libraryName, tags (max 5) | - |
+| 2. 価値提案明確化 | purpose, coreProblem | §3.1 |
+| 3. ターゲットユーザー具体化 | targetUsers | §3.1 |
+| 4. 主要メリット抽出 | mainBenefits (1-3個) | §3.1 |
+| 5. 使用例作成 | usageExample | §3.2, §3.3 |
+| 6. SEOメタデータ生成 | seoInfo | §3.1 |
+| 7. 最終検証 | JSON妥当性確認 | - |
 
-**Output:** JSON構造妥当性、全フィールド完全性
+## §5 Validation Checklist
 
----
+\`\`\`yaml
+content:
+  - 全メソッド名がREADMEに存在
+  - 主観的表現を排除
+  - 出力テキストに文字数表記なし
 
-## §6 Self-Validation Checklist
+format:
+  - 日英両言語が全フィールドに存在
+  - §3.1 Character Limits遵守
+  - JSON構造が妥当
 
-- [ ] 全メソッド名がREADMEに存在
-- [ ] 日英両言語が全フィールドに存在
-- [ ] §4 Character Limitsを遵守
-- [ ] 主観的表現を排除
-- [ ] JSON構造が妥当
-- [ ] usageExample: functions 1-3個、examples 1-3個（§5.1, §5.2）
-- [ ] explanation: JSDoc形式の実装ポイント3点（§5.2参照）
-- [ ] 出力テキストに文字数表記なし（§3 NEVER参照）
-- [ ] examples間の関数呼び出しが一致（§5.3参照）
+usageExample:
+  - functions: 1-3個
+  - examples: 1-3個
+  - code: JSDocコメント（実装ポイント3点）で始まる（§3.2）
+  - examples間の関数呼び出しが一致（§3.3）
+\`\`\`
 ` as const;
 
 /**
@@ -379,7 +323,7 @@ ${sourceSummary}
 `;
 
   // Insert after Input section
-  return basePrompt.replace(/^(## Input[\s\S]*?```\n)/m, `$1${sourceSection}`);
+  return basePrompt.replace(/^(### Input[\s\S]*?```\n)/m, `$1${sourceSection}`);
 }
 
 /**
