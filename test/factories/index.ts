@@ -17,10 +17,13 @@ export { clearTestData, closePool, getDb, getPool } from '../scripts/db-pool';
 
 // ライブラリ関連のfactory
 export {
+  CreatedLibraryTestDataFactories,
   DatabaseLibraryDataFactory,
   LibraryStatusTestDataFactories,
   LibraryTestDataFactories,
+  type CreatedLibraryTestData,
   type DatabaseLibraryData,
+  type Library,
   type LibraryTestData,
 } from './library-test-data.factory';
 
@@ -38,11 +41,13 @@ export {
 // GitHubスクレイピング関連のfactory
 export {
   DuplicateCheckerTestDataFactories,
+  GitHubRepoDataTestDataFactories,
   GitHubRepositoryTestDataFactories,
   LibrarySaveCallbackTestDataFactories,
   SaveWithSummaryCallbackTestDataFactories,
   ScraperConfigTestDataFactories,
   ScrapeResultTestDataFactories,
+  type GitHubRepoDataTestData,
   type GitHubRepositoryTestData,
   type ScraperConfigTestData,
   type ScrapeResultTestData,
@@ -56,6 +61,14 @@ export {
   ValidationErrorTestDataFactories,
   ValidationResultTestDataFactories,
 } from './source-analysis-test-data.factory';
+
+// ライブラリAPI関連のfactory
+export {
+  LibraryDetailDbRowFactories,
+  LibrarySearchDbRowFactories,
+  type LibraryDetailDbRow,
+  type LibrarySearchDbRow,
+} from './library-api-test-data.factory';
 
 /**
  * 使用例:

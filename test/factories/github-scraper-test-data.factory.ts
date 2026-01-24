@@ -1,4 +1,5 @@
 import * as Factory from 'factory.ts';
+import type { GitHubRepoData } from '../../src/lib/server/services/fetch-github-repo-data-service.js';
 import type {
   GitHubRepository,
   ScrapeResult,
@@ -9,6 +10,7 @@ import { createFactoryWrapper, type FactoryWrapper } from './base.factory.js';
 export type GitHubRepositoryTestData = GitHubRepository;
 export type ScrapeResultTestData = ScrapeResult;
 export type ScraperConfigTestData = ScraperConfig;
+export type GitHubRepoDataTestData = GitHubRepoData;
 
 // GitHubRepository ベースファクトリ
 const baseGitHubRepositoryFactory = Factory.Sync.makeFactory<GitHubRepositoryTestData>({
@@ -53,6 +55,29 @@ export const GitHubRepositoryTestDataFactories: Record<
       license: {
         name: 'Apache-2.0',
         url: 'https://github.com/googleworkspace/apps-script-oauth2/blob/main/LICENSE',
+      },
+    })
+  ),
+  /**
+   * FetchGitHubRepoDataServiceテスト用プリセット
+   * testowner/testrepoの標準的なリポジトリデータ
+   */
+  testOwnerRepo: createFactoryWrapper(
+    baseGitHubRepositoryFactory.extend({
+      name: 'testrepo',
+      html_url: 'https://github.com/testowner/testrepo',
+      clone_url: 'https://github.com/testowner/testrepo.git',
+      description: 'Test repository description',
+      stargazers_count: 123,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-15T00:00:00Z',
+      owner: {
+        login: 'testowner',
+        html_url: 'https://github.com/testowner',
+      },
+      license: {
+        name: 'MIT License',
+        url: 'https://api.github.com/licenses/mit',
       },
     })
   ),
@@ -176,4 +201,52 @@ export const SaveWithSummaryCallbackTestDataFactories = {
     success: false,
     error: 'Save failed',
   }),
+};
+
+// GitHubRepoData ベースファクトリ（FetchGitHubRepoDataServiceの戻り値型）
+const baseGitHubRepoDataFactory = Factory.Sync.makeFactory<GitHubRepoDataTestData>({
+  repoInfo: {
+    name: 'Test Library',
+    repositoryUrl: 'https://github.com/owner/repo',
+    authorUrl: 'https://github.com/owner',
+    authorName: 'owner',
+    description: 'Test description',
+    starCount: 100,
+  },
+  licenseInfo: {
+    type: 'MIT',
+    url: 'https://example.com/license',
+  },
+  lastCommitAt: new Date('2024-01-01T00:00:00Z'),
+});
+
+/**
+ * GitHubRepoDataのテストデータファクトリ
+ * FetchGitHubRepoDataService.callの戻り値をモック
+ */
+export const GitHubRepoDataTestDataFactories: Record<
+  string,
+  FactoryWrapper<GitHubRepoDataTestData>
+> = {
+  default: createFactoryWrapper(baseGitHubRepoDataFactory),
+  /**
+   * CreateLibraryServiceテスト用プリセット
+   */
+  forCreateLibrary: createFactoryWrapper(
+    baseGitHubRepoDataFactory.extend({
+      repoInfo: {
+        name: 'Test Library',
+        repositoryUrl: 'https://github.com/owner/repo',
+        authorUrl: 'https://github.com/owner',
+        authorName: 'owner',
+        description: 'Test description',
+        starCount: 100,
+      },
+      licenseInfo: {
+        type: 'MIT',
+        url: 'https://example.com/license',
+      },
+      lastCommitAt: new Date('2024-01-01T00:00:00Z'),
+    })
+  ),
 };

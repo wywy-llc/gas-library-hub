@@ -1,7 +1,7 @@
 import * as Factory from 'factory.ts';
 import { LIBRARY_STATUS, type LibraryStatus } from '../../src/lib/constants/library-status';
 import { LICENSE_TYPES } from '../../src/lib/constants/license-types';
-import { library } from '../../src/lib/server/db/schema';
+import { library, type Library } from '../../src/lib/server/db/schema';
 import {
   createDatabaseFactoryWrapper,
   createFactoryWrapper,
@@ -37,6 +37,13 @@ export interface DatabaseLibraryData extends CreateLibraryInput {
  * CreateLibraryInputを基盤とし、テストで必要な最小限のデータ構造
  */
 export type LibraryTestData = CreateLibraryInput;
+
+/**
+ * 作成済みライブラリデータ（Library型エクスポート）
+ * LibraryRepository.createの戻り値に対応
+ */
+export type { Library } from '../../src/lib/server/db/schema';
+export type CreatedLibraryTestData = Library;
 
 // ベースファクトリ定義
 const baseLibraryFactory = Factory.Sync.makeFactory<LibraryTestData>({
@@ -210,3 +217,57 @@ export const DatabaseLibraryDataFactory = createDatabaseFactoryWrapper<DatabaseL
  * });
  * ```
  */
+
+// CreatedLibrary用ファクトリ（LibraryRepository.createの戻り値に対応）
+const baseCreatedLibraryFactory = Factory.Sync.makeFactory<CreatedLibraryTestData>({
+  id: 'mock-library-id',
+  name: 'Test Library',
+  scriptId: 'TEST_SCRIPT_ID',
+  repositoryUrl: 'https://github.com/owner/repo',
+  authorUrl: 'https://github.com/owner',
+  authorName: 'owner',
+  description: 'Test description',
+  starCount: 100,
+  copyCount: 0,
+  licenseType: 'MIT',
+  licenseUrl: 'https://example.com/license',
+  lastCommitAt: new Date('2024-01-01T00:00:00Z'),
+  status: 'pending',
+  scriptType: 'library',
+  scriptValidationStatus: null,
+  requesterId: null,
+  requestNote: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+/**
+ * 作成済みライブラリのテストデータファクトリ
+ * LibraryRepository.createの戻り値をモック
+ */
+export const CreatedLibraryTestDataFactories: Record<
+  string,
+  FactoryWrapper<CreatedLibraryTestData>
+> = {
+  default: createFactoryWrapper(baseCreatedLibraryFactory),
+  /**
+   * CreateLibraryServiceテスト用プリセット
+   */
+  forCreateLibraryService: createFactoryWrapper(
+    baseCreatedLibraryFactory.extend({
+      id: 'mock-library-id',
+      name: 'Test Library',
+      scriptId: 'TEST_SCRIPT_ID',
+      repositoryUrl: 'https://github.com/owner/repo',
+      authorUrl: 'https://github.com/owner',
+      authorName: 'owner',
+      description: 'Test description',
+      starCount: 100,
+      copyCount: 0,
+      licenseType: 'MIT',
+      licenseUrl: 'https://example.com/license',
+      lastCommitAt: new Date('2024-01-01T00:00:00Z'),
+      status: 'pending',
+    })
+  ),
+};
