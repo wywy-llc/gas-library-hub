@@ -15,6 +15,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run preview',
     port: 4173,
+    reuseExistingServer: true,
     env: {
       DATABASE_URL: process.env.DATABASE_TEST_URL || process.env.DATABASE_URL || '',
       POSTGRES_USER: process.env.POSTGRES_USER || '',
