@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { ERROR_MESSAGES } from '../../../../../src/lib/constants/error-messages.js';
+import {
+  CreatedLibraryTestDataFactories,
+  GitHubRepoDataTestDataFactories,
+} from '../../../../factories/index.js';
 
 // モックを設定
 vi.mock('../../../../../src/lib/server/db/index.js', () => ({
@@ -87,39 +91,9 @@ describe('CreateLibraryService', () => {
     repoUrl: 'owner/repo',
   };
 
-  const mockRepoData = {
-    repoInfo: {
-      name: 'Test Library',
-      repositoryUrl: 'https://github.com/owner/repo',
-      authorUrl: 'https://github.com/owner',
-      authorName: 'owner',
-      description: 'Test description',
-      starCount: 100,
-    },
-    licenseInfo: {
-      type: 'MIT',
-      url: 'https://example.com/license',
-    },
-    lastCommitAt: new Date('2024-01-01T00:00:00Z'),
-  };
-
-  const mockCreatedLibrary = {
-    id: 'mock-library-id',
-    name: 'Test Library',
-    scriptId: 'TEST_SCRIPT_ID',
-    repositoryUrl: 'https://github.com/owner/repo',
-    authorUrl: 'https://github.com/owner',
-    authorName: 'owner',
-    description: 'Test description',
-    starCount: 100,
-    copyCount: 0,
-    licenseType: 'MIT',
-    licenseUrl: 'https://example.com/license',
-    lastCommitAt: new Date('2024-01-01T00:00:00Z'),
-    status: 'pending',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  // ファクトリからテストデータを生成
+  const mockRepoData = GitHubRepoDataTestDataFactories.forCreateLibrary.build();
+  const mockCreatedLibrary = CreatedLibraryTestDataFactories.forCreateLibraryService.build();
 
   beforeEach(() => {
     vi.clearAllMocks();

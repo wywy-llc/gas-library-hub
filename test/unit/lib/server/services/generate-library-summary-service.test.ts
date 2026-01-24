@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { GenerateLibrarySummaryService } from '../../../../../src/lib/server/services/generate-library-summary-service.js';
-import type {
-  LibrarySummary,
-  LibrarySummaryParams,
-} from '../../../../../src/lib/types/library-summary.js';
+import type { LibrarySummaryParams } from '../../../../../src/lib/types/library-summary.js';
+import { LibrarySummaryTestDataFactories } from '../../../../factories/index.js';
 
 // OpenAI SDK全体をモック（xAI APIはOpenAI SDK互換）
 vi.mock('openai', () => ({
@@ -27,7 +25,8 @@ describe('GenerateLibrarySummaryService', () => {
     githubUrl: 'https://github.com/test/sample-gas-library',
   };
 
-  const mockLibrarySummary: LibrarySummary = {
+  // ファクトリからテストデータを生成
+  const mockLibrarySummary = LibrarySummaryTestDataFactories.default.build({
     basicInfo: {
       libraryName: {
         ja: 'サンプルGASライブラリ',
@@ -87,7 +86,7 @@ describe('GenerateLibrarySummaryService', () => {
         en: 'Library to simplify API integration in Google Apps Script. Improve development efficiency with intuitive methods.',
       },
     },
-  };
+  });
 
   // xAIクライアントのモック（OpenAI SDK互換）
   const mockChatCompletionsCreate = vi.fn();

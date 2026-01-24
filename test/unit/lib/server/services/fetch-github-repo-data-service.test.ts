@@ -1,4 +1,3 @@
-import * as Factory from 'factory.ts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   FetchGitHubRepoDataService,
@@ -6,32 +5,11 @@ import {
 } from '../../../../../src/lib/server/services/fetch-github-repo-data-service.js';
 import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
-import { createFactoryWrapper } from '../../../../factories/index.js';
+import { GitHubRepositoryTestDataFactories } from '../../../../factories/index.js';
 
 // モックの設定
 vi.mock('../../../../../src/lib/server/utils/github-api-utils.js');
 vi.mock('../../../../../src/lib/server/utils/service-error-util.js');
-
-// テストデータファクトリの作成
-const GitHubRepoInfoFactory = createFactoryWrapper(
-  Factory.Sync.makeFactory({
-    name: 'testrepo',
-    html_url: 'https://github.com/testowner/testrepo',
-    clone_url: 'https://github.com/testowner/testrepo.git',
-    owner: {
-      login: 'testowner',
-      html_url: 'https://github.com/testowner',
-    },
-    description: 'Test repository description',
-    stargazers_count: 123,
-    license: {
-      name: 'MIT License',
-      url: 'https://api.github.com/licenses/mit',
-    },
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-15T00:00:00Z',
-  })
-);
 
 // 日付のテストデータ
 const mockCommitDate = new Date('2024-01-15T10:30:00Z');
@@ -40,7 +18,8 @@ describe('FetchGitHubRepoDataService', () => {
   const mockOwner = 'testowner';
   const mockRepo = 'testrepo';
 
-  const mockRepoInfo = GitHubRepoInfoFactory.build();
+  // ファクトリからテストデータを生成
+  const mockRepoInfo = GitHubRepositoryTestDataFactories.testOwnerRepo.build();
   const mockLastCommitAt = mockCommitDate;
 
   const expectedResult: GitHubRepoData = {
@@ -106,7 +85,7 @@ describe('FetchGitHubRepoDataService', () => {
     });
 
     it('description が null の場合は空文字になる', async () => {
-      const repoInfoWithoutDescription = GitHubRepoInfoFactory.build({
+      const repoInfoWithoutDescription = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         description: undefined,
       });
       vi.mocked(GitHubApiUtils.fetchRepositoryInfo).mockResolvedValue(repoInfoWithoutDescription);
@@ -117,7 +96,7 @@ describe('FetchGitHubRepoDataService', () => {
     });
 
     it('stargazers_count が null の場合は 0 になる', async () => {
-      const repoInfoWithoutStars = GitHubRepoInfoFactory.build({
+      const repoInfoWithoutStars = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         stargazers_count: undefined,
       });
       vi.mocked(GitHubApiUtils.fetchRepositoryInfo).mockResolvedValue(repoInfoWithoutStars);
@@ -175,7 +154,7 @@ describe('FetchGitHubRepoDataService', () => {
 
   describe('データ変換の検証', () => {
     it('GitHubAPIのレスポンスが正しく変換される', async () => {
-      const complexRepoInfo = GitHubRepoInfoFactory.build({
+      const complexRepoInfo = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         name: 'complex-repo-name',
         html_url: 'https://github.com/complex-owner/complex-repo-name',
         clone_url: 'https://github.com/complex-owner/complex-repo-name.git',
@@ -202,7 +181,7 @@ describe('FetchGitHubRepoDataService', () => {
     });
 
     it('authorUrl が正しいフォーマットで生成される', async () => {
-      const repoWithSpecialOwner = GitHubRepoInfoFactory.build({
+      const repoWithSpecialOwner = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         owner: {
           login: 'user-with-dashes_and_underscores',
           html_url: 'https://github.com/user-with-dashes_and_underscores',
@@ -221,7 +200,7 @@ describe('FetchGitHubRepoDataService', () => {
     });
 
     it('リポジトリ情報からライセンス情報を正しく抽出する', async () => {
-      const repoWithLicense = GitHubRepoInfoFactory.build({
+      const repoWithLicense = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         license: {
           name: 'Apache License 2.0',
           url: 'https://api.github.com/licenses/apache-2.0',
@@ -237,7 +216,7 @@ describe('FetchGitHubRepoDataService', () => {
     });
 
     it('ライセンス情報がない場合はデフォルト値を使用する', async () => {
-      const repoWithoutLicense = GitHubRepoInfoFactory.build({
+      const repoWithoutLicense = GitHubRepositoryTestDataFactories.testOwnerRepo.build({
         license: undefined,
       });
 
