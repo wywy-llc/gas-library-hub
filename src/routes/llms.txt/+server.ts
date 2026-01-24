@@ -16,7 +16,58 @@ ${APP_CONFIG.SITE_NAME} は、開発者が Google Apps Script のオープンソ
 効率的に発見・評価できるよう支援します。各ライブラリにはAI生成の要約、
 使用例、機能説明が含まれています。
 
-## API
+## MCP Server
+
+このサイトは Model Context Protocol (MCP) をサポートしています。
+Claude Desktop、Cursor、その他のMCPクライアントから直接GASライブラリを検索・取得できます。
+
+### Endpoint
+
+- URL: ${APP_CONFIG.BASE_URL}/api/mcp
+- Transport: HTTP (JSON-RPC 2.0)
+- Protocol Version: 2024-11-05
+
+### Available Tools
+
+1. **search_libraries**
+   - GASライブラリをキーワード、タグ、条件で検索
+   - Parameters: query, tags, minStars, limit, locale
+
+2. **get_library_details**
+   - 特定のライブラリの詳細情報を取得（AI要約、使用例、ドキュメント含む）
+   - Parameters: libraryId (required)
+
+### Available Resources
+
+- \`gas-library-hub://catalog\` - 全ライブラリカタログ（JSON）
+
+### Configuration
+
+Claude Desktop (\`claude_desktop_config.json\`):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "${APP_CONFIG.BASE_URL}/api/mcp"
+    }
+  }
+}
+\`\`\`
+
+Cursor (\`.cursor/mcp.json\`):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "${APP_CONFIG.BASE_URL}/api/mcp"
+    }
+  }
+}
+\`\`\`
+
+## REST API
 
 ### ライブラリ検索API
 - エンドポイント: ${APP_CONFIG.BASE_URL}/api/libraries
@@ -48,12 +99,32 @@ ${APP_CONFIG.SITE_NAME} は、開発者が Google Apps Script のオープンソ
 
 ## 使用例
 
-### GASライブラリの検索
+### MCP経由でのライブラリ検索
+
+\`\`\`json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "search_libraries",
+    "arguments": {
+      "query": "OAuth",
+      "limit": 5,
+      "locale": "ja"
+    }
+  },
+  "id": 1
+}
+\`\`\`
+
+### REST APIでのライブラリ検索
+
 \`\`\`bash
 curl "${APP_CONFIG.BASE_URL}/api/libraries?q=OAuth&scriptType=library&limit=5"
 \`\`\`
 
 ### 特定ライブラリの詳細取得
+
 \`\`\`bash
 curl "${APP_CONFIG.BASE_URL}/api/libraries/{library_id}"
 \`\`\`
@@ -61,6 +132,8 @@ curl "${APP_CONFIG.BASE_URL}/api/libraries/{library_id}"
 ## Contact
 
 - Website: ${APP_CONFIG.BASE_URL}
+- GitHub: https://github.com/wywy-llc/app-script-hub
+- Contact Form: https://wywy.jp/contact
 `;
 
   return new Response(content.trim(), {
