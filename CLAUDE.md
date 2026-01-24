@@ -234,7 +234,10 @@ usage: |
 
 ```yaml
 commands:
-  related: "./scripts/dev.sh related '<修正ファイルパス>'"
+  test: "./scripts/dev.sh test '<ファイルパス or パターン>'"
+  test_fast: "./scripts/dev.sh test:fast"
+  check: "./scripts/dev.sh check"
+  fix: "./scripts/dev.sh fix [path]"
   all: npm run test
   storybook: npm run story
   test_runner: npm run test:storybook
