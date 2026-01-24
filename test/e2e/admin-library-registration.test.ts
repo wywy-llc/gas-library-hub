@@ -186,10 +186,10 @@ test.describe('Admin Screen - Library Registration', () => {
     await page.fill('input[name="repoUrl"]', testData.repositoryUrl);
     await page.click('button[type="submit"]');
 
-    // 重複エラーメッセージの表示を待機
-    await expect(
-      page.locator('[class*="bg-red"], [class*="text-red"], div:has-text("既に登録")')
-    ).toBeVisible({ timeout: 10000 });
+    // 重複エラーメッセージの表示を待機（bg-red-50のアラートボックスを確認）
+    await expect(page.locator('.bg-red-50, div:has-text("既に登録")').first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('重複データエラーハンドリング - 同じrepositoryUrlでの登録', async ({ page }) => {
