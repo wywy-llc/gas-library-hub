@@ -170,4 +170,3 @@ export const createDatabaseFactoryWrapper = <T, TReturn = string>(
     _factory: factory,
   } as const;
 };
-
