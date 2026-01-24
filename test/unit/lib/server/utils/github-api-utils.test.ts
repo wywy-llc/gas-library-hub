@@ -26,8 +26,8 @@ let mockClientInstance = createMockClient();
 
 // ファクトリーをモック
 vi.mock('../../../../../src/lib/server/factories/github-api-client-factory.js', () => ({
-  GitHubApiClientFactoryLegacy: {
-    create: vi.fn(() => mockClientInstance),
+  GitHubApiClientFactory: {
+    build: vi.fn(() => mockClientInstance),
   },
 }));
 

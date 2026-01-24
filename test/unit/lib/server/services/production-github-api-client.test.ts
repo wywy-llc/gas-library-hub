@@ -1,43 +1,52 @@
+import * as Factory from 'factory.ts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProductionGitHubApiClient } from '../../../../../src/lib/server/services/production-github-api-client.js';
-import { createTestDataFactory } from '../../../../factories/index.js';
+import { createFactoryWrapper } from '../../../../factories/index.js';
 
 // テスト用のGitHub APIレスポンスをモック
-const GitHubRepositoryFactory = createTestDataFactory(() => ({
-  id: 123456789,
-  name: 'test-library',
-  full_name: 'testowner/test-library', // cspell:disable-line
-  html_url: 'https://github.com/testowner/test-library', // cspell:disable-line
-  owner: {
-    login: 'testowner', // cspell:disable-line
-    html_url: 'https://github.com/testowner', // cspell:disable-line
-  },
-  description: 'Test GAS library',
-  stargazers_count: 42,
-  license: {
-    name: 'MIT License',
-    url: 'https://api.github.com/licenses/mit',
-  },
-}));
-
-const GitHubReadmeFactory = createTestDataFactory(() => ({
-  content: btoa('# Test Library\n\nThis is a test Google Apps Script library.'),
-  encoding: 'base64' as const,
-}));
-
-const GitHubSearchResponseFactory = createTestDataFactory(() => ({
-  total_count: 1,
-  incomplete_results: false,
-  items: [GitHubRepositoryFactory.build()],
-}));
-
-const GitHubCommitFactory = createTestDataFactory(() => ({
-  commit: {
-    committer: {
-      date: '2024-01-15T10:30:00Z',
+const GitHubRepositoryFactory = createFactoryWrapper(
+  Factory.Sync.makeFactory({
+    id: 123456789,
+    name: 'test-library',
+    full_name: 'testowner/test-library', // cspell:disable-line
+    html_url: 'https://github.com/testowner/test-library', // cspell:disable-line
+    owner: {
+      login: 'testowner', // cspell:disable-line
+      html_url: 'https://github.com/testowner', // cspell:disable-line
     },
-  },
-}));
+    description: 'Test GAS library',
+    stargazers_count: 42,
+    license: {
+      name: 'MIT License',
+      url: 'https://api.github.com/licenses/mit',
+    },
+  })
+);
+
+const GitHubReadmeFactory = createFactoryWrapper(
+  Factory.Sync.makeFactory({
+    content: btoa('# Test Library\n\nThis is a test Google Apps Script library.'),
+    encoding: 'base64' as const,
+  })
+);
+
+const GitHubSearchResponseFactory = createFactoryWrapper(
+  Factory.Sync.makeFactory({
+    total_count: 1,
+    incomplete_results: false,
+    items: [GitHubRepositoryFactory.build()],
+  })
+);
+
+const GitHubCommitFactory = createFactoryWrapper(
+  Factory.Sync.makeFactory({
+    commit: {
+      committer: {
+        date: '2024-01-15T10:30:00Z',
+      },
+    },
+  })
+);
 
 // fetch関数をモック
 global.fetch = vi.fn();

@@ -6,12 +6,12 @@
 // 基底クラスとユーティリティ
 export {
   closeDbConnection,
-  createDatabaseFactory,
   createDbConnection,
-  createPresetFactories,
-  createTestDataFactory,
+  createFactoryWrapper,
   generateUniqueId,
   POSTGRES_CONFIG,
+  type DatabaseFactoryWrapper,
+  type FactoryWrapper,
 } from './base.factory';
 
 // ライブラリ関連のfactory

@@ -1,5 +1,6 @@
+import * as Factory from 'factory.ts';
 import type { LibrarySummary } from '../../src/lib/types/library-summary.js';
-import { createTestDataFactory } from './base.factory.js';
+import { createFactoryWrapper, type FactoryWrapper } from './base.factory.js';
 
 /**
  * LibrarySummary用のテストデータファクトリー
@@ -208,11 +209,19 @@ const utilityLibrarySummaryData: LibrarySummary = {
   },
 };
 
+// ファクトリ定義
+const defaultLibrarySummaryFactory =
+  Factory.Sync.makeFactory<LibrarySummary>(defaultLibrarySummaryData);
+const oauthLibrarySummaryFactory =
+  Factory.Sync.makeFactory<LibrarySummary>(oauthLibrarySummaryData);
+const utilityLibrarySummaryFactory =
+  Factory.Sync.makeFactory<LibrarySummary>(utilityLibrarySummaryData);
+
 /**
  * LibrarySummaryテストデータファクトリーのプリセット
  */
-export const LibrarySummaryTestDataFactories = {
-  default: createTestDataFactory<LibrarySummary>(() => defaultLibrarySummaryData),
-  oauth: createTestDataFactory<LibrarySummary>(() => oauthLibrarySummaryData),
-  utility: createTestDataFactory<LibrarySummary>(() => utilityLibrarySummaryData),
+export const LibrarySummaryTestDataFactories: Record<string, FactoryWrapper<LibrarySummary>> = {
+  default: createFactoryWrapper(defaultLibrarySummaryFactory),
+  oauth: createFactoryWrapper(oauthLibrarySummaryFactory),
+  utility: createFactoryWrapper(utilityLibrarySummaryFactory),
 };

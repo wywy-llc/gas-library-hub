@@ -1,3 +1,4 @@
+import * as Factory from 'factory.ts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   FetchGitHubRepoDataService,
@@ -5,35 +6,38 @@ import {
 } from '../../../../../src/lib/server/services/fetch-github-repo-data-service.js';
 import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
-import { createTestDataFactory } from '../../../../factories/index.js';
+import { createFactoryWrapper } from '../../../../factories/index.js';
 
 // モックの設定
 vi.mock('../../../../../src/lib/server/utils/github-api-utils.js');
 vi.mock('../../../../../src/lib/server/utils/service-error-util.js');
 
 // テストデータファクトリの作成
-const GitHubRepoInfoFactory = createTestDataFactory(() => ({
-  name: 'testrepo',
-  html_url: 'https://github.com/testowner/testrepo',
-  owner: {
-    login: 'testowner',
-  },
-  description: 'Test repository description',
-  stargazers_count: 123,
-  license: {
-    name: 'MIT License',
-    url: 'https://api.github.com/licenses/mit',
-  },
-}));
+const GitHubRepoInfoFactory = createFactoryWrapper(
+  Factory.Sync.makeFactory({
+    name: 'testrepo',
+    html_url: 'https://github.com/testowner/testrepo',
+    owner: {
+      login: 'testowner',
+    },
+    description: 'Test repository description',
+    stargazers_count: 123,
+    license: {
+      name: 'MIT License',
+      url: 'https://api.github.com/licenses/mit',
+    },
+  })
+);
 
-const DateFactory = createTestDataFactory(() => new Date('2024-01-15T10:30:00Z'));
+// 日付のテストデータ
+const mockCommitDate = new Date('2024-01-15T10:30:00Z');
 
 describe('FetchGitHubRepoDataService', () => {
   const mockOwner = 'testowner';
   const mockRepo = 'testrepo';
 
   const mockRepoInfo = GitHubRepoInfoFactory.build();
-  const mockLastCommitAt = DateFactory.build();
+  const mockLastCommitAt = mockCommitDate;
 
   const expectedResult: GitHubRepoData = {
     repoInfo: {

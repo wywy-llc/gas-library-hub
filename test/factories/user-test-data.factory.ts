@@ -1,5 +1,11 @@
+import * as Factory from 'factory.ts';
 import { user } from '../../src/lib/server/db/schema';
-import { createDatabaseFactory, createPresetFactories, generateUniqueId } from './base.factory';
+import {
+  createDatabaseFactoryWrapper,
+  createFactoryWrapper,
+  generateUniqueId,
+  type FactoryWrapper,
+} from './base.factory';
 
 /**
  * ユーザー作成用入力データ（drizzleスキーマから推論）
@@ -17,6 +23,14 @@ export type UserTestData = CreateUserInput;
 export interface DatabaseUserData extends CreateUserInput {
   id: string;
 }
+
+// ベースファクトリ定義
+const baseUserFactory = Factory.Sync.makeFactory<UserTestData>({
+  email: 'test@example.com',
+  name: 'Test User',
+  picture: 'https://example.com/avatar.jpg',
+  googleId: 'google_test_id',
+});
 
 /**
  * ユーザーテストデータのFactory群
@@ -37,44 +51,44 @@ export interface DatabaseUserData extends CreateUserInput {
  * });
  * ```
  */
-export const UserTestDataFactories = createPresetFactories<UserTestData>({
-  default: () => ({
-    email: 'test@example.com',
-    name: 'Test User',
-    picture: 'https://example.com/avatar.jpg',
-    googleId: 'google_test_id',
-  }),
-  admin: () => ({
-    email: 'admin@example.com',
-    name: 'Admin User',
-    picture: 'https://example.com/admin-avatar.jpg',
-    googleId: 'google_admin_id',
-  }),
-  guest: () => ({
-    email: 'guest@example.com',
-    name: 'Guest User',
-    picture: undefined,
-    googleId: 'google_guest_id',
-  }),
+export const UserTestDataFactories: Record<string, FactoryWrapper<UserTestData>> = {
+  default: createFactoryWrapper(baseUserFactory),
+  admin: createFactoryWrapper(
+    baseUserFactory.extend({
+      email: 'admin@example.com',
+      name: 'Admin User',
+      picture: 'https://example.com/admin-avatar.jpg',
+      googleId: 'google_admin_id',
+    })
+  ),
+  guest: createFactoryWrapper(
+    baseUserFactory.extend({
+      email: 'guest@example.com',
+      name: 'Guest User',
+      picture: undefined,
+      googleId: 'google_guest_id',
+    })
+  ),
+};
+
+// Database用ファクトリ
+const databaseUserFactory = Factory.Sync.makeFactory<DatabaseUserData>({
+  id: Factory.each(() => generateUniqueId('user')),
+  email: Factory.each(() => `test-${Date.now()}@example.com`),
+  name: 'Test User',
+  picture: 'https://example.com/avatar.jpg',
+  googleId: Factory.each(
+    () => `google_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+  ),
 });
 
 /**
  * データベース作成用のユーザーデータFactory
  * Drizzle ORMのベストプラクティスに基づいてdb.insert().values().returning()を使用
  */
-export const DatabaseUserDataFactory = createDatabaseFactory<DatabaseUserData>(
+export const DatabaseUserDataFactory = createDatabaseFactoryWrapper<DatabaseUserData>(
   'user',
-  () => {
-    const uniqueId = generateUniqueId('user');
-    const timestamp = Date.now();
-    return {
-      id: uniqueId,
-      email: `test-${timestamp}@example.com`,
-      name: 'Test User',
-      picture: 'https://example.com/avatar.jpg',
-      googleId: `google_${timestamp}_${Math.random().toString(36).substring(2, 11)}`,
-    };
-  },
+  databaseUserFactory,
   async (db, userData) => {
     // Drizzle ORMの標準的なinsert APIを使用
     const result = await db
@@ -96,7 +110,7 @@ export const DatabaseUserDataFactory = createDatabaseFactory<DatabaseUserData>(
  * DatabaseUserDataFactoryの使用例
  *
  * ```typescript
- * // Fisheryのcreate()メソッドを使用してデータベースにユーザーを直接作成
+ * // create()メソッドを使用してデータベースにユーザーを直接作成
  *
  * // デフォルトユーザーを作成
  * const userId = await DatabaseUserDataFactory.create();

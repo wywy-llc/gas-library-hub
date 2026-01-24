@@ -1,5 +1,5 @@
 import type { GitHubSearchSortOption } from '$lib/constants/github-search.js';
-import { GitHubApiClientFactoryLegacy } from '$lib/server/factories/github-api-client-factory.js';
+import { GitHubApiClientFactory } from '$lib/server/factories/github-api-client-factory.js';
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
 import type {
   GitHubRepository,
@@ -20,7 +20,7 @@ export class GitHubApiUtils {
    */
   private static getClient(): GitHubApiClient {
     if (!this.client) {
-      this.client = GitHubApiClientFactoryLegacy.create();
+      this.client = GitHubApiClientFactory.build();
     }
     return this.client;
   }

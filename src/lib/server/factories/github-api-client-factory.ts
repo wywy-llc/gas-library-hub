@@ -1,5 +1,4 @@
 import { env } from '$env/dynamic/private';
-import { Factory } from 'fishery';
 import { MockGitHubApiClient } from '$lib/server/services/mock-github-api-client.js';
 import { ProductionGitHubApiClient } from '$lib/server/services/production-github-api-client.js';
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
@@ -79,7 +78,7 @@ function authenticate() {
     clientSecret: 'your-client-secret',
     redirectUri: 'your-redirect-uri'
   });
-  
+
   const authUrl = oauth.getAuthorizationUrl();
   console.log('Visit this URL:', authUrl);
 }
@@ -124,10 +123,9 @@ lib.doSomething();
 }
 
 /**
- * GitHub API クライアントファクトリー
- * fisheryを使用してGitHubApiClientのインスタンスを生成
+ * GitHub API クライアントを作成するヘルパー関数
  */
-export const GitHubApiClientFactory = Factory.define<GitHubApiClient>(() => {
+const createGitHubApiClient = (): GitHubApiClient => {
   // E2Eテストモードの判定
   // ユニットテストでは実際のAPIを呼び出すため、Playwrightによる実際のE2Eテストのみモックを適用
   const isE2eTestMode =
@@ -139,18 +137,12 @@ export const GitHubApiClientFactory = Factory.define<GitHubApiClient>(() => {
   }
 
   return new ProductionGitHubApiClient();
-});
+};
 
 /**
- * 下位互換性のための静的メソッド
- * 既存のコードがそのまま動作するように提供
+ * GitHubApiClientFactoryのラッパー
+ * 環境に応じた適切なクライアントを返す
  */
-export class GitHubApiClientFactoryLegacy {
-  /**
-   * 環境に応じたGitHubApiClientインスタンスを作成
-   * @returns GitHubApiClient実装
-   */
-  public static create(): GitHubApiClient {
-    return GitHubApiClientFactory.build();
-  }
-}
+export const GitHubApiClientFactory = {
+  build: (): GitHubApiClient => createGitHubApiClient(),
+};
