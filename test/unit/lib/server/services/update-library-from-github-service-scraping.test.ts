@@ -271,4 +271,126 @@ describe('UpdateLibraryFromGithubService - スクレイピング機能', () => {
 
     consoleSpy.mockRestore();
   });
+
+  test('web_appの場合はステータスがrejectedに変更される', async () => {
+    // Arrange: スクリプトタイプがweb_appになる場合
+    const mockPendingLibrary = {
+      ...mockLibraryData,
+      status: 'pending' as const,
+    };
+    mockLibraryRepository.findById.mockResolvedValue(mockPendingLibrary);
+
+    mockScrapeGASLibraryService.call.mockResolvedValue({
+      success: true,
+      data: {
+        scriptId: 'AK_WebApp123',
+        scriptType: 'web_app' as const,
+        name: 'test-repo',
+        repositoryUrl: 'https://github.com/test/repo',
+        authorUrl: 'https://github.com/test-owner',
+        authorName: 'test-owner',
+        description: 'Test repository',
+        starCount: 10,
+        lastCommitAt: lastCommitAt,
+        status: 'pending' as const,
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    await UpdateLibraryFromGithubService.call(libraryId, { skipAiSummary: true });
+
+    // Assert: ステータスがrejectedに変更される
+    expect(mockUpdateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scriptType: 'web_app',
+        status: 'rejected',
+      })
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ライブラリとして利用不可のため自動却下')
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  test('not_foundの場合はステータスがrejectedに変更される', async () => {
+    // Arrange: 検証ステータスがnot_foundになる場合
+    const mockPendingLibrary = {
+      ...mockLibraryData,
+      status: 'pending' as const,
+    };
+    mockLibraryRepository.findById.mockResolvedValue(mockPendingLibrary);
+
+    mockScrapeGASLibraryService.call.mockResolvedValue({
+      success: true,
+      data: {
+        scriptId: '1OldScriptId123',
+        scriptType: 'library' as const,
+        scriptValidationStatus: 'not_found' as const,
+        name: 'test-repo',
+        repositoryUrl: 'https://github.com/test/repo',
+        authorUrl: 'https://github.com/test-owner',
+        authorName: 'test-owner',
+        description: 'Test repository',
+        starCount: 10,
+        lastCommitAt: lastCommitAt,
+        status: 'pending' as const,
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    await UpdateLibraryFromGithubService.call(libraryId, { skipAiSummary: true });
+
+    // Assert: ステータスがrejectedに変更される（not_foundの場合はweb_appに変更される）
+    expect(mockUpdateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scriptType: 'web_app',
+        scriptValidationStatus: 'not_found',
+        status: 'rejected',
+      })
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  test('すでにrejectedの場合はステータスは変更されない', async () => {
+    // Arrange: すでにrejectedの場合
+    const mockRejectedLibrary = {
+      ...mockLibraryData,
+      status: 'rejected' as const,
+    };
+    mockLibraryRepository.findById.mockResolvedValue(mockRejectedLibrary);
+
+    mockScrapeGASLibraryService.call.mockResolvedValue({
+      success: true,
+      data: {
+        scriptId: 'AK_WebApp123',
+        scriptType: 'web_app' as const,
+        name: 'test-repo',
+        repositoryUrl: 'https://github.com/test/repo',
+        authorUrl: 'https://github.com/test-owner',
+        authorName: 'test-owner',
+        description: 'Test repository',
+        starCount: 10,
+        lastCommitAt: lastCommitAt,
+        status: 'pending' as const,
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    await UpdateLibraryFromGithubService.call(libraryId, { skipAiSummary: true });
+
+    // Assert: ステータスフィールドが更新されないことを確認
+    // setに渡されるオブジェクトにstatusプロパティが含まれていない
+    const setCallArgs = mockUpdateChain.set.mock.calls[0][0];
+    expect(setCallArgs).not.toHaveProperty('status');
+
+    consoleSpy.mockRestore();
+  });
 });

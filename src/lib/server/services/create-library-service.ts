@@ -62,6 +62,17 @@ export const CreateLibraryService = (() => {
     // スクリプトタイプを決定（not_foundの場合はWebアプリとして扱う）
     const scriptType = validationResult?.status === 'not_found' ? 'web_app' : 'library';
 
+    // web_appまたはnot_foundの場合はライブラリとして利用不可なので却下
+    const isUnusableAsLibrary =
+      scriptType === 'web_app' || validationResult?.status === 'not_found';
+    const status = isUnusableAsLibrary ? 'rejected' : 'pending';
+
+    if (isUnusableAsLibrary) {
+      console.log(
+        `⚠️ ライブラリとして利用不可のため自動却下: scriptType=${scriptType}, validationStatus=${validationResult?.status}`
+      );
+    }
+
     // データベースに保存
     const createdLibrary = await LibraryRepository.create({
       id: libraryId,
@@ -76,7 +87,7 @@ export const CreateLibraryService = (() => {
       licenseType: licenseInfo.type,
       licenseUrl: licenseInfo.url,
       lastCommitAt: lastCommitAt,
-      status: 'pending',
+      status,
       scriptType,
       scriptValidationStatus: validationResult?.status ?? undefined,
       requesterId: undefined,

@@ -464,8 +464,10 @@
       <div class="flex items-center gap-2">
         <label for="scriptTypeFilter" class="text-sm font-medium text-gray-700">タイプ:</label>
         <form method="GET" id="scriptTypeForm">
-          <!-- 検索クエリを隠しフィールドで保持 -->
-          <input type="hidden" name="search" bind:value={searchValue} />
+          <!-- 検索クエリを隠しフィールドで保持（値がある場合のみ） -->
+          {#if searchValue.trim()}
+            <input type="hidden" name="search" value={searchValue.trim()} />
+          {/if}
           <select
             id="scriptTypeFilter"
             name="scriptType"

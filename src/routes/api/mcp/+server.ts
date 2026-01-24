@@ -38,11 +38,6 @@ const TOOLS = [
           type: 'string',
           description: 'Search keyword (e.g., OAuth, Spreadsheet, Gmail)',
         },
-        scriptType: {
-          type: 'string',
-          enum: ['library', 'web_app'],
-          description: 'Filter by script type',
-        },
         tags: {
           type: 'string',
           description: 'Comma-separated tags to filter by (e.g., "OAuth,認証")',
@@ -97,7 +92,6 @@ const TOOL_NAMES = TOOLS.map(t => t.name);
 const RESOURCE_URIS = RESOURCES.map(r => r.uri);
 
 // 型ガード用Set（O(1)ルックアップ）
-const VALID_SCRIPT_TYPES = new Set(['library', 'web_app'] as const);
 const VALID_LOCALES = new Set(['ja', 'en'] as const);
 
 /** MCP ツールハンドラーの結果型 */
@@ -119,7 +113,7 @@ const toolHandlers: Record<string, (args: Record<string, unknown>) => Promise<Mc
   search_libraries: async args => {
     const searchResult = await SearchLibrariesApiService.call({
       q: typeof args.query === 'string' ? args.query : undefined,
-      scriptType: isValidScriptType(args.scriptType) ? args.scriptType : undefined,
+      scriptType: 'library', // ライブラリのみを検索対象とする
       tags: typeof args.tags === 'string' ? args.tags : undefined,
       minStars: typeof args.minStars === 'number' ? args.minStars : undefined,
       limit: typeof args.limit === 'number' ? args.limit : 10,
@@ -179,13 +173,6 @@ const resourceHandlers: Record<string, () => Promise<McpResourceResult>> = {
     };
   },
 };
-
-/**
- * 型ガード: scriptType（Set lookup O(1)）
- */
-function isValidScriptType(value: unknown): value is 'library' | 'web_app' {
-  return typeof value === 'string' && VALID_SCRIPT_TYPES.has(value as 'library' | 'web_app');
-}
 
 /**
  * 型ガード: locale（Set lookup O(1)）

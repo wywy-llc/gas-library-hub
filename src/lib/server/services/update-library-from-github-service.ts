@@ -198,6 +198,16 @@ export class UpdateLibraryFromGithubService {
       }
     }
 
+    // web_appまたはnot_foundの場合はライブラリとして利用不可なので却下
+    const isUnusableAsLibrary = scriptType === 'web_app' || scriptValidationStatus === 'not_found';
+    const shouldReject = isUnusableAsLibrary && existingLibrary.status !== 'rejected';
+
+    if (shouldReject) {
+      console.log(
+        `⚠️ ライブラリとして利用不可のため自動却下: scriptType=${scriptType}, validationStatus=${scriptValidationStatus}`
+      );
+    }
+
     // 新データオブジェクトを構築（detectChanges用）
     const newData: NewLibraryData = {
       name: repoInfo.name,
@@ -222,9 +232,13 @@ export class UpdateLibraryFromGithubService {
     };
     const changeDetection = this.detectChanges(existingDataForCompare, newData);
 
-    // 変更がある場合のみデータベース更新
-    if (changeDetection.hasChanges) {
-      console.log(`更新フィールド: ${changeDetection.changedFields.join(', ')}`);
+    // 変更がある場合またはステータス変更が必要な場合にデータベース更新
+    if (changeDetection.hasChanges || shouldReject) {
+      const changedInfo = changeDetection.hasChanges
+        ? `更新フィールド: ${changeDetection.changedFields.join(', ')}`
+        : '';
+      const rejectInfo = shouldReject ? 'ステータスをrejectedに変更' : '';
+      console.log([changedInfo, rejectInfo].filter(Boolean).join(', '));
 
       await db
         .update(library)
@@ -241,6 +255,7 @@ export class UpdateLibraryFromGithubService {
           scriptId: newData.scriptId,
           scriptType: newData.scriptType as 'library' | 'web_app',
           scriptValidationStatus: newData.scriptValidationStatus,
+          ...(shouldReject && { status: 'rejected' as const }),
           updatedAt: new Date(),
         })
         .where(eq(library.id, libraryId));

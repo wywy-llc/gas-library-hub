@@ -5,13 +5,11 @@
   import { createAppUrl, getLogoUrl } from '$lib/constants/app-config.js';
   import {
     featured_libraries,
-    featured_web_apps,
     gas_library_search,
     meta_description_home,
     meta_keywords_home,
     meta_title_home,
     view_all_libraries,
-    view_all_web_apps,
     welcome_user,
   } from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
@@ -88,34 +86,3 @@
     </footer>
   </div>
 </section>
-
-<!-- 注目のWebアプリセクション - 準拠 -->
-{#if data.featuredWebApps && data.featuredWebApps.length > 0}
-  <section class="bg-base-200 py-16 sm:py-24">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <header class="mb-12 text-center">
-        <h2 class="text-3xl font-bold sm:text-4xl">
-          {featured_web_apps()}
-        </h2>
-      </header>
-
-      <div
-        class="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
-        role="list"
-        aria-label="注目のWebアプリ一覧"
-      >
-        {#each data.featuredWebApps as webApp (webApp.id)}
-          <article role="listitem">
-            <LibraryCard library={webApp} librarySummary={webApp.librarySummary} />
-          </article>
-        {/each}
-      </div>
-
-      <footer class="mt-16 text-center">
-        <Button variant="outline" size="lg" href="/user/search?scriptType=web_app">
-          {view_all_web_apps()}
-        </Button>
-      </footer>
-    </div>
-  </section>
-{/if}

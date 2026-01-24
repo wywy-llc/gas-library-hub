@@ -48,6 +48,12 @@ vi.mock('../../../../../src/lib/server/utils/service-error-util.js', () => ({
   },
 }));
 
+vi.mock('../../../../../src/lib/server/utils/gas-script-validator.js', () => ({
+  GasScriptValidator: {
+    validate: vi.fn(),
+  },
+}));
+
 vi.mock('nanoid', () => ({
   nanoid: vi.fn(),
 }));
@@ -60,10 +66,14 @@ import { CreateLibraryService } from '../../../../../src/lib/server/services/cre
 import { FetchGitHubRepoDataService } from '../../../../../src/lib/server/services/fetch-github-repo-data-service.js';
 import { GenerateAiSummaryService } from '../../../../../src/lib/server/services/generate-ai-summary-service.js';
 import { ValidateLibraryUniquenessService } from '../../../../../src/lib/server/services/validate-library-uniqueness-service.js';
+import { GasScriptValidator } from '../../../../../src/lib/server/utils/gas-script-validator.js';
 import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
 
 const mockTestConnection = testConnection as ReturnType<typeof vi.fn>;
+const mockGasScriptValidator = GasScriptValidator as unknown as {
+  validate: ReturnType<typeof vi.fn>;
+};
 const mockLibraryRepository = LibraryRepository as unknown as {
   create: ReturnType<typeof vi.fn>;
 };
@@ -107,6 +117,7 @@ describe('CreateLibraryService', () => {
     mockGenerateAiSummaryService.callBackground.mockReturnValue(undefined);
     mockLibraryRepository.create.mockResolvedValue(mockCreatedLibrary);
     mockNanoid.mockReturnValue('mock-library-id');
+    mockGasScriptValidator.validate.mockResolvedValue(null); // デフォルトは検証なし
     mockServiceErrorUtil.assertCondition.mockImplementation((condition, message) => {
       if (!condition) {
         throw new Error(message);
@@ -204,6 +215,54 @@ describe('CreateLibraryService', () => {
 
     // AI要約生成は呼び出されないことを確認
     expect(mockGenerateAiSummaryService.callBackground).not.toHaveBeenCalled();
+  });
+
+  test('スクリプト検証がnot_foundの場合はステータスがrejectedになる', async () => {
+    // 1から始まるスクリプトIDを使用（検証が実行される）
+    const params = { scriptId: '1TEST_SCRIPT_ID', repoUrl: 'owner/repo' };
+
+    // 検証結果がnot_foundを返す
+    mockGasScriptValidator.validate.mockResolvedValue({
+      scriptId: '1TEST_SCRIPT_ID',
+      status: 'not_found',
+      httpStatus: 404,
+    });
+
+    // ライブラリ作成を実行
+    await CreateLibraryService.call(params);
+
+    // ステータスがrejectedで保存されることを確認
+    expect(mockLibraryRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'rejected',
+        scriptType: 'web_app',
+        scriptValidationStatus: 'not_found',
+      })
+    );
+  });
+
+  test('スクリプト検証がaccessibleの場合はステータスがpendingになる', async () => {
+    // 1から始まるスクリプトIDを使用
+    const params = { scriptId: '1TEST_SCRIPT_ID', repoUrl: 'owner/repo' };
+
+    // 検証結果がaccessibleを返す
+    mockGasScriptValidator.validate.mockResolvedValue({
+      scriptId: '1TEST_SCRIPT_ID',
+      status: 'accessible',
+      httpStatus: 200,
+    });
+
+    // ライブラリ作成を実行
+    await CreateLibraryService.call(params);
+
+    // ステータスがpendingで保存されることを確認
+    expect(mockLibraryRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'pending',
+        scriptType: 'library',
+        scriptValidationStatus: 'accessible',
+      })
+    );
   });
 
   test('最終コミット日時の取得に失敗した場合はエラーをスローする', async () => {
