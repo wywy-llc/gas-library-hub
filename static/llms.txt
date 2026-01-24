@@ -1,0 +1,108 @@
+# GAS Library Hub
+
+> Google Apps Script ライブラリの検索・発見プラットフォーム
+
+## Overview
+
+GAS Library Hub は、Google Apps Script（GAS）の優れたライブラリを発見・共有するためのプラットフォームです。
+開発者が必要なGASライブラリを効率的に見つけ、プロジェクトに活用できるようサポートします。
+
+Website: https://appscripthub.com/
+
+## MCP Server
+
+このサイトは Model Context Protocol (MCP) をサポートしています。
+Claude Desktop、Cursor、その他のMCPクライアントから直接GASライブラリを検索・取得できます。
+
+### Endpoint
+
+- URL: https://appscripthub.com/api/mcp
+- Transport: HTTP (JSON-RPC 2.0)
+- Protocol Version: 2024-11-05
+
+### Available Tools
+
+1. **search_libraries**
+   - GASライブラリをキーワード、タグ、条件で検索
+   - Parameters: query, tags, minStars, limit, locale
+
+2. **get_library_details**
+   - 特定のライブラリの詳細情報を取得（AI要約、使用例、ドキュメント含む）
+   - Parameters: libraryId (required)
+
+### Available Resources
+
+- `gas-library-hub://catalog` - 全ライブラリカタログ（JSON）
+
+### Configuration
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "https://appscripthub.com/api/mcp"
+    }
+  }
+}
+```
+
+Cursor (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "https://appscripthub.com/api/mcp"
+    }
+  }
+}
+```
+
+## API Endpoints
+
+- GET /api/mcp - サーバー情報取得
+- POST /api/mcp - MCP JSON-RPC リクエスト
+
+## Example Usage
+
+### Search Libraries
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "search_libraries",
+    "arguments": {
+      "query": "OAuth",
+      "limit": 5,
+      "locale": "ja"
+    }
+  },
+  "id": 1
+}
+```
+
+### Get Library Details
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "get_library_details",
+    "arguments": {
+      "libraryId": "abc123"
+    }
+  },
+  "id": 2
+}
+```
+
+## Contact
+
+- Website: https://appscripthub.com/
+- GitHub: https://github.com/wywy-llc/app-script-hub
+- Contact Form: https://wywy.jp/contact

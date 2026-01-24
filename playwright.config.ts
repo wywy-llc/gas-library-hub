@@ -32,9 +32,8 @@ export default defineConfig({
     timeout: 5000, // expect: 5秒
   },
 
-  // 全体では1ワーカー（ファイル単位で順次実行を保証）
-  // fullyParallelでファイル内の並列化を制御
-  workers: 1,
+  // ワーカー数を増やして並列実行（テストファイル単位）
+  workers: 4,
 
   use: {
     browserName: 'chromium',
@@ -43,27 +42,59 @@ export default defineConfig({
     baseURL: `http://localhost:${TEST_PORT}`,
   },
 
-  // プロジェクト設定: テストを特性別にグループ化
+  // プロジェクト設定: テストファイルごとに独立したプロジェクトを定義
+  // 各プロジェクトは独自のデータを作成するため、並列実行可能
   projects: [
+    // 読み取り専用APIテスト（最初に実行、ファイル内も並列）
     {
       name: 'readonly-api',
       testMatch: '**/public-library-api.test.ts',
-      // 読み取り専用APIテストはファイル内のテストを並列実行可能
       fullyParallel: true,
       use: { ...devices['Desktop Chrome'] },
     },
+
+    // 管理者テスト: 各ファイルを独立プロジェクトとして並列実行
     {
-      name: 'admin-sequential',
-      testMatch: '**/admin-library-*.test.ts',
-      dependencies: ['readonly-api'], // APIテスト完了後に実行
-      // データ変更があるためファイル内のテストも順次実行
+      name: 'admin-registration',
+      testMatch: '**/admin-library-registration.test.ts',
+      dependencies: ['readonly-api'],
+      fullyParallel: false, // ファイル内は順次（データ依存あり）
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin-approval',
+      testMatch: '**/admin-library-approval.test.ts',
+      dependencies: ['readonly-api'],
       fullyParallel: false,
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'admin-ai-summary',
+      testMatch: '**/admin-library-ai-summary.test.ts',
+      dependencies: ['readonly-api'],
+      fullyParallel: false,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin-bulk-api',
+      testMatch: '**/admin-library-bulk-api.test.ts',
+      dependencies: ['readonly-api'],
+      fullyParallel: false,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin-basic',
+      testMatch: '**/admin-library-basic.test.ts',
+      dependencies: ['readonly-api'],
+      fullyParallel: false,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    // その他のテスト
+    {
       name: 'misc',
       testMatch: '**/demo.test.ts',
-      dependencies: ['readonly-api'], // APIテスト完了後に実行
+      dependencies: ['readonly-api'],
       fullyParallel: false,
       use: { ...devices['Desktop Chrome'] },
     },

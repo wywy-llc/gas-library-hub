@@ -178,6 +178,52 @@ test/
 - マジックナンバー・文字列リテラルの定数化
 - コンポーネントのStorybook対応
 
+## 🤖 MCP Integration (For LLMs)
+
+GAS Library Hub は [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) に対応しています。
+Claude Desktop、Cursor、その他のMCPクライアントから直接GASライブラリを検索・取得できます。
+
+### Endpoint
+
+- **URL**: `https://appscripthub.com/api/mcp`
+- **Transport**: HTTP (JSON-RPC 2.0)
+- **Documentation**: <https://appscripthub.com/llms.txt>
+
+### Available Tools
+
+| Tool                  | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `search_libraries`    | GASライブラリをキーワード・タグ・Star数で検索  |
+| `get_library_details` | ライブラリ詳細情報を取得（AI要約・使用例含む） |
+
+### Configuration
+
+**Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "https://appscripthub.com/api/mcp"
+    }
+  }
+}
+```
+
+**Cursor** (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "gas-library-hub": {
+      "url": "https://appscripthub.com/api/mcp"
+    }
+  }
+}
+```
+
+---
+
 ## 📧 お問い合わせ
 
 - **お問い合わせフォーム**: <https://wywy.jp/contact>

@@ -247,7 +247,7 @@ test.describe('Public Library API', () => {
       const text = await response.text();
 
       expect(text).toContain('GAS Library Hub');
-      expect(text).toContain('/api/libraries');
+      expect(text).toContain('/api/mcp');
       expect(text).toContain('Google Apps Script');
 
       console.log('✅ llms.txt: サイト情報を取得');
