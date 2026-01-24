@@ -174,8 +174,11 @@ test.describe('Admin Screen - Library Registration', () => {
     await page.fill('input[name="repoUrl"]', repoPath);
     await page.click('button[type="submit"]');
 
-    // 結果を待機（成功または失敗）
-    await page.waitForLoadState('networkidle');
+    // 結果を待機（成功メッセージまたは詳細ページへのリダイレクト）
+    await Promise.race([
+      page.waitForURL(/\/admin\/libraries\/[^/]+$/),
+      page.locator('text=Library has been successfully registered').waitFor(),
+    ]);
 
     // 2回目の登録（重複エラーを発生させる）
     await page.goto('/admin/libraries/new');
@@ -183,19 +186,10 @@ test.describe('Admin Screen - Library Registration', () => {
     await page.fill('input[name="repoUrl"]', testData.repositoryUrl);
     await page.click('button[type="submit"]');
 
-    // フォーム送信後の状態を確認
-    await page.waitForLoadState('networkidle');
-
-    // フォームのsubmitMessage要素を確認
-    const submitMessage = await page
-      .locator(
-        '[class*="bg-red"], [class*="text-red"], div:has-text("エラー"), div:has-text("失敗"), div:has-text("既に登録")'
-      )
-      .count();
-
-    // 手動動作確認でOKなので、少なくとも何らかのエラー表示があることを期待
-    // サーバーログで重複エラーが出力されているため、機能は正常に動作している
-    expect(submitMessage).toBeGreaterThan(0);
+    // 重複エラーメッセージの表示を待機
+    await expect(
+      page.locator('[class*="bg-red"], [class*="text-red"], div:has-text("既に登録")')
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('重複データエラーハンドリング - 同じrepositoryUrlでの登録', async ({ page }) => {

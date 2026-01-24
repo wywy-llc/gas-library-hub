@@ -1,44 +1,18 @@
-import { config } from 'dotenv';
-import { type NodePgDatabase, drizzle } from 'drizzle-orm/node-postgres';
+import { type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as Factory from 'factory.ts';
-import { Client } from 'pg';
+import { getDb } from '../scripts/db-pool.js';
 
-// 環境変数を読み込み（メッセージ非表示）
-config({ quiet: true });
-
-/**
- * データベース接続設定
- * 全てのfactoryで使用する共通のPostgreSQL接続設定
- */
-export const POSTGRES_CONFIG = {
-  host: process.env.POSTGRES_HOST || 'localhost',
-  port: parseInt(process.env.POSTGRES_PORT || '5433', 10),
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  database: process.env.POSTGRES_TEST_DB || 'gas_library_hub_test_db',
-};
-
-// Drizzle DB型（Client用）
+// Drizzle DB型
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DrizzleDB = NodePgDatabase<any>;
 
 /**
- * データベース接続を作成する共通ユーティリティ
- * @returns Promise<{ client: Client, db: DrizzleDB }>
+ * データベース接続を取得する共通ユーティリティ
+ * プール接続を使用して接続オーバーヘッドを削減
+ * @returns DrizzleDB インスタンス
  */
-export const createDbConnection = async (): Promise<{ client: Client; db: DrizzleDB }> => {
-  const client = new Client(POSTGRES_CONFIG);
-  await client.connect();
-  const db = drizzle(client);
-  return { client, db };
-};
-
-/**
- * データベース接続を安全に閉じる共通ユーティリティ
- * @param client PostgreSQLクライアント
- */
-export const closeDbConnection = async (client: Client) => {
-  await client.end();
+export const getDbConnection = (): DrizzleDB => {
+  return getDb();
 };
 
 /**
@@ -157,14 +131,12 @@ export const createDatabaseFactoryWrapper = <T, TReturn = string>(
     create: async (overrides?: Partial<T>): Promise<TReturn> => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = factory.build((overrides ?? {}) as any);
-      const { client, db } = await createDbConnection();
+      const db = getDbConnection();
       try {
         return await insertFn(db, data);
       } catch (error) {
         console.error(`❌ ${tableName}作成エラー:`, error);
         throw error;
-      } finally {
-        await closeDbConnection(client);
       }
     },
     _factory: factory,

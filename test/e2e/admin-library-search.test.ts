@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { clearTestDataBeforeTest } from './test-utils.js';
 
 test.describe('Admin Screen - Library Search Functionality', () => {
+  // テストグループ全体で一度だけクリーンアップ
+  test.beforeAll(async () => {
+    await clearTestDataBeforeTest();
+  });
+
   test.beforeEach(async ({ page }) => {
     // 管理画面にアクセス
     await page.goto('/admin/libraries');

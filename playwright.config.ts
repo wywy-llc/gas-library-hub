@@ -6,6 +6,7 @@ config({ quiet: true });
 
 export default defineConfig({
   globalSetup: './test/e2e/global-setup.ts',
+  globalTeardown: './test/e2e/global-teardown.ts',
   workers: 1, // テストを順次実行してデータ競合を防ぐ
   fullyParallel: false, // 並列実行を無効化
   use: {

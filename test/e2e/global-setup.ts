@@ -1,7 +1,7 @@
-import { clearTestData } from '../scripts/clear-test-data.js';
+import { clearTestData } from '../scripts/db-pool.js';
 import { setupTestDatabase } from '../scripts/setup-test-db.js';
 
-async function globalSetup() {
+async function globalSetup(): Promise<void> {
   console.log('🔧 E2Eテスト前のセットアップを開始...');
 
   try {
@@ -18,7 +18,7 @@ async function globalSetup() {
     // テストデータベースをセットアップ
     await setupTestDatabase();
 
-    // テストデータをクリア
+    // テストデータをクリア（プール接続を使用）
     await clearTestData();
     console.log('✅ E2Eテストのセットアップが完了しました');
   } catch (error) {

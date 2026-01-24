@@ -3,9 +3,12 @@ import { DatabaseLibraryDataFactory } from '../factories/index.js';
 import { clearTestDataBeforeTest } from './test-utils.js';
 
 test.describe('Admin Screen - Library Approval', () => {
-  test('未公開ライブラリ - 公開ボタンが表示され正常に動作する', async ({ page }) => {
+  // テストグループ全体で一度だけクリーンアップ
+  test.beforeAll(async () => {
     await clearTestDataBeforeTest();
+  });
 
+  test('未公開ライブラリ - 公開ボタンが表示され正常に動作する', async ({ page }) => {
     // 1. ライブラリを未公開状態でデータベースに直接作成
     const libraryId = await DatabaseLibraryDataFactory.create({ status: 'pending' });
 
@@ -41,8 +44,6 @@ test.describe('Admin Screen - Library Approval', () => {
   });
 
   test('公開ライブラリ - 未公開ボタンが表示され正常に動作する', async ({ page }) => {
-    await clearTestDataBeforeTest();
-
     // 1. ライブラリを公開状態でデータベースに直接作成
     const libraryId = await DatabaseLibraryDataFactory.create({ status: 'published' });
 
@@ -72,8 +73,6 @@ test.describe('Admin Screen - Library Approval', () => {
   });
 
   test('ステータス更新時の確認ダイアログ - キャンセル時は変更されない', async ({ page }) => {
-    await clearTestDataBeforeTest();
-
     // 1. ライブラリを未公開状態でデータベースに直接作成
     const libraryId = await DatabaseLibraryDataFactory.create({ status: 'pending' });
 
@@ -98,8 +97,6 @@ test.describe('Admin Screen - Library Approval', () => {
   });
 
   test('ステータス更新中のローディング状態 - ボタンが無効化される', async ({ page }) => {
-    await clearTestDataBeforeTest();
-
     // 1. ライブラリを未公開状態でデータベースに直接作成
     const libraryId = await DatabaseLibraryDataFactory.create({ status: 'pending' });
 
@@ -116,8 +113,6 @@ test.describe('Admin Screen - Library Approval', () => {
   });
 
   test('複数のライブラリで独立してステータス管理される', async ({ page }) => {
-    await clearTestDataBeforeTest();
-
     // 1. 2つのライブラリを未公開状態でデータベースに直接作成
     const library1Id = await DatabaseLibraryDataFactory.create({
       status: 'pending',
