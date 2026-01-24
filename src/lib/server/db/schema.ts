@@ -1,4 +1,5 @@
 import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -108,6 +109,7 @@ export const librarySummary = pgTable('library_summary', {
   >(),
   usageExampleJa: text('usage_example_ja'),
   usageExampleEn: text('usage_example_en'),
+  usageExample: jsonb('usage_example').$type<UsageExampleAnnotated>(),
   // seoInfo
   seoTitleJa: text('seo_title_ja'),
   seoTitleEn: text('seo_title_en'),

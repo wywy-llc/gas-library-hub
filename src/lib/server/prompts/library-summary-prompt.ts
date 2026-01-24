@@ -8,6 +8,19 @@
 import type { ValidationError } from '$lib/types/source-analysis.js';
 
 /**
+ * 多言語テキストのJSON Schema定義
+ */
+const BILINGUAL_TEXT_SCHEMA = {
+  type: 'object',
+  properties: {
+    ja: { type: 'string' },
+    en: { type: 'string' },
+  },
+  required: ['ja', 'en'],
+  additionalProperties: false,
+} as const;
+
+/**
  * xAI Grok API用のJSON Schema（Single Source of Truth）
  */
 export const LIBRARY_SUMMARY_JSON_SCHEMA = {
@@ -19,33 +32,9 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
       basicInfo: {
         type: 'object',
         properties: {
-          libraryName: {
-            type: 'object',
-            properties: {
-              ja: { type: 'string' },
-              en: { type: 'string' },
-            },
-            required: ['ja', 'en'],
-            additionalProperties: false,
-          },
-          purpose: {
-            type: 'object',
-            properties: {
-              ja: { type: 'string' },
-              en: { type: 'string' },
-            },
-            required: ['ja', 'en'],
-            additionalProperties: false,
-          },
-          targetUsers: {
-            type: 'object',
-            properties: {
-              ja: { type: 'string' },
-              en: { type: 'string' },
-            },
-            required: ['ja', 'en'],
-            additionalProperties: false,
-          },
+          libraryName: BILINGUAL_TEXT_SCHEMA,
+          purpose: BILINGUAL_TEXT_SCHEMA,
+          targetUsers: BILINGUAL_TEXT_SCHEMA,
           tags: {
             type: 'object',
             properties: {
@@ -62,38 +51,14 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
       functionality: {
         type: 'object',
         properties: {
-          coreProblem: {
-            type: 'object',
-            properties: {
-              ja: { type: 'string' },
-              en: { type: 'string' },
-            },
-            required: ['ja', 'en'],
-            additionalProperties: false,
-          },
+          coreProblem: BILINGUAL_TEXT_SCHEMA,
           mainBenefits: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                title: {
-                  type: 'object',
-                  properties: {
-                    ja: { type: 'string' },
-                    en: { type: 'string' },
-                  },
-                  required: ['ja', 'en'],
-                  additionalProperties: false,
-                },
-                description: {
-                  type: 'object',
-                  properties: {
-                    ja: { type: 'string' },
-                    en: { type: 'string' },
-                  },
-                  required: ['ja', 'en'],
-                  additionalProperties: false,
-                },
+                title: BILINGUAL_TEXT_SCHEMA,
+                description: BILINGUAL_TEXT_SCHEMA,
               },
               required: ['title', 'description'],
               additionalProperties: false,
@@ -102,16 +67,66 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
           usageExample: {
             type: 'object',
             properties: {
-              ja: {
-                type: 'string',
-                description: 'Markdown形式のコードと解説。コードブロック（```javascript）を使用。',
+              functions: {
+                type: 'array',
+                description: '主要関数一覧（3-5個）',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: {
+                      type: 'string',
+                      description:
+                        '関数名またはメソッド名（例: getSheetData, OAuth2.createService）',
+                    },
+                    summary: {
+                      type: 'object',
+                      properties: {
+                        ja: { type: 'string', description: '1行要約（20字以内）' },
+                        en: { type: 'string', description: '1行要約（30字以内）' },
+                      },
+                      required: ['ja', 'en'],
+                      additionalProperties: false,
+                    },
+                  },
+                  required: ['name', 'summary'],
+                  additionalProperties: false,
+                },
               },
-              en: {
-                type: 'string',
-                description: 'Code and explanation in Markdown. Use code blocks (```javascript).',
+              examples: {
+                type: 'array',
+                description: '使用例（1-3個）',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: {
+                      type: 'object',
+                      properties: {
+                        ja: { type: 'string', description: '例のタイトル（日本語）' },
+                        en: { type: 'string', description: '例のタイトル（英語）' },
+                      },
+                      required: ['ja', 'en'],
+                      additionalProperties: false,
+                    },
+                    code: {
+                      type: 'string',
+                      description: 'JavaScriptコード（言語タグなし、コメント付き）',
+                    },
+                    explanation: {
+                      type: 'object',
+                      properties: {
+                        ja: { type: 'string', description: 'コードの解説（日本語）' },
+                        en: { type: 'string', description: 'コードの解説（英語）' },
+                      },
+                      required: ['ja', 'en'],
+                      additionalProperties: false,
+                    },
+                  },
+                  required: ['title', 'code', 'explanation'],
+                  additionalProperties: false,
+                },
               },
             },
-            required: ['ja', 'en'],
+            required: ['functions', 'examples'],
             additionalProperties: false,
           },
         },
@@ -164,6 +179,7 @@ export const CHARACTER_LIMITS = {
   targetUsers: { ja: 100, en: 100 },
   benefitTitle: { ja: 20, en: 20 },
   benefitDescription: { ja: 100, en: 100 },
+  functionSummary: { ja: 20, en: 30 },
   seoTitle: { ja: 30, en: 60 },
   seoDescription: { ja: 120, en: 160 },
 } as const;
@@ -223,9 +239,24 @@ github_url: {{GITHUB_URL}}
 | 2 | 価値提案明確化 | purpose, coreProblem |
 | 3 | ターゲットユーザー具体化 | targetUsers |
 | 4 | 主要メリット抽出 | mainBenefits (3-5個) |
-| 5 | 実用コード例作成 | usageExample (README準拠, ES6+, インラインコメント) |
+| 5 | 主要関数と使用例作成 | usageExample.functions (3-5個) + usageExample.examples (1-3個) |
 | 6 | SEOメタデータ生成 | seoInfo |
 | 7 | 最終検証 | JSON構造妥当性、全フィールド完全性 |
+
+---
+
+## usageExample Format
+
+### functions（主要関数一覧）
+
+- README記載の主要関数/メソッドを3-5個抽出
+- 各関数に1行要約（ja: 20字以内, en: 30字以内）
+
+### examples（使用例）
+
+- README記載のコード例を1-3個抽出
+- 各例に title, code, explanation を含める
+- codeは言語タグなしの純粋なJavaScript（コメント付き可）
 
 ---
 
@@ -238,6 +269,7 @@ github_url: {{GITHUB_URL}}
 | targetUsers | 100字 | 100 chars | [レベル]の開発者で、[課題]を解決したい[文脈]を開発している方 |
 | mainBenefits.title | 20字 | 20 chars | - |
 | mainBenefits.description | 100字 | 100 chars | - |
+| functions[].summary | 20字 | 30 chars | 1行要約 |
 | seoInfo.title | 30字前後 | 60 chars | 【GAS】で始まる |
 | seoInfo.description | 120字前後 | 160 chars | - |
 
@@ -250,6 +282,8 @@ github_url: {{GITHUB_URL}}
 - [ ] Character Limitsを遵守
 - [ ] 主観的表現を排除
 - [ ] JSON構造が妥当
+- [ ] usageExample.functions に3-5個の関数が含まれる
+- [ ] usageExample.examples に1-3個の例が含まれる
 - [ ] **出力テキストに「（XX字）」「(XX chars)」等の文字数表記が含まれていない**
 ` as const;
 
@@ -276,7 +310,7 @@ export function buildLibrarySummaryPromptWithSource(
 
 ${sourceSummary}
 
-> **Warning**: usageExampleでは上記の公開APIのみを使用すること。
+> **Warning**: usageExample.examples[].code および usageExample.functions[].name では上記の公開APIのみを使用すること。
 > 上記未記載のメソッド・クラス使用はバリデーションエラーとなる。
 > README未記載メソッドの創作はConstraints違反。
 `;

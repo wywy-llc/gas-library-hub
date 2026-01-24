@@ -1,54 +1,54 @@
 /**
  * ライブラリ要約情報の型定義
  */
+
+/**
+ * 多言語テキスト（日本語・英語）
+ */
+export interface BilingualText {
+  ja: string;
+  en: string;
+}
+
+/**
+ * usageExample の構造化された形式（Annotated形式）
+ *
+ * - functions: 主要関数一覧（名前と1行要約）
+ * - examples: 使用例（1-3個、タイトル・コード・解説）
+ */
+export interface UsageExampleAnnotated {
+  functions: Array<{
+    name: string;
+    summary: BilingualText; // ja: 20字以内, en: 30字以内
+  }>;
+  examples: Array<{
+    title: BilingualText;
+    code: string;
+    explanation: BilingualText;
+  }>;
+}
+
 export interface LibrarySummary {
   basicInfo: {
-    libraryName: {
-      ja: string;
-      en: string;
-    };
-    purpose: {
-      ja: string;
-      en: string;
-    };
-    targetUsers: {
-      ja: string;
-      en: string;
-    };
+    libraryName: BilingualText;
+    purpose: BilingualText;
+    targetUsers: BilingualText;
     tags: {
       en: string[];
       ja: string[];
     };
   };
   functionality: {
-    coreProblem: {
-      ja: string;
-      en: string;
-    };
+    coreProblem: BilingualText;
     mainBenefits: Array<{
-      title: {
-        ja: string;
-        en: string;
-      };
-      description: {
-        ja: string;
-        en: string;
-      };
+      title: BilingualText;
+      description: BilingualText;
     }>;
-    usageExample: {
-      ja: string;
-      en: string;
-    };
+    usageExample: UsageExampleAnnotated;
   };
   seoInfo: {
-    title: {
-      ja: string;
-      en: string;
-    };
-    description: {
-      ja: string;
-      en: string;
-    };
+    title: BilingualText;
+    description: BilingualText;
   };
 }
 
@@ -76,17 +76,15 @@ export interface LibrarySummaryRecord {
   coreProblemJa: string | null;
   coreProblemEn: string | null;
   mainBenefits: Array<{
-    title: {
-      ja: string;
-      en: string;
-    };
-    description: {
-      ja: string;
-      en: string;
-    };
+    title: BilingualText;
+    description: BilingualText;
   }> | null;
+  /** @deprecated 旧形式。usageExample に移行予定 */
   usageExampleJa: string | null;
+  /** @deprecated 旧形式。usageExample に移行予定 */
   usageExampleEn: string | null;
+  /** 新形式: 構造化された使用例 */
+  usageExample: UsageExampleAnnotated | null;
   seoTitleJa: string | null;
   seoTitleEn: string | null;
   seoDescriptionJa: string | null;

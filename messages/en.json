@@ -85,6 +85,7 @@
   "tags": "Tags",
   "main_features": "Main Features",
   "usage_examples": "Usage Examples",
+  "main_functions": "Main Functions",
   "markdown_render_error": "An error occurred while rendering markdown.",
   "close_toast": "Close toast",
   "notifications": "Notifications",

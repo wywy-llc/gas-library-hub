@@ -1,11 +1,43 @@
 import * as Factory from 'factory.ts';
-import type { LibrarySummary } from '../../src/lib/types/library-summary.js';
+import type { LibrarySummary, UsageExampleAnnotated } from '../../src/lib/types/library-summary.js';
 import { createFactoryWrapper, type FactoryWrapper } from './base.factory.js';
 
 /**
  * LibrarySummary用のテストデータファクトリー
  * E2Eテストやユニットテストで使用するモックデータを生成
  */
+
+/**
+ * デフォルトのusageExample（Annotated形式）
+ */
+const defaultUsageExample: UsageExampleAnnotated = {
+  functions: [
+    {
+      name: 'TestLibrary',
+      summary: { ja: 'テストライブラリ生成', en: 'Create test library' },
+    },
+    {
+      name: 'runMockTest',
+      summary: { ja: 'モックテスト実行', en: 'Run mock test' },
+    },
+    {
+      name: 'getResult',
+      summary: { ja: '結果取得', en: 'Get result' },
+    },
+  ],
+  examples: [
+    {
+      title: { ja: '基本的なテスト実行', en: 'Basic Test Execution' },
+      code: `const testLib = new TestLibrary();
+testLib.runMockTest();
+const result = testLib.getResult();`,
+      explanation: {
+        ja: 'テストライブラリの基本的な使用方法です。モックテストを実行して結果を取得します。',
+        en: 'Basic usage of test library. Runs a mock test and gets the result.',
+      },
+    },
+  ],
+};
 
 // デフォルトのLibrarySummaryテストデータ
 const defaultLibrarySummaryData: LibrarySummary = {
@@ -54,10 +86,7 @@ const defaultLibrarySummaryData: LibrarySummary = {
         },
       },
     ],
-    usageExample: {
-      ja: '// テストライブラリの使用例\nconst testLib = new TestLibrary();\ntestLib.runMockTest();\n// テスト結果を確認\nconst result = testLib.getResult();',
-      en: '// Test Library Usage Example\nconst testLib = new TestLibrary();\ntestLib.runMockTest();\n// Check test result\nconst result = testLib.getResult();',
-    },
+    usageExample: defaultUsageExample,
   },
   seoInfo: {
     title: {
@@ -69,6 +98,38 @@ const defaultLibrarySummaryData: LibrarySummary = {
       en: 'Testing library for Google Apps Script that streamlines E2E and unit testing. Provides mock data and test automation features.',
     },
   },
+};
+
+/**
+ * OAuth認証ライブラリ用usageExample
+ */
+const oauthUsageExample: UsageExampleAnnotated = {
+  functions: [
+    {
+      name: 'OAuth2Service',
+      summary: { ja: 'OAuth2サービス生成', en: 'Create OAuth2 service' },
+    },
+    {
+      name: 'authorize',
+      summary: { ja: '認証を実行', en: 'Execute authorization' },
+    },
+    {
+      name: 'getToken',
+      summary: { ja: 'トークン取得', en: 'Get token' },
+    },
+  ],
+  examples: [
+    {
+      title: { ja: 'OAuth2認証フロー', en: 'OAuth2 Authentication Flow' },
+      code: `const auth = new OAuth2Service();
+auth.authorize("google", "your-client-id", "your-client-secret");
+const token = auth.getToken();`,
+      explanation: {
+        ja: 'OAuth2認証の基本的なフローです。プロバイダとクレデンシャルを指定して認証し、トークンを取得します。',
+        en: 'Basic OAuth2 authentication flow. Authorize with provider and credentials, then get the token.',
+      },
+    },
+  ],
 };
 
 // OAuth認証ライブラリのテストデータ
@@ -128,10 +189,7 @@ const oauthLibrarySummaryData: LibrarySummary = {
         },
       },
     ],
-    usageExample: {
-      ja: '// OAuth2認証の実装\nconst auth = new OAuth2Service();\nauth.authorize("google", "your-client-id", "your-client-secret");\n// トークンを取得\nconst token = auth.getToken();',
-      en: '// OAuth2 Authentication Implementation\nconst auth = new OAuth2Service();\nauth.authorize("google", "your-client-id", "your-client-secret");\n// Get token\nconst token = auth.getToken();',
-    },
+    usageExample: oauthUsageExample,
   },
   seoInfo: {
     title: {
@@ -143,6 +201,38 @@ const oauthLibrarySummaryData: LibrarySummary = {
       en: 'Easy OAuth2 authentication implementation for Google Apps Script. Secure authentication library supporting major providers like Google, GitHub, and Slack.',
     },
   },
+};
+
+/**
+ * ユーティリティライブラリ用usageExample
+ */
+const utilityUsageExample: UsageExampleAnnotated = {
+  functions: [
+    {
+      name: 'UtilityLibrary',
+      summary: { ja: 'ユーティリティ生成', en: 'Create utility' },
+    },
+    {
+      name: 'formatString',
+      summary: { ja: '文字列整形', en: 'Format string' },
+    },
+    {
+      name: 'formatDate',
+      summary: { ja: '日付整形', en: 'Format date' },
+    },
+  ],
+  examples: [
+    {
+      title: { ja: '文字列・日付処理', en: 'String and Date Processing' },
+      code: `const util = new UtilityLibrary();
+const result = util.formatString("hello world");
+const date = util.formatDate(new Date());`,
+      explanation: {
+        ja: '文字列と日付の基本的なフォーマット処理です。',
+        en: 'Basic string and date formatting operations.',
+      },
+    },
+  ],
 };
 
 // ユーティリティライブラリのテストデータ
@@ -192,10 +282,7 @@ const utilityLibrarySummaryData: LibrarySummary = {
         },
       },
     ],
-    usageExample: {
-      ja: '// ユーティリティライブラリの使用例\nconst util = new UtilityLibrary();\n// 文字列処理\nconst result = util.formatString("hello world");\n// 日付処理\nconst date = util.formatDate(new Date());',
-      en: '// Utility Library Usage Example\nconst util = new UtilityLibrary();\n// String processing\nconst result = util.formatString("hello world");\n// Date processing\nconst date = util.formatDate(new Date());',
-    },
+    usageExample: utilityUsageExample,
   },
   seoInfo: {
     title: {
@@ -224,4 +311,13 @@ export const LibrarySummaryTestDataFactories: Record<string, FactoryWrapper<Libr
   default: createFactoryWrapper(defaultLibrarySummaryFactory),
   oauth: createFactoryWrapper(oauthLibrarySummaryFactory),
   utility: createFactoryWrapper(utilityLibrarySummaryFactory),
+};
+
+/**
+ * UsageExampleAnnotated用のヘルパーファクトリ
+ */
+export const UsageExampleTestData = {
+  default: defaultUsageExample,
+  oauth: oauthUsageExample,
+  utility: utilityUsageExample,
 };

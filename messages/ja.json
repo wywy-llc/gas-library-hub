@@ -85,6 +85,7 @@
   "tags": "タグ",
   "main_features": "主な特徴",
   "usage_examples": "使用例",
+  "main_functions": "主要な関数",
   "markdown_render_error": "マークダウンのレンダリングでエラーが発生しました。",
   "close_toast": "トーストを閉じる",
   "notifications": "通知メッセージ",

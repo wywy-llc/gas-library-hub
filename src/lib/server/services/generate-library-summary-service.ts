@@ -1,7 +1,4 @@
 import { env } from '$env/dynamic/private';
-import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
-import { XaiUtils } from '$lib/server/utils/xai-utils.js';
-import type { LibrarySummary, LibrarySummaryParams } from '$lib/types/library-summary.js';
 import {
   LIBRARY_SUMMARY_JSON_SCHEMA,
   buildLibrarySummaryPrompt,
@@ -11,6 +8,9 @@ import {
   type GenerationOptions,
   type ValidatedSummaryResult,
 } from '$lib/server/services/validated-summary-generator-service.js';
+import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
+import { XaiUtils } from '$lib/server/utils/xai-utils.js';
+import type { LibrarySummary, LibrarySummaryParams } from '$lib/types/library-summary.js';
 
 /**
  * E2Eテスト用のモックデータを取得
@@ -67,18 +67,32 @@ function getE2EMockSummary(githubUrl: string): LibrarySummary {
           },
         ],
         usageExample: {
-          ja: `// OAuth2認証ライブラリの基本的な使用例
-const oauth = new OAuth2Lib();
-// 認証URLを生成
+          functions: [
+            {
+              name: 'OAuth2Lib',
+              summary: { ja: 'OAuth2クライアント生成', en: 'Create OAuth2 client' },
+            },
+            {
+              name: 'getAuthUrl',
+              summary: { ja: '認証URLを生成', en: 'Generate auth URL' },
+            },
+            {
+              name: 'getAccessToken',
+              summary: { ja: 'アクセストークン取得', en: 'Get access token' },
+            },
+          ],
+          examples: [
+            {
+              title: { ja: '基本的な認証フロー', en: 'Basic Authentication Flow' },
+              code: `const oauth = new OAuth2Lib();
 const authUrl = oauth.getAuthUrl('client_id', 'redirect_uri');
-// アクセストークンを取得
 const token = oauth.getAccessToken('auth_code');`,
-          en: `// Basic usage example of OAuth2 authentication library
-const oauth = new OAuth2Lib();
-// Generate authentication URL
-const authUrl = oauth.getAuthUrl('client_id', 'redirect_uri');
-// Get access token
-const token = oauth.getAccessToken('auth_code');`,
+              explanation: {
+                ja: 'OAuth2認証の基本的なフローを示します。認証URLを生成し、認証コードからアクセストークンを取得します。',
+                en: 'Shows the basic OAuth2 authentication flow. Generates auth URL and gets access token from auth code.',
+              },
+            },
+          ],
         },
       },
       seoInfo: {
@@ -142,18 +156,32 @@ const token = oauth.getAccessToken('auth_code');`,
         },
       ],
       usageExample: {
-        ja: `// テストライブラリの基本的な使用例
-const testLib = new TestLibrary();
-// モックデータを設定
+        functions: [
+          {
+            name: 'TestLibrary',
+            summary: { ja: 'テストライブラリ生成', en: 'Create test library' },
+          },
+          {
+            name: 'setMockData',
+            summary: { ja: 'モックデータ設定', en: 'Set mock data' },
+          },
+          {
+            name: 'runTest',
+            summary: { ja: 'テスト実行', en: 'Run test' },
+          },
+        ],
+        examples: [
+          {
+            title: { ja: '基本的なテスト実行', en: 'Basic Test Execution' },
+            code: `const testLib = new TestLibrary();
 testLib.setMockData('sample_data');
-// テストを実行
 const result = testLib.runTest();`,
-        en: `// Basic usage example of test library
-const testLib = new TestLibrary();
-// Set mock data
-testLib.setMockData('sample_data');
-// Run test
-const result = testLib.runTest();`,
+            explanation: {
+              ja: 'テストライブラリの基本的な使用方法です。モックデータを設定してテストを実行します。',
+              en: 'Basic usage of test library. Sets mock data and runs the test.',
+            },
+          },
+        ],
       },
     },
     seoInfo: {

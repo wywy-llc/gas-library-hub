@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { UsageExampleValidatorService } from '$lib/server/services/usage-example-validator-service.js';
+import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
 import { PublicApiTestDataFactories } from '../../../../factories/index.js';
 
 describe('UsageExampleValidatorService', () => {
@@ -139,24 +140,39 @@ const promise = new Promise(() => {});
   describe('validate', () => {
     const publicApis = PublicApiTestDataFactories.oauth2Example();
 
+    /**
+     * ヘルパー: 新形式のUsageExampleAnnotatedを作成
+     */
+    const createUsageExample = (code: string): UsageExampleAnnotated => ({
+      functions: [{ name: 'createService', summary: { ja: 'サービス生成', en: 'Create service' } }],
+      examples: [
+        {
+          title: { ja: 'テスト例', en: 'Test Example' },
+          code,
+          explanation: { ja: 'テスト', en: 'Test' },
+        },
+      ],
+    });
+
     it('有効なusageExampleの場合はisValid=trueを返す', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = createService();
+      const usageExample: UsageExampleAnnotated = {
+        functions: [
+          { name: 'createService', summary: { ja: 'サービス生成', en: 'Create service' } },
+          {
+            name: 'OAuth2Service',
+            summary: { ja: 'OAuth2サービスクラス', en: 'OAuth2 service class' },
+          },
+        ],
+        examples: [
+          {
+            title: { ja: 'OAuth2認証', en: 'OAuth2 Auth' },
+            code: `const service = createService();
 service.setTokenUrl('https://example.com/token');
 service.setClientId('client_id');
-const authUrl = service.getAuthUrl();
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = createService();
-service.setTokenUrl('https://example.com/token');
-service.setClientId('client_id');
-const authUrl = service.getAuthUrl();
-\`\`\`
-`,
+const authUrl = service.getAuthUrl();`,
+            explanation: { ja: '認証の例', en: 'Auth example' },
+          },
+        ],
       };
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);
@@ -165,43 +181,22 @@ const authUrl = service.getAuthUrl();
       expect(result.errors).toHaveLength(0);
     });
 
-    it('存在しない関数を使用した場合はエラーを返す', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = unknownFunction();
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = unknownFunction();
-\`\`\`
-`,
+    it('存在しない関数をfunctionsに含む場合はエラーを返す', () => {
+      const usageExample: UsageExampleAnnotated = {
+        functions: [{ name: 'unknownFunction', summary: { ja: '不明', en: 'Unknown' } }],
+        examples: [],
       };
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
       expect(result.errors.some(e => e.type === 'unknown_function')).toBe(true);
       expect(result.errors.some(e => e.invalidCall === 'unknownFunction')).toBe(true);
     });
 
-    it('存在しないメソッドを使用した場合はエラーを返す', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = createService();
-service.nonExistentMethod();
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = createService();
-service.nonExistentMethod();
-\`\`\`
-`,
-      };
+    it('存在しないメソッドをexamples[].codeで使用した場合はエラーを返す', () => {
+      const usageExample = createUsageExample(`const service = createService();
+service.nonExistentMethod();`);
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);
 
@@ -210,18 +205,7 @@ service.nonExistentMethod();
     });
 
     it('存在しないクラスをnewした場合はエラーを返す', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = new NonExistentClass();
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = new NonExistentClass();
-\`\`\`
-`,
-      };
+      const usageExample = createUsageExample('const service = new NonExistentClass();');
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);
 
@@ -229,42 +213,9 @@ const service = new NonExistentClass();
       expect(result.errors.some(e => e.type === 'unknown_class')).toBe(true);
     });
 
-    it('日本語と英語両方でエラーを検出する', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-unknownFunction();
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-unknownFunction();
-\`\`\`
-`,
-      };
-
-      const result = UsageExampleValidatorService.validate(usageExample, publicApis);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors.filter(e => e.language === 'ja').length).toBeGreaterThan(0);
-      expect(result.errors.filter(e => e.language === 'en').length).toBeGreaterThan(0);
-    });
-
     it('抽出したメソッド呼び出しを返す', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = createService();
-service.setClientId('id');
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = createService();
-service.setClientId('id');
-\`\`\`
-`,
-      };
+      const usageExample = createUsageExample(`const service = createService();
+service.setClientId('id');`);
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);
 
@@ -273,17 +224,11 @@ service.setClientId('id');
     });
 
     it('類似名を提案する', () => {
-      const usageExample = {
-        ja: `
-\`\`\`javascript
-const service = createServic(); // typo
-\`\`\`
-`,
-        en: `
-\`\`\`javascript
-const service = createServic(); // typo
-\`\`\`
-`,
+      const usageExample: UsageExampleAnnotated = {
+        functions: [
+          { name: 'createServic', summary: { ja: 'typo', en: 'typo' } }, // typo
+        ],
+        examples: [],
       };
 
       const result = UsageExampleValidatorService.validate(usageExample, publicApis);

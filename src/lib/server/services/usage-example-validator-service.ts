@@ -5,6 +5,7 @@
  * ハルシネーション（存在しないメソッドの創作）を検出する。
  */
 
+import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
 import type { PublicApi, ValidationError, ValidationResult } from '$lib/types/source-analysis.js';
 
 /**
@@ -71,13 +72,13 @@ const BUILTIN_IDENTIFIERS = new Set([
 export const UsageExampleValidatorService = (() => {
   /**
    * コード文字列からメソッド呼び出しを抽出
-   * @param code コード文字列
+   * @param code コード文字列（Markdownコードブロックまたは生コード）
    * @returns 抽出されたメソッド呼び出し
    */
   const extractMethodCalls = (code: string): string[] => {
     const calls: Set<string> = new Set();
 
-    // コードブロック内のコードのみを抽出
+    // コードブロック内のコードのみを抽出（Markdown形式の場合）
     const codeBlockPattern = /```(?:javascript|js)?\s*([\s\S]*?)```/g;
     let codeContent = '';
     let match;
@@ -86,7 +87,7 @@ export const UsageExampleValidatorService = (() => {
       codeContent += match[1] + '\n';
     }
 
-    // コードブロックがない場合は全体を使用
+    // コードブロックがない場合は全体を使用（新形式の生コード）
     if (!codeContent) {
       codeContent = code;
     }
@@ -133,13 +134,13 @@ export const UsageExampleValidatorService = (() => {
   };
 
   /**
-   * usageExampleを検証
-   * @param usageExample usageExample（日本語・英語）
+   * usageExampleを検証（新形式: UsageExampleAnnotated）
+   * @param usageExample 構造化されたusageExample
    * @param publicApis 公開API一覧
    * @returns バリデーション結果
    */
   const validate = (
-    usageExample: { ja: string; en: string },
+    usageExample: UsageExampleAnnotated,
     publicApis: PublicApi[]
   ): ValidationResult => {
     // 公開APIから名前セットを作成
@@ -155,13 +156,51 @@ export const UsageExampleValidatorService = (() => {
     const errors: ValidationError[] = [];
     const extractedCalls: { ja: string[]; en: string[] } = { ja: [], en: [] };
 
-    // 日本語・英語両方を検証
-    for (const [lang, code] of [
-      ['ja', usageExample.ja],
-      ['en', usageExample.en],
-    ] as const) {
-      const calls = extractMethodCalls(code);
-      extractedCalls[lang] = calls;
+    // functions[].name を検証
+    for (const func of usageExample.functions) {
+      const funcName = func.name;
+
+      // ドット区切りの場合（例: OAuth2.createService）
+      if (funcName.includes('.')) {
+        const [, methodPart] = funcName.split('.');
+        const hasExactMatch = Array.from(methodNames).some(m => m.endsWith(`.${methodPart}`));
+
+        if (!hasExactMatch && !apiNames.has(funcName)) {
+          const similarMethods = Array.from(methodNames)
+            .filter(m => {
+              const mMethod = m.split('.').pop() || '';
+              return levenshteinDistance(methodPart.toLowerCase(), mMethod.toLowerCase()) <= 3;
+            })
+            .slice(0, 3);
+
+          errors.push({
+            language: 'ja', // functions は言語非依存だが、エラー表示用にja
+            invalidCall: funcName,
+            type: 'unknown_method',
+            message: `関数/メソッド "${funcName}" は公開APIに存在しません`,
+            suggestions: similarMethods,
+          });
+        }
+      } else {
+        // 単独関数名の場合
+        if (!functionNames.has(funcName) && !classNames.has(funcName) && !apiNames.has(funcName)) {
+          errors.push({
+            language: 'ja',
+            invalidCall: funcName,
+            type: 'unknown_function',
+            message: `関数 "${funcName}" は公開APIに存在しません`,
+            suggestions: findSimilarNames(funcName, Array.from(functionNames)),
+          });
+        }
+      }
+    }
+
+    // examples[].code を検証（日本語コメントと英語コメントが混在する可能性があるが、コードは共通）
+    for (const example of usageExample.examples) {
+      const calls = extractMethodCalls(example.code);
+      // 抽出結果は両言語で同じ（コードは共通）
+      extractedCalls.ja = [...new Set([...extractedCalls.ja, ...calls])];
+      extractedCalls.en = [...new Set([...extractedCalls.en, ...calls])];
 
       for (const call of calls) {
         // new ClassName の場合
@@ -169,7 +208,7 @@ export const UsageExampleValidatorService = (() => {
           const className = call.replace('new ', '');
           if (!classNames.has(className)) {
             errors.push({
-              language: lang,
+              language: 'ja',
               invalidCall: call,
               type: 'unknown_class',
               message: `クラス "${className}" は公開APIに存在しません`,
@@ -195,7 +234,7 @@ export const UsageExampleValidatorService = (() => {
               .slice(0, 3);
 
             errors.push({
-              language: lang,
+              language: 'ja',
               invalidCall: call,
               type: 'unknown_method',
               message: `メソッド "${methodPart}" は公開APIに存在しません`,
@@ -208,7 +247,7 @@ export const UsageExampleValidatorService = (() => {
         // 関数呼び出しの場合
         if (!functionNames.has(call) && !classNames.has(call) && !apiNames.has(call)) {
           errors.push({
-            language: lang,
+            language: 'ja',
             invalidCall: call,
             type: 'unknown_function',
             message: `関数 "${call}" は公開APIに存在しません`,

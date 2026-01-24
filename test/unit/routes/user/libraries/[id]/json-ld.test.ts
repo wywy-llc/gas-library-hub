@@ -133,8 +133,18 @@ describe('JSON-LD構造化データ', () => {
     coreProblemJa: 'テスト問題',
     coreProblemEn: 'Test problem',
     mainBenefits: [],
-    usageExampleJa: 'テスト使用例',
-    usageExampleEn: 'Test usage example',
+    usageExampleJa: '',
+    usageExampleEn: '',
+    usageExample: {
+      functions: [{ name: 'testFunction', summary: { ja: 'テスト関数', en: 'Test function' } }],
+      examples: [
+        {
+          title: { ja: 'テスト使用例', en: 'Test usage example' },
+          code: 'testFunction();',
+          explanation: { ja: 'テスト', en: 'Test' },
+        },
+      ],
+    },
     seoTitleJa: 'テストライブラリ - GAS Library Hub',
     seoTitleEn: 'Test Library - GAS Library Hub',
     seoDescriptionJa: 'テストライブラリの説明',

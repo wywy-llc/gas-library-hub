@@ -64,8 +64,17 @@ describe('GenerateLibrarySummaryService', () => {
         },
       ],
       usageExample: {
-        ja: '// GASライブラリの使用例\nconst lib = new GasLibrary();\nlib.callApi();',
-        en: '// GAS Library Usage Example\nconst lib = new GasLibrary();\nlib.callApi();',
+        functions: [
+          { name: 'GasLibrary', summary: { ja: 'ライブラリ生成', en: 'Create library' } },
+          { name: 'callApi', summary: { ja: 'API呼び出し', en: 'Call API' } },
+        ],
+        examples: [
+          {
+            title: { ja: '基本的な使用例', en: 'Basic Usage' },
+            code: 'const lib = new GasLibrary();\nlib.callApi();',
+            explanation: { ja: 'API呼び出しの例', en: 'API call example' },
+          },
+        ],
       },
     },
     seoInfo: {

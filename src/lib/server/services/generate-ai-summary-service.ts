@@ -67,8 +67,11 @@ export const GenerateAiSummaryService = (() => {
       coreProblemJa: summary.functionality.coreProblem.ja,
       coreProblemEn: summary.functionality.coreProblem.en,
       mainBenefits: summary.functionality.mainBenefits,
-      usageExampleJa: summary.functionality.usageExample.ja,
-      usageExampleEn: summary.functionality.usageExample.en,
+      // 旧形式は互換性のため空文字列を設定（将来削除予定）
+      usageExampleJa: '',
+      usageExampleEn: '',
+      // 新形式: 構造化されたusageExample
+      usageExample: summary.functionality.usageExample,
       // seoInfo → フラット構造に変換
       seoTitleJa: summary.seoInfo.title.ja,
       seoTitleEn: summary.seoInfo.title.en,

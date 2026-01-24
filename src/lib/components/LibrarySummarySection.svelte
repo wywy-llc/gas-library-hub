@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getLocale } from '$lib/paraglide/runtime.js'; // cspell:ignore paraglide
   import type { Locale } from '$lib';
+  import CodeBlock from '$lib/components/CodeBlock.svelte';
   import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
   import TagButton from '$lib/components/TagButton.svelte';
   import * as m from '$lib/paraglide/messages.js';
@@ -17,8 +18,15 @@
   // Paraglide の現在の言語設定を使用（自動的に更新される） // cspell:ignore Paraglide
   let currentLocale = $derived<Locale>(getLocale());
 
-  // 使用例のマークダウンを取得
-  let usageExample = $derived(
+  // 新形式のAnnotated usageExampleがあるか確認
+  let hasAnnotatedUsageExample = $derived(
+    librarySummary.usageExample &&
+      librarySummary.usageExample.functions &&
+      librarySummary.usageExample.functions.length > 0
+  );
+
+  // 旧形式（Markdown）の使用例を取得（フォールバック用）
+  let legacyUsageExample = $derived(
     currentLocale === 'ja' ? librarySummary.usageExampleJa : librarySummary.usageExampleEn
   );
 
@@ -186,7 +194,70 @@
       {/if}
 
       <!-- 使用例 -->
-      {#if usageExample}
+      {#if hasAnnotatedUsageExample}
+        <!-- 新形式: Annotated usageExample -->
+        <div class="mb-6">
+          <!-- 主要な関数 -->
+          <h4 class="mb-4 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              ></path>
+            </svg>
+            {m.main_functions()}
+          </h4>
+          <div class="mb-6 overflow-x-auto">
+            <table class="table-sm table w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">{currentLocale === 'ja' ? '関数名' : 'Function'}</th>
+                  <th class="text-left">{currentLocale === 'ja' ? '説明' : 'Description'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each librarySummary.usageExample?.functions || [] as func}
+                  <tr>
+                    <td class="font-mono text-sm">{func.name}</td>
+                    <td class="text-sm opacity-80">
+                      {currentLocale === 'ja' ? func.summary.ja : func.summary.en}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 使用例 -->
+          <h4 class="mb-4 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
+            </svg>
+            {m.usage_examples()}
+          </h4>
+          {#each librarySummary.usageExample?.examples || [] as example}
+            <div class="card bg-base-200 mb-4 shadow-sm">
+              <div class="card-body p-4">
+                <h5 class="mb-2 text-sm font-semibold">
+                  {currentLocale === 'ja' ? example.title.ja : example.title.en}
+                </h5>
+                <CodeBlock code={example.code} class="mb-3" />
+                <p class="text-sm leading-relaxed opacity-80">
+                  {currentLocale === 'ja' ? example.explanation.ja : example.explanation.en}
+                </p>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {:else if legacyUsageExample}
+        <!-- 旧形式: Markdown -->
         <div class="mb-6">
           <h4 class="mb-4 flex items-center text-base font-semibold">
             <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +270,7 @@
             </svg>
             {m.usage_examples()}
           </h4>
-          <MarkdownRenderer content={usageExample} class="shadow-sm" />
+          <MarkdownRenderer content={legacyUsageExample} class="shadow-sm" />
         </div>
       {/if}
 
