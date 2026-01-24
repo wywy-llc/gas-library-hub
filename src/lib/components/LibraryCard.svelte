@@ -29,6 +29,24 @@
   // Paraglide の現在の言語設定を使用（自動的に更新される） // cspell:ignore Paraglide
   let currentLocale = $derived<Locale>(getLocale());
 
+  // パフォーマンス最適化: 導出値を事前計算
+  let tags = $derived(
+    currentLocale === 'ja' ? librarySummary?.tagsJa || [] : librarySummary?.tagsEn || []
+  );
+  let displayTags = $derived(tags.slice(0, 3));
+  let seoDescription = $derived(
+    librarySummary
+      ? currentLocale === 'ja'
+        ? librarySummary.seoDescriptionJa || library.description
+        : librarySummary.seoDescriptionEn || library.description
+      : library.description
+  );
+  let formattedDate = $derived(
+    currentLocale === 'ja'
+      ? new Date(library.lastCommitAt).toLocaleDateString('ja-JP')
+      : new Date(library.lastCommitAt).toLocaleDateString('en-US')
+  );
+
   // 数値をフォーマットする関数
   function formatNumber(num: number): string {
     if (num >= 1000) {
@@ -64,18 +82,14 @@
       </span>
     </div>
     <p class="mt-2 text-sm opacity-70">
-      {librarySummary
-        ? currentLocale === 'ja'
-          ? librarySummary.seoDescriptionJa || library.description
-          : librarySummary.seoDescriptionEn || library.description
-        : library.description}
+      {seoDescription}
     </p>
 
     <!-- タグ -->
-    {#if librarySummary && (currentLocale === 'ja' ? librarySummary.tagsJa : librarySummary.tagsEn) && (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).length > 0}
+    {#if displayTags.length > 0}
       <div class="mt-3">
         <div class="flex flex-wrap gap-1">
-          {#each (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).slice(0, 3) as tag, index (index)}
+          {#each displayTags as tag, index (index)}
             <TagButton
               variant="neutral"
               onclick={() => searchByTag(tag)}
@@ -111,9 +125,7 @@
     </div>
     <div class="flex items-center justify-between text-xs opacity-70">
       <span>
-        {last_updated()}: {currentLocale === 'ja'
-          ? new Date(library.lastCommitAt).toLocaleDateString('ja-JP')
-          : new Date(library.lastCommitAt).toLocaleDateString('en-US')}
+        {last_updated()}: {formattedDate}
       </span>
       <div class="flex items-center space-x-3">
         <div class="flex items-center space-x-1">
