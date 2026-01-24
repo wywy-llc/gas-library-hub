@@ -1,18 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { CheckLibraryCommitStatusService } from '../../../../../src/lib/server/services/check-library-commit-status-service.js';
 import { CheckLibrarySummaryExistenceService } from '../../../../../src/lib/server/services/check-library-summary-existence-service.js';
-import { GenerateLibrarySummaryService } from '../../../../../src/lib/server/services/generate-library-summary-service.js';
+import { GenerateAiSummaryService } from '../../../../../src/lib/server/services/generate-ai-summary-service.js';
 import {
   ProcessBulkGASLibraryWithSaveService,
   type LibrarySaveWithSummaryCallback,
 } from '../../../../../src/lib/server/services/process-bulk-gas-library-with-save-service.js';
-import { SaveLibrarySummaryService } from '../../../../../src/lib/server/services/save-library-summary-service.js';
 import { ScrapeGASLibraryService } from '../../../../../src/lib/server/services/scrape-gas-library-service.js';
 import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-utils.js';
 import type { TagSearchResult } from '../../../../../src/lib/types/github-scraper.js';
 import {
   GitHubRepositoryTestDataFactories,
-  LibrarySummaryTestDataFactories,
   ScrapeResultTestDataFactories,
   ScraperConfigTestDataFactories,
 } from '../../../../factories/index.js';
@@ -22,15 +20,16 @@ vi.mock('../../../../../src/lib/server/utils/github-api-utils.js');
 vi.mock('../../../../../src/lib/server/services/scrape-gas-library-service.js');
 vi.mock('../../../../../src/lib/server/services/check-library-commit-status-service.js');
 vi.mock('../../../../../src/lib/server/services/check-library-summary-existence-service.js');
-vi.mock('../../../../../src/lib/server/services/generate-library-summary-service.js');
-vi.mock('../../../../../src/lib/server/services/save-library-summary-service.js');
+vi.mock('../../../../../src/lib/server/services/generate-ai-summary-service.js');
 
-const mockedGitHubApiUtils = vi.mocked(GitHubApiUtils);
-const mockedScrapeGASLibraryService = vi.mocked(ScrapeGASLibraryService);
-const mockedCheckLibraryCommitStatusService = vi.mocked(CheckLibraryCommitStatusService);
-const mockedCheckLibrarySummaryExistenceService = vi.mocked(CheckLibrarySummaryExistenceService);
-const mockedGenerateLibrarySummaryService = vi.mocked(GenerateLibrarySummaryService);
-const mockedSaveLibrarySummaryService = vi.mocked(SaveLibrarySummaryService);
+const mockedGitHubApiUtils = vi.mocked(GitHubApiUtils, true);
+const mockedScrapeGASLibraryService = vi.mocked(ScrapeGASLibraryService, true);
+const mockedCheckLibraryCommitStatusService = vi.mocked(CheckLibraryCommitStatusService, true);
+const mockedCheckLibrarySummaryExistenceService = vi.mocked(
+  CheckLibrarySummaryExistenceService,
+  true
+);
+const mockedGenerateAiSummaryService = vi.mocked(GenerateAiSummaryService, true);
 
 describe('ProcessBulkGASLibraryWithSaveService', () => {
   const mockConfig = ScraperConfigTestDataFactories.default.build();
@@ -45,8 +44,7 @@ describe('ProcessBulkGASLibraryWithSaveService', () => {
     mockSaveCallback.mockClear();
     mockDuplicateChecker.mockClear();
     mockedCheckLibraryCommitStatusService.call.mockClear();
-    mockedGenerateLibrarySummaryService.call.mockClear();
-    mockedSaveLibrarySummaryService.call.mockClear();
+    mockedGenerateAiSummaryService.call.mockClear();
     mockedCheckLibrarySummaryExistenceService.call.mockClear();
   });
 
@@ -134,9 +132,7 @@ describe('ProcessBulkGASLibraryWithSaveService', () => {
         shouldUpdate: false,
         libraryId: undefined,
       });
-      const mockSummary = LibrarySummaryTestDataFactories.default.build();
-      mockedGenerateLibrarySummaryService.call.mockResolvedValue(mockSummary);
-      mockedSaveLibrarySummaryService.call.mockResolvedValue(undefined);
+      mockedGenerateAiSummaryService.call.mockResolvedValue(undefined);
 
       // テスト実行
       const promise = ProcessBulkGASLibraryWithSaveService.call(
@@ -163,13 +159,13 @@ describe('ProcessBulkGASLibraryWithSaveService', () => {
       // 保存コールバックが呼ばれる
       expect(mockSaveCallback).toHaveBeenCalledWith(recentCommitScrapeResult.data, true);
 
-      // AI要約生成も実行される
-      expect(mockedGenerateLibrarySummaryService.call).toHaveBeenCalledWith({
-        githubUrl: testRepo1.html_url,
-      });
-      expect(mockedSaveLibrarySummaryService.call).toHaveBeenCalledWith(
-        'test-library-id',
-        mockSummary
+      // AI要約生成も実行される（GenerateAiSummaryServiceが呼ばれる）
+      expect(mockedGenerateAiSummaryService.call).toHaveBeenCalledWith(
+        expect.objectContaining({
+          libraryId: 'test-library-id',
+          githubUrl: testRepo1.html_url,
+          skipOnError: true,
+        })
       );
     });
 
@@ -270,9 +266,7 @@ describe('ProcessBulkGASLibraryWithSaveService', () => {
         shouldUpdate: false,
         libraryId: undefined,
       });
-      const mockSummary = LibrarySummaryTestDataFactories.oauth.build();
-      mockedGenerateLibrarySummaryService.call.mockResolvedValue(mockSummary);
-      mockedSaveLibrarySummaryService.call.mockResolvedValue(undefined);
+      mockedGenerateAiSummaryService.call.mockResolvedValue(undefined);
 
       // テスト実行
       const promise = ProcessBulkGASLibraryWithSaveService.call(
@@ -352,8 +346,7 @@ describe('ProcessBulkGASLibraryWithSaveService', () => {
 
       // AI要約関連の処理は呼ばれない
       expect(mockedCheckLibraryCommitStatusService.call).not.toHaveBeenCalled();
-      expect(mockedGenerateLibrarySummaryService.call).not.toHaveBeenCalled();
-      expect(mockedSaveLibrarySummaryService.call).not.toHaveBeenCalled();
+      expect(mockedGenerateAiSummaryService.call).not.toHaveBeenCalled();
     });
   });
 });

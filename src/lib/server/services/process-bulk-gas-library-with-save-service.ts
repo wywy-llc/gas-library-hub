@@ -11,8 +11,7 @@ import type {
 
 import { CheckLibraryCommitStatusService } from './check-library-commit-status-service.js';
 import { CheckLibrarySummaryExistenceService } from './check-library-summary-existence-service.js';
-import { GenerateLibrarySummaryService } from './generate-library-summary-service.js';
-import { SaveLibrarySummaryService } from './save-library-summary-service.js';
+import { GenerateAiSummaryService } from './generate-ai-summary-service.js';
 
 import { ScrapeGASLibraryService } from './scrape-gas-library-service.js';
 
@@ -318,14 +317,13 @@ export class ProcessBulkGASLibraryWithSaveService {
         // 保存成功時にAI要約生成（必要な場合）
         if (shouldGenerateAiSummary && saveResult.id) {
           try {
-            const summary = await GenerateLibrarySummaryService.call({
+            await GenerateAiSummaryService.call({
+              libraryId: saveResult.id,
               githubUrl: repo.html_url,
+              skipOnError: true,
+              logContext: `バルク処理 AI要約生成[${repo.name}]`,
+              verbose: config.verbose,
             });
-            await SaveLibrarySummaryService.call(saveResult.id, summary);
-
-            if (config.verbose) {
-              console.log(`AI要約生成完了: ${repo.name}`);
-            }
           } catch (summaryError) {
             if (config.verbose) {
               console.warn(`AI要約生成に失敗: ${repo.name} - ${summaryError}`);
