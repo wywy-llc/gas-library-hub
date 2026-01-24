@@ -1,6 +1,11 @@
 User-agent: *
 Allow: /
 Allow: /user/
+Allow: /api/libraries
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /admin
+Disallow: /api/cron
+Disallow: /api/mcp
 
 Sitemap: https://appscripthub.com/sitemap.xml
