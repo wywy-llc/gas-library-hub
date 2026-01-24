@@ -229,5 +229,14 @@
   "already_have_account": "Already have an account?",
   "login_here": "here",
   "login_suffix": "to login",
-  "google_button": "Google"
+  "google_button": "Google",
+  "tab_overview": "Overview",
+  "tab_features": "Features",
+  "tab_usage_examples": "Usage",
+  "quick_links": "Quick Links",
+  "copy_count_feedback": "Copied {count} times",
+  "copy_button": "Copy",
+  "script_validation_inaccessible": "This script is inaccessible or set to private.",
+  "script_validation_not_found": "This script does not exist or has been deleted.",
+  "script_validation_warning_title": "Script Access Warning"
 }

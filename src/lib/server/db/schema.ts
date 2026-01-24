@@ -1,5 +1,6 @@
 import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
+import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -50,6 +51,10 @@ export const library = pgTable(
     scriptType: text('script_type', { enum: ['library', 'web_app'] })
       .notNull()
       .default('library'),
+    // スクリプトID検証ステータス
+    scriptValidationStatus: text('script_validation_status', {
+      enum: ['accessible', 'inaccessible', 'not_found', 'unknown'],
+    }).$type<ScriptValidationStatus>(),
     // 申請者情報（ユーザー申請の場合のみ）
     requesterId: text('requester_id').references(() => user.id),
     requestNote: text('request_note'), // 申請時のメモ

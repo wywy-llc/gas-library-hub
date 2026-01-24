@@ -113,6 +113,7 @@ describe('JSON-LD構造化データ', () => {
     lastCommitAt: new Date('2023-01-01'),
     status: 'published' as const,
     scriptType: 'library' as const,
+    scriptValidationStatus: null,
     requesterId: null,
     requestNote: null,
     createdAt: new Date('2023-01-01'),

@@ -6,7 +6,6 @@
   import TagButton from '$lib/components/TagButton.svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
-  // refreshed
 
   interface Props {
     librarySummary: LibrarySummaryRecord;
@@ -66,6 +65,7 @@
         {/if}
       </div>
 
+      <!-- 対象ユーザー + 解決する課題 -->
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <!-- 対象ユーザー - daisyUI v5準拠 -->
         {#if librarySummary.targetUsersJa || librarySummary.targetUsersEn}
@@ -130,7 +130,7 @@
 
       <!-- タグ -->
       {#if (currentLocale === 'ja' ? librarySummary.tagsJa : librarySummary.tagsEn) && (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).length > 0}
-        <div class="my-4">
+        <div class="my-6">
           <h4 class="mb-3 flex items-center text-base font-semibold">
             <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -158,11 +158,11 @@
         </div>
       {/if}
 
-      <!-- 主な特徴 -->
+      <!-- 主な特徴セクション -->
       {#if librarySummary.mainBenefits && librarySummary.mainBenefits.length > 0}
-        <div class="mb-8">
-          <h4 class="mb-4 flex items-center text-base font-semibold">
-            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="divider">
+          <span class="badge badge-outline gap-1">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -171,99 +171,117 @@
               ></path>
             </svg>
             {m.main_features()}
-          </h4>
-          <div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-            {#each librarySummary.mainBenefits as benefit, index (index)}
-              <div class="card card-bordered bg-base-200 shadow-sm">
-                <div class="card-body p-4">
-                  <div class="mb-2 flex items-center">
-                    <div class="mr-3 flex h-8 w-8 items-center justify-center">
-                      <span class="text-sm font-semibold">{index + 1}</span>
-                    </div>
-                    <h5 class="text-base font-semibold">
-                      {currentLocale === 'ja' ? benefit.title.ja : benefit.title.en}
-                    </h5>
+          </span>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+          {#each librarySummary.mainBenefits as benefit, index (index)}
+            <div class="card card-bordered bg-base-200 shadow-sm">
+              <div class="card-body p-4">
+                <div class="mb-2 flex items-center">
+                  <div
+                    class="bg-primary/10 mr-3 flex h-8 w-8 items-center justify-center rounded-full"
+                  >
+                    <span class="text-primary text-sm font-semibold">{index + 1}</span>
                   </div>
-                  <p class="text-sm leading-relaxed opacity-80">
-                    {currentLocale === 'ja' ? benefit.description.ja : benefit.description.en}
+                  <h5 class="text-base font-semibold">
+                    {currentLocale === 'ja' ? benefit.title.ja : benefit.title.en}
+                  </h5>
+                </div>
+                <p class="text-sm leading-relaxed opacity-80">
+                  {currentLocale === 'ja' ? benefit.description.ja : benefit.description.en}
+                </p>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <!-- 使用例セクション -->
+      {#if hasAnnotatedUsageExample}
+        <div class="divider">
+          <span class="badge badge-outline gap-1">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              ></path>
+            </svg>
+            {m.usage_examples()}
+          </span>
+        </div>
+        <!-- 新形式: Annotated usageExample -->
+        <div class="space-y-6">
+          <!-- 主要な関数 -->
+          <div>
+            <h4 class="mb-4 flex items-center text-base font-semibold">
+              <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                ></path>
+              </svg>
+              {m.main_functions()}
+            </h4>
+            <div class="overflow-x-auto">
+              <table class="table-sm table w-full">
+                <thead>
+                  <tr>
+                    <th class="text-left">{currentLocale === 'ja' ? '関数名' : 'Function'}</th>
+                    <th class="text-left">{currentLocale === 'ja' ? '説明' : 'Description'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each librarySummary.usageExample?.functions || [] as func}
+                    <tr>
+                      <td class="font-mono text-sm">{func.name}</td>
+                      <td class="text-sm opacity-80">
+                        {currentLocale === 'ja' ? func.summary.ja : func.summary.en}
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 使用例 -->
+          <div>
+            <h4 class="mb-4 flex items-center text-base font-semibold">
+              <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              {m.usage_examples()}
+            </h4>
+            {#each librarySummary.usageExample?.examples || [] as example}
+              <div class="card bg-base-200 mb-4 shadow-sm">
+                <div class="card-body p-4">
+                  <h5 class="mb-2 text-sm font-semibold">
+                    {currentLocale === 'ja' ? (example.title?.ja ?? '') : (example.title?.en ?? '')}
+                  </h5>
+                  <CodeBlock code={example.code} class="mb-3" />
+                  <p class="text-sm leading-relaxed whitespace-pre-line opacity-80">
+                    {currentLocale === 'ja'
+                      ? (example.explanation?.ja ?? '')
+                      : (example.explanation?.en ?? '')}
                   </p>
                 </div>
               </div>
             {/each}
           </div>
         </div>
-      {/if}
-
-      <!-- 使用例 -->
-      {#if hasAnnotatedUsageExample}
-        <!-- 新形式: Annotated usageExample -->
-        <div class="mb-6">
-          <!-- 主要な関数 -->
-          <h4 class="mb-4 flex items-center text-base font-semibold">
-            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-              ></path>
-            </svg>
-            {m.main_functions()}
-          </h4>
-          <div class="mb-6 overflow-x-auto">
-            <table class="table-sm table w-full">
-              <thead>
-                <tr>
-                  <th class="text-left">{currentLocale === 'ja' ? '関数名' : 'Function'}</th>
-                  <th class="text-left">{currentLocale === 'ja' ? '説明' : 'Description'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each librarySummary.usageExample?.functions || [] as func}
-                  <tr>
-                    <td class="font-mono text-sm">{func.name}</td>
-                    <td class="text-sm opacity-80">
-                      {currentLocale === 'ja' ? func.summary.ja : func.summary.en}
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 使用例 -->
-          <h4 class="mb-4 flex items-center text-base font-semibold">
-            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              ></path>
-            </svg>
-            {m.usage_examples()}
-          </h4>
-          {#each librarySummary.usageExample?.examples || [] as example}
-            <div class="card bg-base-200 mb-4 shadow-sm">
-              <div class="card-body p-4">
-                <h5 class="mb-2 text-sm font-semibold">
-                  {currentLocale === 'ja' ? (example.title?.ja ?? '') : (example.title?.en ?? '')}
-                </h5>
-                <CodeBlock code={example.code} class="mb-3" />
-                <p class="text-sm leading-relaxed whitespace-pre-line opacity-80">
-                  {currentLocale === 'ja'
-                    ? (example.explanation?.ja ?? '')
-                    : (example.explanation?.en ?? '')}
-                </p>
-              </div>
-            </div>
-          {/each}
-        </div>
       {:else if legacyUsageExample}
-        <!-- 旧形式: Markdown -->
-        <div class="mb-6">
-          <h4 class="mb-4 flex items-center text-base font-semibold">
-            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="divider">
+          <span class="badge badge-outline gap-1">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -272,9 +290,10 @@
               ></path>
             </svg>
             {m.usage_examples()}
-          </h4>
-          <MarkdownRenderer content={legacyUsageExample} class="shadow-sm" />
+          </span>
         </div>
+        <!-- 旧形式: Markdown -->
+        <MarkdownRenderer content={legacyUsageExample} class="shadow-sm" />
       {/if}
 
       <!-- 言語設定はヘッダーの LanguageSwitcher で管理 -->

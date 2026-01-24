@@ -229,5 +229,14 @@
   "already_have_account": "すでにアカウントをお持ちの方は",
   "login_here": "こちら",
   "login_suffix": "からログイン",
-  "google_button": "Google"
+  "google_button": "Google",
+  "tab_overview": "概要",
+  "tab_features": "特徴",
+  "tab_usage_examples": "使用例",
+  "quick_links": "クイックリンク",
+  "copy_count_feedback": "{count}回コピーされました",
+  "copy_button": "コピー",
+  "script_validation_inaccessible": "このスクリプトにはアクセス権がないか、非公開に設定されています。",
+  "script_validation_not_found": "このスクリプトは存在しないか、削除されています。",
+  "script_validation_warning_title": "スクリプトアクセス警告"
 }

@@ -3,6 +3,8 @@
  * GAS Library Scraper用の型定義
  */
 
+import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator';
+
 export interface ScraperConfig {
   rateLimit: {
     maxRequestsPerHour: number;
@@ -95,6 +97,8 @@ export interface ScrapedLibraryData {
   lastCommitAt: Date;
   status: 'pending';
   scriptType: 'library' | 'web_app';
+  /** スクリプトIDの検証ステータス */
+  scriptValidationStatus?: ScriptValidationStatus;
 }
 
 export interface ScrapeResult {

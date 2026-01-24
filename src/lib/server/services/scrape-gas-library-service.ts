@@ -1,6 +1,7 @@
 import { DEFAULT_WEB_APP_PATTERNS } from '$lib/constants/scraper-config.js';
 import { ErrorUtils } from '$lib/server/utils/error-utils.js';
 import { GASScriptIdExtractor } from '$lib/server/utils/gas-script-id-extractor.js';
+import { GasScriptValidator } from '$lib/server/utils/gas-script-validator.js';
 import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
 import type { ScrapedLibraryData, ScrapeResult } from '$lib/types/github-scraper.js';
 
@@ -178,6 +179,14 @@ export class ScrapeGASLibraryService {
         };
       }
 
+      // スクリプトIDの検証（ライブラリタイプのみ）
+      // Web Appの場合はowner/repoの形式なので検証不要
+      let scriptValidationStatus: ScrapedLibraryData['scriptValidationStatus'];
+      if (scriptType === 'library' && scriptId.startsWith('1')) {
+        const validationResult = await GasScriptValidator.validate(scriptId);
+        scriptValidationStatus = validationResult.status;
+      }
+
       // データベース形式に変換
       const libraryData: ScrapedLibraryData = {
         name: repoInfo.name,
@@ -192,6 +201,7 @@ export class ScrapeGASLibraryService {
         lastCommitAt: lastCommitAt,
         status: 'pending',
         scriptType,
+        scriptValidationStatus,
       };
 
       return {

@@ -1,0 +1,1 @@
+ALTER TABLE "library" ADD COLUMN "script_validation_status" text;

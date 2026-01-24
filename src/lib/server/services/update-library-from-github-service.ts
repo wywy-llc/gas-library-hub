@@ -2,6 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { library } from '$lib/server/db/schema.js';
 import { LibraryRepository } from '$lib/server/repositories/library-repository.js';
 import { LibrarySummaryRepository } from '$lib/server/repositories/library-summary-repository.js';
+import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
 import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '$lib/server/utils/service-error-util.js';
 import { eq } from 'drizzle-orm';
@@ -32,6 +33,7 @@ interface NewLibraryData {
   licenseUrl: string;
   scriptId: string;
   scriptType: string;
+  scriptValidationStatus: ScriptValidationStatus | undefined;
   lastCommitAt: Date;
 }
 
@@ -163,10 +165,13 @@ export class UpdateLibraryFromGithubService {
     // スクリプトID情報を取得（既存値をデフォルトに使用）
     let scriptId = existingLibrary.scriptId;
     let scriptType = existingLibrary.scriptType;
+    let scriptValidationStatus: ScriptValidationStatus | undefined =
+      existingLibrary.scriptValidationStatus ?? undefined;
 
     if (scrapeResult?.success && scrapeResult.data) {
       const newScriptId = scrapeResult.data.scriptId;
       const newScriptType = scrapeResult.data.scriptType;
+      const newValidationStatus = scrapeResult.data.scriptValidationStatus;
 
       // 変更があった場合のみログ出力
       if (newScriptId !== existingLibrary.scriptId) {
@@ -177,6 +182,19 @@ export class UpdateLibraryFromGithubService {
       if (newScriptType !== existingLibrary.scriptType) {
         console.log(`スクリプトタイプ更新: ${existingLibrary.scriptType} → ${newScriptType}`);
         scriptType = newScriptType;
+      }
+
+      // 検証ステータスの更新
+      if (newValidationStatus) {
+        scriptValidationStatus = newValidationStatus;
+
+        // not_foundの場合はWebアプリとして扱う
+        if (newValidationStatus === 'not_found' && scriptType === 'library') {
+          console.log(
+            `スクリプトタイプを修正: library → web_app（スクリプトIDが見つからないため）`
+          );
+          scriptType = 'web_app';
+        }
       }
     }
 
@@ -192,11 +210,17 @@ export class UpdateLibraryFromGithubService {
       licenseUrl: licenseInfo.url,
       scriptId,
       scriptType,
+      scriptValidationStatus,
       lastCommitAt,
     };
 
     // 変更検出による差分更新判定（最適化されたシグネチャ）
-    const changeDetection = this.detectChanges(existingLibrary, newData);
+    // existingLibraryのscriptValidationStatusがnullの場合はundefinedに変換
+    const existingDataForCompare = {
+      ...existingLibrary,
+      scriptValidationStatus: existingLibrary.scriptValidationStatus ?? undefined,
+    };
+    const changeDetection = this.detectChanges(existingDataForCompare, newData);
 
     // 変更がある場合のみデータベース更新
     if (changeDetection.hasChanges) {
@@ -216,6 +240,7 @@ export class UpdateLibraryFromGithubService {
           lastCommitAt: newData.lastCommitAt,
           scriptId: newData.scriptId,
           scriptType: newData.scriptType as 'library' | 'web_app',
+          scriptValidationStatus: newData.scriptValidationStatus,
           updatedAt: new Date(),
         })
         .where(eq(library.id, libraryId));

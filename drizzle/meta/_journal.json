@@ -43,6 +43,13 @@
       "when": 1769254929821,
       "tag": "0005_sticky_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1769260204530,
+      "tag": "0006_closed_callisto",
+      "breakpoints": true
     }
   ]
 }

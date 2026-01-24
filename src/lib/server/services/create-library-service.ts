@@ -1,6 +1,7 @@
 import { ERROR_MESSAGES } from '$lib/constants/error-messages.js';
 import { testConnection } from '$lib/server/db/index.js';
 import { LibraryRepository } from '$lib/server/repositories/library-repository.js';
+import { GasScriptValidator } from '$lib/server/utils/gas-script-validator.js';
 import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '$lib/server/utils/service-error-util.js';
 import { nanoid } from 'nanoid';
@@ -44,14 +45,22 @@ export const CreateLibraryService = (() => {
     // 重複チェック
     await ValidateLibraryUniquenessService.call(params.scriptId, repositoryUrl);
 
-    // GitHub から情報を取得
-    const { repoInfo, licenseInfo, lastCommitAt } = await FetchGitHubRepoDataService.call(
-      owner,
-      repo
-    );
+    // GitHub から情報を取得 + スクリプトID検証を並列実行
+    const [githubData, validationResult] = await Promise.all([
+      FetchGitHubRepoDataService.call(owner, repo),
+      // ライブラリ形式のスクリプトID（1から始まる）のみ検証
+      params.scriptId.startsWith('1')
+        ? GasScriptValidator.validate(params.scriptId)
+        : Promise.resolve(null),
+    ]);
+
+    const { repoInfo, licenseInfo, lastCommitAt } = githubData;
 
     // ライブラリを作成
     const libraryId = nanoid();
+
+    // スクリプトタイプを決定（not_foundの場合はWebアプリとして扱う）
+    const scriptType = validationResult?.status === 'not_found' ? 'web_app' : 'library';
 
     // データベースに保存
     const createdLibrary = await LibraryRepository.create({
@@ -68,7 +77,8 @@ export const CreateLibraryService = (() => {
       licenseUrl: licenseInfo.url,
       lastCommitAt: lastCommitAt,
       status: 'pending',
-      scriptType: 'library',
+      scriptType,
+      scriptValidationStatus: validationResult?.status ?? undefined,
       requesterId: undefined,
       requestNote: undefined,
     });
