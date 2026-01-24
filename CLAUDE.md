@@ -63,6 +63,7 @@ NEVER:
 ALWAYS:
   - $state(): 状態宣言
   - $derived(): 算出プロパティ
+  - $derived(): propsから派生する値（クラス名生成等）
   - $effect(): 副作用
   - $props(): Props定義
   - Propsコールバック: イベント処理
@@ -71,6 +72,7 @@ NEVER:
   - letリアクティブ宣言
   - export let（レガシー）
   - createEventDispatcher
+  - propsから派生する値をconst直接代入（初期値のみキャプチャされる）
 ```
 
 ---

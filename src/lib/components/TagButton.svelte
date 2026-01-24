@@ -63,13 +63,15 @@
 
   // 動的クラス生成（daisyUI v5準拠）
   const baseClasses = 'badge';
-  const variantClasses = variants[variant];
-  const sizeClasses = sizes[size];
-  const interactiveClasses = onclick && !disabled ? 'cursor-pointer' : '';
+  const variantClasses = $derived(variants[variant]);
+  const sizeClasses = $derived(sizes[size]);
+  const interactiveClasses = $derived(onclick && !disabled ? 'cursor-pointer' : '');
 
-  const combinedClasses = [baseClasses, variantClasses, sizeClasses, interactiveClasses, className]
-    .filter(Boolean)
-    .join(' ');
+  const combinedClasses = $derived(
+    [baseClasses, variantClasses, sizeClasses, interactiveClasses, className]
+      .filter(Boolean)
+      .join(' ')
+  );
 
   // クリックハンドラー
   function handleClick() {
