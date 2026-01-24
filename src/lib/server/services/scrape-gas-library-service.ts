@@ -27,6 +27,9 @@ interface ParsedResults {
  * 4. README解析の並行処理による効率化
  */
 export class ScrapeGASLibraryService {
+  /** WebアプリスクリプトIDの最小長 */
+  private static readonly MIN_SCRIPT_ID_LENGTH = 10;
+
   // 正規表現の事前コンパイル（パフォーマンス最適化）
   private static readonly WEB_APP_URL_PATTERN =
     /https:\/\/script\.google\.com\/(?:a\/)?macros\/(?:[^/]+\/)?s\/([A-Za-z0-9_-]+)\/exec/g;
@@ -50,7 +53,7 @@ export class ScrapeGASLibraryService {
       const scriptId = match[1]; // グループキャプチャから直接取得
 
       // 基本的な検証のみ実行して高速化
-      if (scriptId && scriptId.length > 10) {
+      if (scriptId && scriptId.length > this.MIN_SCRIPT_ID_LENGTH) {
         return { scriptId, scriptType: 'web_app' };
       }
     }
@@ -75,25 +78,46 @@ export class ScrapeGASLibraryService {
   }
 
   /**
-   * README解析を並行実行する最適化メソッド
+   * README解析を実行する
    * @private
    */
-  private static async parseReadmeContent(readmeContent: string): Promise<ParsedResults> {
-    // README解析の各処理を並行実行して高速化
-    const [webAppInfo, extractedScriptId, webAppFromGsFiles] = await Promise.all([
-      // WebアプリURL検出を非同期で実行
-      Promise.resolve(this.extractWebAppInfo(readmeContent)),
-      // スクリプトID抽出を非同期で実行
-      Promise.resolve(GASScriptIdExtractor.extractScriptId(readmeContent)),
-      // .gsファイル検出を非同期で実行
-      Promise.resolve(this.detectWebAppFromGsFiles(readmeContent)),
-    ]);
-
+  private static parseReadmeContent(readmeContent: string): ParsedResults {
     return {
-      webAppInfo,
-      extractedScriptId,
-      webAppFromGsFiles,
+      webAppInfo: this.extractWebAppInfo(readmeContent),
+      extractedScriptId: GASScriptIdExtractor.extractScriptId(readmeContent),
+      webAppFromGsFiles: this.detectWebAppFromGsFiles(readmeContent),
     };
+  }
+
+  /**
+   * スクリプトIDとタイプを決定する
+   * 優先順位: ライブラリID > WebアプリURL > .gsファイル検出
+   * @private
+   */
+  private static determineScriptInfo(
+    libraryScriptId: string | undefined,
+    webAppInfo: { scriptId: string; scriptType: 'web_app' } | null,
+    webAppFromGsFiles: 'web_app' | null,
+    owner: string,
+    repo: string
+  ): { scriptId: string | undefined; scriptType: 'library' | 'web_app' } {
+    // ライブラリIDがある場合は常にライブラリとして分類（WebアプリURLがあっても）
+    if (libraryScriptId) {
+      return { scriptId: libraryScriptId, scriptType: 'library' };
+    }
+
+    // WebアプリURLがある場合
+    if (webAppInfo) {
+      return { scriptId: webAppInfo.scriptId, scriptType: 'web_app' };
+    }
+
+    // .gsファイルが検出された場合
+    if (webAppFromGsFiles) {
+      return { scriptId: `${owner}/${repo}`, scriptType: 'web_app' };
+    }
+
+    // 何も検出されなかった場合
+    return { scriptId: undefined, scriptType: 'library' };
   }
 
   /**
@@ -126,38 +150,22 @@ export class ScrapeGASLibraryService {
       let scriptType: 'library' | 'web_app' = 'library';
 
       if (readmeContent) {
-        // README解析を並行実行で最適化
+        // README解析を実行
         const { webAppInfo, extractedScriptId, webAppFromGsFiles } =
-          await this.parseReadmeContent(readmeContent);
+          this.parseReadmeContent(readmeContent);
 
         // ライブラリ形式のスクリプトID判定（1から始まるIDのみ）
         const libraryScriptId = extractedScriptId?.startsWith('1') ? extractedScriptId : undefined;
 
-        if (webAppInfo && libraryScriptId) {
-          // WebアプリURLと通常のライブラリスクリプトIDの両方がある場合はライブラリとして分類
-          scriptId = libraryScriptId;
-          scriptType = 'library';
-        } else if (webAppInfo) {
-          // WebアプリURLのみがある場合はweb_appとして分類
-          scriptId = webAppInfo.scriptId;
-          scriptType = 'web_app';
-        } else if (libraryScriptId) {
-          // WebアプリURLがなく、通常のスクリプトIDがある場合
-          scriptId = libraryScriptId;
-          if (libraryScriptId.startsWith('1')) {
-            scriptType = 'library';
-          } else {
-            // 1以外から始まる場合はWebアプリ条件をチェック
-            scriptType = webAppFromGsFiles ? 'web_app' : 'library';
-          }
-        } else {
-          // スクリプトIDもWebアプリURLもない場合、.gsファイルをチェック
-          if (webAppFromGsFiles) {
-            scriptType = 'web_app';
-            // スクリプトIDが無い場合はowner/repo形式をscriptIdとして使用（重複回避）
-            scriptId = `${owner}/${repo}`;
-          }
-        }
+        // scriptIdとscriptTypeを決定
+        // 優先順位: ライブラリID > WebアプリURL > .gsファイル検出
+        ({ scriptId, scriptType } = this.determineScriptInfo(
+          libraryScriptId,
+          webAppInfo,
+          webAppFromGsFiles,
+          owner,
+          repo
+        ));
       }
 
       if (!scriptId) {
