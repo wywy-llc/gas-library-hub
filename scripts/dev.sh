@@ -247,6 +247,13 @@ cmd_test_fast() {
     execute_vitest "test/" "$mode"
 }
 
+# Storybookテスト実行
+cmd_test_storybook() {
+    echo "[TEST:STORYBOOK] Storybookテスト実行"
+
+    execute_command "npm run test:storybook" "default"
+}
+
 # Prettier + ESLint で自動修正
 cmd_fix() {
     local target="${1:-.}"
@@ -467,6 +474,7 @@ show_usage() {
 コマンド:
   test <path|pattern>  テスト実行（ファイルパス or パターンを自動判定）
   test:fast            全テスト実行（型チェック・lint スキップ）
+  test:storybook       Storybook テスト実行
   check                型チェック（svelte-check）
   fix [path]           Prettier + ESLint で自動修正（デフォルト: .）
 
@@ -478,6 +486,7 @@ show_usage() {
   ./scripts/dev.sh test test/lib/services/foo.test.ts     # テストファイル直接実行
   ./scripts/dev.sh test foo-service                       # パターンでテスト検索
   ./scripts/dev.sh test:fast --verbose                    # 高速テスト（詳細ログ）
+  ./scripts/dev.sh test:storybook                         # Storybook テスト実行
   ./scripts/dev.sh fix                                    # 全体を自動修正
   ./scripts/dev.sh fix src/lib/components/Button.svelte   # 特定ファイルを修正
 EOF
@@ -508,6 +517,9 @@ main() {
             ;;
         "test:fast")
             cmd_test_fast
+            ;;
+        "test:storybook")
+            cmd_test_storybook
             ;;
         "check")
             cmd_check
