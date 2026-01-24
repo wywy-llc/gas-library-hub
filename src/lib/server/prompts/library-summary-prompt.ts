@@ -110,7 +110,7 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
                     code: {
                       type: 'string',
                       description:
-                        'JSDocコメント（実装ポイント3点）で始まるJavaScriptコード（例: "/**\\n * タイトル\\n * ・ポイント1\\n * ・ポイント2\\n * ・ポイント3\\n */\\nfunction example() {}"）',
+                        'JSDocコメント（実装ポイント3点 + 対応コード）で始まるJavaScriptコード（例: "/**\\n * タイトル\\n * ・ポイント1: コード断片1\\n * ・ポイント2: コード断片2\\n * ・ポイント3: コード断片3\\n */\\nfunction example() {}"）',
                     },
                   },
                   required: ['title', 'code'],
@@ -241,19 +241,44 @@ functions: # 1-3個
 
 examples: # 1-3個
   - title: { ja: "例のタイトル", en: "Example title" }
-    code: | # JSDocコメント（実装ポイント3点）で始まるJavaScriptコード
+    code: | # JSDocコメント（実装ポイント3点 + 対応コード）で始まるJavaScriptコード
       /**
        * [title.jaの内容]
-       * ・[実装ポイント1]
-       * ・[実装ポイント2]
-       * ・[実装ポイント3]
+       * ・[実装ポイント1]: [対応するコード断片]
+       * ・[実装ポイント2]: [対応するコード断片]
+       * ・[実装ポイント3]: [対応するコード断片]
        */
       function example() {
         // 実際のコード
       }
 \`\`\`
 
-> **重要**: codeフィールドは必ずJSDocコメント（実装ポイント3点を含む）で始めること。
+#### JSDocコメント形式
+
+各実装ポイントには対応するコード断片を明記すること。
+
+**フォーマット:** \`・[ポイント説明]: [対応コード]\`
+
+**例:**
+\`\`\`javascript
+/**
+ * Drive OAuth2サービス作成
+ * ・Google共通エンドポイント設定: OAuth2.createService('drive')
+ * ・クライアント認証情報設定: setClientId(...).setClientSecret(...)
+ * ・コールバックとスコープ設定: setCallbackFunction(...).setPropertyStore(...)
+ */
+function getDriveService_() {
+  return OAuth2.createService('drive')
+      .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
+      .setTokenUrl('https://accounts.google.com/o/oauth2/token')
+      .setClientId('...')
+      .setClientSecret('...')
+      .setCallbackFunction('authCallback')
+      .setPropertyStore(PropertiesService.getUserProperties());
+}
+\`\`\`
+
+> **重要**: codeフィールドは必ずJSDocコメント（実装ポイント3点 + 対応コード）で始めること。
 
 ### 3.3 examples一貫性ルール
 
@@ -289,7 +314,8 @@ format:
 usageExample:
   - functions: 1-3個
   - examples: 1-3個
-  - code: JSDocコメント（実装ポイント3点）で始まる（§3.2）
+  - code: JSDocコメント（実装ポイント3点 + 対応コード）で始まる（§3.2）
+  - 各ポイントに「: [対応コード断片]」が付与されている
   - examples間の関数呼び出しが一致（§3.3）
 \`\`\`
 ` as const;
