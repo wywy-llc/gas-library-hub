@@ -238,77 +238,47 @@ get_execution_mode() {
 # メインコマンド関数
 # =============================================================================
 
-# 特定のテストファイルを実行
-cmd_file() {
-    local file_path="$1"
+# 高速テスト実行（型チェック・lintスキップ）
+cmd_test_fast() {
     local mode="$(get_execution_mode)"
-    
-    [[ -f "$file_path" ]] || { echo "[ERROR] テストファイルが見つかりません: $file_path" >&2; return 1; }
-    
-    echo "[FILE] 特定のテストファイルを実行: $file_path"
 
-    execute_command "npm run check" "$mode" && \
-    execute_vitest "'$file_path'" "$mode"
-}
+    echo "[TEST:FAST] 全テスト実行（型チェック・lintスキップ）"
 
-# パターンマッチでテストを実行
-cmd_pattern() {
-    local pattern="$1"
-    local mode="$(get_execution_mode)"
-    
-    [[ -n "$pattern" ]] || { echo "[ERROR] テストパターンを指定してください" >&2; return 1; }
-    
-    # 1. ファイル名ベースの検索を試行
-    local matching_files=()
-    local temp_file="$TEMP_DIR/pattern_$$"
-    mkdir -p "$TEMP_DIR"
-    find_test_files_by_pattern "$pattern" > "$temp_file"
-    while IFS= read -r file; do
-        [[ -n "$file" ]] && matching_files+=("$file")
-    done < "$temp_file"
-    
-    if [[ ${#matching_files[@]} -gt 0 ]]; then
-        # ファイルベースのマッチが見つかった場合
-        if [[ ${#matching_files[@]} -eq 1 ]]; then
-            echo "[PATTERN-FILE] ファイル名マッチ検出: $pattern → ${matching_files[0]}"
-            execute_command "npm run check" "$mode" && \
-            execute_vitest "'${matching_files[0]}'" "$mode"
-        else
-            echo "[PATTERN-MULTI] 複数ファイルマッチ検出: $pattern (${#matching_files[@]}件)"
-            [[ "$mode" == "verbose" ]] && {
-                printf '  - %s\n' "${matching_files[@]}"
-            }
-            # 複数ファイルを空白区切りで渡す
-            local file_args=""
-            for file in "${matching_files[@]}"; do
-                file_args+="'$file' "
-            done
-            execute_command "npm run check" "$mode" && \
-            execute_vitest "$file_args" "$mode"
-        fi
-    else
-        # ファイルベースのマッチが見つからない場合は従来の-tオプションを使用
-        echo "[PATTERN-NAME] テスト名マッチで実行: $pattern"
-        execute_command "npm run check" "$mode" && \
-        execute_vitest "-t '$pattern'" "$mode"
-    fi
-}
-
-# 高速テスト実行（型チェックとlintをスキップ）
-cmd_quick() {
-    local mode="$(get_execution_mode)"
-    
-    echo "[QUICK] 高速テスト実行（型チェック・lintスキップ）"
-    
     execute_vitest "test/" "$mode"
 }
 
-# 関連テストを実行
-cmd_related() {
-    local src_file="$1"
+# Prettier + ESLint で自動修正
+cmd_fix() {
+    local target="${1:-.}"
+
+    echo "[FIX] コードフォーマット・lint自動修正: $target"
+
+    execute_command "npm run fix -- '$target'" "default"
+}
+
+# 型チェック（svelte-check）
+cmd_check() {
     local mode="$(get_execution_mode)"
 
-    [[ -f "$src_file" ]] || { echo "[ERROR] ソースファイルが見つかりません: $src_file" >&2; return 1; }
+    echo "[CHECK] 型チェック実行"
+
+    execute_command "npm run check" "$mode"
+}
+
+# テスト実行（ファイルパス or パターンを自動判定）
+cmd_test() {
+    local target="$1"
+    local mode="$(get_execution_mode)"
+
+    [[ -n "$target" ]] || { echo "[ERROR] ファイルパスまたは検索パターンを指定してください" >&2; return 1; }
+
+    # ファイルが存在しない場合はパターン検索モード
+    if [[ ! -f "$target" ]]; then
+        cmd_test_by_pattern "$target" "$mode"
+        return $?
+    fi
+
+    local src_file="$target"
 
     # *.svelteファイルの場合はStorybookテストを検索
     if [[ "$src_file" == *.svelte ]]; then
@@ -413,11 +383,11 @@ cmd_related() {
 
         # 結果の処理
         if [[ ${#story_files[@]} -eq 1 ]]; then
-            echo "[STORYBOOK] Storybookテスト検出: $src_file → ${story_files[0]}"
+            echo "[TEST] Storybookテスト検出: $src_file → ${story_files[0]}"
             echo "[INFO] Storybookテストは 'npm run test:storybook' で実行してください"
             return 0
         elif [[ ${#story_files[@]} -gt 1 ]]; then
-            echo "[STORYBOOK] 複数のStorybookテストを検出: $src_file"
+            echo "[TEST] 複数のStorybookテストを検出: $src_file"
             printf '  - %s\n' "${story_files[@]}"
             echo "[INFO] Storybookテストは 'npm run test:storybook' で実行してください"
             return 0
@@ -438,13 +408,51 @@ cmd_related() {
 
     if [[ "$test_result" == pattern:* ]]; then
         local pattern="${test_result#pattern:}"
-        echo "[FALLBACK] テストファイル未検出 → パターンマッチ使用: $pattern"
+        echo "[TEST] テストファイル未検出 → パターン検索: $pattern"
         execute_command "npm run check" "$mode" && \
         execute_vitest "-t '$pattern'" "$mode"
     else
-        echo "[MATCHED] 関連テスト検出: $src_file → $test_result"
+        echo "[TEST] 関連テスト検出: $src_file → $test_result"
         execute_command "npm run check" "$mode" && \
         execute_vitest "'$test_result'" "$mode"
+    fi
+}
+
+# パターンでテストを検索・実行（内部関数）
+cmd_test_by_pattern() {
+    local pattern="$1"
+    local mode="$2"
+
+    # ファイル名ベースの検索を試行
+    local matching_files=()
+    local temp_file="$TEMP_DIR/pattern_$$"
+    mkdir -p "$TEMP_DIR"
+    find_test_files_by_pattern "$pattern" > "$temp_file"
+    while IFS= read -r file; do
+        [[ -n "$file" ]] && matching_files+=("$file")
+    done < "$temp_file"
+
+    if [[ ${#matching_files[@]} -gt 0 ]]; then
+        if [[ ${#matching_files[@]} -eq 1 ]]; then
+            echo "[TEST] パターン検索: $pattern → ${matching_files[0]}"
+            execute_command "npm run check" "$mode" && \
+            execute_vitest "'${matching_files[0]}'" "$mode"
+        else
+            echo "[TEST] パターン検索: $pattern (${#matching_files[@]}件マッチ)"
+            [[ "$mode" == "verbose" ]] && {
+                printf '  - %s\n' "${matching_files[@]}"
+            }
+            local file_args=""
+            for file in "${matching_files[@]}"; do
+                file_args+="'$file' "
+            done
+            execute_command "npm run check" "$mode" && \
+            execute_vitest "$file_args" "$mode"
+        fi
+    else
+        echo "[TEST] テスト名で検索: $pattern"
+        execute_command "npm run check" "$mode" && \
+        execute_vitest "-t '$pattern'" "$mode"
     fi
 }
 
@@ -457,19 +465,21 @@ show_usage() {
   ./scripts/dev.sh <command> [options]
 
 コマンド:
-  file <path>      特定のテストファイルを実行
-  related <path>   ソースファイルの関連テストを実行
-  pattern <pat>    パターンマッチでテスト実行
-  quick           高速テスト実行（型チェック・ lint スキップ）
+  test <path|pattern>  テスト実行（ファイルパス or パターンを自動判定）
+  test:fast            全テスト実行（型チェック・lint スキップ）
+  check                型チェック（svelte-check）
+  fix [path]           Prettier + ESLint で自動修正（デフォルト: .）
 
 オプション:
-  --verbose       詳細ログ表示（test/setup.ts の VITEST_CONSOLE_LOG 連携）
+  --verbose            詳細ログ表示（test/setup.ts の VITEST_CONSOLE_LOG 連携）
 
 例:
-  ./scripts/dev.sh related src/app/utils/breakdown-utils.ts
-  ./scripts/dev.sh file test/utils/breakdown-utils.test.ts --verbose
-  ./scripts/dev.sh pattern breakdown-template
-  ./scripts/dev.sh quick --verbose
+  ./scripts/dev.sh test src/lib/services/foo-service.ts   # ソースから関連テスト検出
+  ./scripts/dev.sh test test/lib/services/foo.test.ts     # テストファイル直接実行
+  ./scripts/dev.sh test foo-service                       # パターンでテスト検索
+  ./scripts/dev.sh test:fast --verbose                    # 高速テスト（詳細ログ）
+  ./scripts/dev.sh fix                                    # 全体を自動修正
+  ./scripts/dev.sh fix src/lib/components/Button.svelte   # 特定ファイルを修正
 EOF
 }
 
@@ -492,20 +502,18 @@ main() {
     fi
     
     case "$command" in
-        "file")
-            [[ -n "${2:-}" ]] || { echo "[ERROR] ファイルパスを指定してください" >&2; show_usage; exit 1; }
-            cmd_file "$2"
+        "test")
+            [[ -n "${2:-}" ]] || { echo "[ERROR] ファイルパスまたはパターンを指定してください" >&2; show_usage; exit 1; }
+            cmd_test "$2"
             ;;
-        "pattern")
-            [[ -n "${2:-}" ]] || { echo "[ERROR] パターンを指定してください" >&2; show_usage; exit 1; }
-            cmd_pattern "$2"
+        "test:fast")
+            cmd_test_fast
             ;;
-        "quick")
-            cmd_quick
+        "check")
+            cmd_check
             ;;
-        "related")
-            [[ -n "${2:-}" ]] || { echo "[ERROR] ソースファイルパスを指定してください" >&2; show_usage; exit 1; }
-            cmd_related "$2"
+        "fix")
+            cmd_fix "${2:-}"
             ;;
         "-h"|"--help"|"help")
             show_usage

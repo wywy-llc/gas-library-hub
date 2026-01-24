@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./docker/dev.sh fix"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./docker/dev.sh check"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": ["Bash(rm -rf:*)", "Read(.env*)", "Edit(.env*)", "Write(.env*)", "MultiEdit(.env*)"]
+  }
+}
