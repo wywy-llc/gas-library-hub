@@ -1,16 +1,34 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
+
   /**
    * 再利用可能なボタンコンポーネント
    * プライマリ、セカンダリ、アウトラインバリアントをサポート
    */
 
-  // Props
-  export let variant: 'primary' | 'secondary' | 'outline' = 'primary';
-  export let size: 'sm' | 'md' | 'lg' = 'md';
-  export let href: string | undefined = undefined;
-  export let disabled = false;
-  export let type: 'button' | 'submit' | 'reset' = 'button';
-  export let fullWidth = false;
+  type Props = {
+    variant?: 'primary' | 'secondary' | 'outline';
+    size?: 'sm' | 'md' | 'lg';
+    href?: string;
+    disabled?: boolean;
+    type?: 'button' | 'submit' | 'reset';
+    fullWidth?: boolean;
+    class?: string;
+    onclick?: (event: MouseEvent) => void;
+    children?: Snippet;
+  };
+
+  let {
+    variant = 'primary',
+    size = 'md',
+    href = undefined,
+    disabled = false,
+    type = 'button',
+    fullWidth = false,
+    class: className = '',
+    onclick,
+    children,
+  }: Props = $props();
 
   // バリアント別のdaisyUIクラス定義
   const variantStyles = {
@@ -26,18 +44,20 @@
     lg: 'btn-lg',
   };
 
-  // 最終的なクラス名を構築（準拠）
-  $: buttonClasses = ['btn', variantStyles[variant], sizeStyles[size], fullWidth ? 'btn-block' : '']
-    .filter(Boolean)
-    .join(' ');
+  // 最終的なクラス名を構築
+  const buttonClasses = $derived(
+    ['btn', variantStyles[variant], sizeStyles[size], fullWidth ? 'btn-block' : '', className]
+      .filter(Boolean)
+      .join(' ')
+  );
 </script>
 
 {#if href}
-  <a {href} class={buttonClasses} class:pointer-events-none={disabled} {...$$restProps}>
-    <slot />
+  <a {href} class={buttonClasses} class:pointer-events-none={disabled} {onclick}>
+    {@render children?.()}
   </a>
 {:else}
-  <button {type} {disabled} class={buttonClasses} {...$$restProps} on:click>
-    <slot />
+  <button {type} {disabled} class={buttonClasses} {onclick}>
+    {@render children?.()}
   </button>
 {/if}

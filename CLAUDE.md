@@ -71,13 +71,6 @@ NEVER:
   - letリアクティブ宣言
   - export let（レガシー）
   - createEventDispatcher
-
-migration_pending:
-  - src/lib/components/Button.svelte
-  - src/lib/components/SearchBox.svelte
-  - src/lib/components/UserDropdown.svelte
-  - src/lib/components/AdminHeader.svelte
-  - src/lib/components/UserHeader.svelte
 ```
 
 ---

@@ -3,10 +3,14 @@
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import UserDropdown from './UserDropdown.svelte';
 
-  export let user: { name?: string; email?: string; image?: string };
-
   // 管理者用ヘッダーコンポーネント
   // 管理者専用ナビゲーションとユーザードロップダウンを含む
+
+  type Props = {
+    user: { name?: string; email?: string; image?: string };
+  };
+
+  let { user }: Props = $props();
 </script>
 
 <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm">

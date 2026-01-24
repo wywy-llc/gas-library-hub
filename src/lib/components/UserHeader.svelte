@@ -3,21 +3,25 @@
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import UserDropdown from './UserDropdown.svelte';
 
-  export let user: { name?: string; email?: string; image?: string };
-  export let showAdminLink = false;
-
   // ログインユーザー用ヘッダーコンポーネント
   // ユーザードロップダウンメニューを含む
 
-  let isMenuOpen = false;
+  type Props = {
+    user: { name?: string; email?: string; image?: string };
+    showAdminLink?: boolean;
+  };
 
-  const toggleMenu = () => {
+  let { user, showAdminLink = false }: Props = $props();
+
+  let isMenuOpen = $state(false);
+
+  function toggleMenu() {
     isMenuOpen = !isMenuOpen;
-  };
+  }
 
-  const closeMenu = () => {
+  function closeMenu() {
     isMenuOpen = false;
-  };
+  }
 </script>
 
 <header class="navbar bg-base-100/80 sticky top-0 z-50 backdrop-blur-sm">
@@ -45,7 +49,7 @@
       <!-- モバイルハンバーガーボタン -->
       <div class="md:hidden">
         <button
-          on:click={toggleMenu}
+          onclick={toggleMenu}
           type="button"
           class="btn btn-ghost btn-square btn-sm"
           aria-controls="mobile-menu"
@@ -80,7 +84,7 @@
       <div class="md:hidden" id="mobile-menu">
         <div class="menu bg-base-100 space-y-1 rounded-b-lg border-t p-2 shadow-lg">
           <!-- ライブラリ申請リンク -->
-          <a href="/user/libraries/request" on:click={closeMenu} class="btn btn-primary btn-block">
+          <a href="/user/libraries/request" onclick={closeMenu} class="btn btn-primary btn-block">
             {gas_library_add()}
           </a>
 

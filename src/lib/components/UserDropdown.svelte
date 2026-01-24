@@ -3,10 +3,14 @@
   import { admin_dashboard, library_search, logout } from '$lib/paraglide/messages.js';
   import { signOut } from '@auth/sveltekit/client';
 
-  export let user: { name?: string; email?: string; image?: string };
-  export let showAdminLink = false;
+  type Props = {
+    user: { name?: string; email?: string; image?: string };
+    showAdminLink?: boolean;
+  };
 
-  let isOpen = false;
+  let { user, showAdminLink = false }: Props = $props();
+
+  let isOpen = $state(false);
 
   function toggleDropdown() {
     isOpen = !isOpen;
@@ -24,7 +28,7 @@
 
 <div class="dropdown dropdown-end">
   <!-- ユーザー名ボタン -->
-  <button on:click={toggleDropdown} class="btn btn-ghost btn-sm">
+  <button onclick={toggleDropdown} class="btn btn-ghost btn-sm">
     <span>{user.name || user.email}</span>
     <svg
       class="h-4 w-4 transition-transform {isOpen ? 'rotate-180' : ''}"
@@ -44,13 +48,13 @@
     >
       {#if showAdminLink}
         <li>
-          <a href="/admin" on:click={closeDropdown}>
+          <a href="/admin" onclick={closeDropdown}>
             {admin_dashboard()}
           </a>
         </li>
       {/if}
       <li>
-        <a href="/user/search" on:click={closeDropdown}>
+        <a href="/user/search" onclick={closeDropdown}>
           {library_search()}
         </a>
       </li>
@@ -58,7 +62,7 @@
         <hr />
       </li>
       <li>
-        <button on:click={handleSignOut} class="w-full text-left">
+        <button onclick={handleSignOut} class="w-full text-left">
           {logout()}
         </button>
       </li>

@@ -1,17 +1,24 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { search_placeholder, header_search } from '$lib/paraglide/messages.js';
+  import { header_search, search_placeholder } from '$lib/paraglide/messages.js';
 
   // GASライブラリ検索コンポーネント
   // トップページとサーチページで共通利用されるレスポンシブ検索ボックス
 
-  // Props
-  export let placeholder = search_placeholder();
-  export let value = '';
-  export let size: 'small' | 'large' = 'large';
+  type Props = {
+    placeholder?: string;
+    value?: string;
+    size?: 'small' | 'large';
+  };
+
+  let {
+    placeholder = search_placeholder(),
+    value = $bindable(''),
+    size = 'large',
+  }: Props = $props();
 
   // 検索実行
-  function handleSearch(event: Event) {
+  function handleSearch(event: SubmitEvent) {
     event.preventDefault();
     const form = event.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -23,18 +30,20 @@
   }
 
   // サイズによるdaisyUIクラス切り替え
-  $: inputClasses =
+  const inputClasses = $derived(
     size === 'large'
       ? 'input input-bordered w-full pl-12 input-lg'
-      : 'input input-bordered w-full pl-10';
+      : 'input input-bordered w-full pl-10'
+  );
 
-  $: iconContainerClasses =
+  const iconContainerClasses = $derived(
     size === 'large'
       ? 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4'
-      : 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3';
+      : 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'
+  );
 </script>
 
-<form class="relative" on:submit={handleSearch}>
+<form class="relative" onsubmit={handleSearch}>
   <div class={iconContainerClasses}>
     <svg
       class="h-6 w-6 text-gray-400"

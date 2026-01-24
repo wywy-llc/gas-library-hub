@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { signOut } from '@auth/sveltekit/client';
   import Button from '$lib/components/Button.svelte';
   import { APP_CONFIG } from '$lib/constants/app-config.js';
+  import { signOut } from '@auth/sveltekit/client';
 
   async function handleSignOut() {
     await signOut({ redirectTo: '/' });
@@ -37,7 +37,7 @@
         <div class="mt-6 space-y-3">
           <Button variant="outline" class="w-full" href="/">ホームに戻る</Button>
 
-          <Button variant="secondary" class="w-full" on:click={handleSignOut}>ログアウト</Button>
+          <Button variant="secondary" class="w-full" onclick={handleSignOut}>ログアウト</Button>
         </div>
       </div>
     </div>

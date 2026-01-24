@@ -97,5 +97,5 @@
 
 <!-- Interactive Example -->
 <Story name="Interactive">
-  <Button variant="primary" size="md" on:click={() => alert('Button clicked!')}>Click Me!</Button>
+  <Button variant="primary" size="md" onclick={() => alert('Button clicked!')}>Click Me!</Button>
 </Story>
