@@ -1,6 +1,6 @@
 import { DEFAULT_GAS_TAGS } from '$lib/constants/scraper-config.js';
-import { validateCronAuth } from '$lib/server/utils/api-auth.js';
 import { ActionErrorHandler } from '$lib/server/utils/action-error-handler.js';
+import { validateCronAuth } from '$lib/server/utils/api-auth.js';
 import { ErrorUtils } from '$lib/server/utils/error-utils.js';
 import { json, type RequestHandler } from '@sveltejs/kit';
 
@@ -58,6 +58,11 @@ import { json, type RequestHandler } from '@sveltejs/kit';
  * - 深夜時間帯での実行でサーバー負荷を分散
  */
 
+// ─── 定数 ───
+const DEFAULT_MAX_PAGES = 2;
+const DEFAULT_PER_PAGE = 10;
+const TAG_PROCESSING_DELAY_MS = 2000;
+
 interface BatchRegisterRequest {
   maxPages?: number;
   perPage?: number;
@@ -65,154 +70,190 @@ interface BatchRegisterRequest {
   tags?: string[];
 }
 
+interface TagResult {
+  tag: string;
+  success: boolean;
+  total: number;
+  successCount: number;
+  errorCount: number;
+  duplicateCount: number;
+  errors?: string[];
+}
+
+interface OverallResults {
+  totalTags: number;
+  successTags: number;
+  failedTags: number;
+  totalLibraries: number;
+  totalSuccess: number;
+  totalErrors: number;
+  totalDuplicates: number;
+}
+
 interface BatchRegisterResponse {
   success: boolean;
   message: string;
-  overallResults: {
-    totalTags: number;
-    successTags: number;
-    failedTags: number;
-    totalLibraries: number;
-    totalSuccess: number;
-    totalErrors: number;
-    totalDuplicates: number;
-  };
-  tagResults: Array<{
-    tag: string;
-    success: boolean;
-    total: number;
-    successCount: number;
-    errorCount: number;
-    duplicateCount: number;
-    errors?: string[];
-  }>;
+  overallResults: OverallResults;
+  tagResults: TagResult[];
 }
 
 /**
  * 全タグ一括登録エンドポイント
  */
+// ─── 型定義（内部用） ───
+interface ParsedConfig {
+  maxPages: number;
+  perPage: number;
+  generateSummary: boolean;
+  tags: readonly string[];
+}
+
+// ─── ヘルパー関数 ───
+
+async function parseRequest(request: Request): Promise<ParsedConfig> {
+  const body: BatchRegisterRequest = await request.json();
+  return {
+    maxPages: body.maxPages ?? DEFAULT_MAX_PAGES,
+    perPage: body.perPage ?? DEFAULT_PER_PAGE,
+    generateSummary: body.generateSummary !== false,
+    tags: body.tags ?? DEFAULT_GAS_TAGS,
+  };
+}
+
+async function processAllTags(
+  tags: readonly string[],
+  config: ParsedConfig,
+  request: Request,
+  fetch: typeof globalThis.fetch
+): Promise<TagResult[]> {
+  const results: TagResult[] = [];
+
+  for (const [index, tag] of tags.entries()) {
+    const result = await processSingleTag(tag, index, tags.length, config, request, fetch);
+    results.push(result);
+
+    if (index < tags.length - 1) {
+      await delay(TAG_PROCESSING_DELAY_MS);
+    }
+  }
+
+  return results;
+}
+
+async function processSingleTag(
+  tag: string,
+  index: number,
+  totalTags: number,
+  config: ParsedConfig,
+  request: Request,
+  fetch: typeof globalThis.fetch
+): Promise<TagResult> {
+  console.log(`📋 処理中: ${tag} (${index + 1}/${totalTags})`);
+
+  try {
+    const response = await fetch('/api/libraries/bulk-register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: request.headers.get('Authorization') ?? '',
+      },
+      body: JSON.stringify({
+        tags: [tag],
+        maxPages: config.maxPages,
+        perPage: config.perPage,
+        generateSummary: config.generateSummary,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    console.log(
+      `✅ ${tag}完了: 成功=${result.summary.successCount}件, エラー=${result.summary.errorCount}件`
+    );
+
+    return {
+      tag,
+      success: result.success,
+      total: result.summary.total,
+      successCount: result.summary.successCount,
+      errorCount: result.summary.errorCount,
+      duplicateCount: result.summary.duplicateCount,
+      errors: result.errors,
+    };
+  } catch (error) {
+    console.error(`❌ ${tag}でエラー:`, error);
+
+    return {
+      tag,
+      success: false,
+      total: 0,
+      successCount: 0,
+      errorCount: 1,
+      duplicateCount: 0,
+      errors: [ErrorUtils.getMessage(error, '不明なエラー')],
+    };
+  }
+}
+
+function aggregateResults(tagResults: TagResult[], totalTags: number): OverallResults {
+  let successTags = 0;
+  let totalLibraries = 0;
+  let totalSuccess = 0;
+  let totalErrors = 0;
+  let totalDuplicates = 0;
+
+  for (const r of tagResults) {
+    if (r.success) successTags++;
+    totalLibraries += r.total;
+    totalSuccess += r.successCount;
+    totalErrors += r.errorCount;
+    totalDuplicates += r.duplicateCount;
+  }
+
+  return {
+    totalTags,
+    successTags,
+    failedTags: totalTags - successTags,
+    totalLibraries,
+    totalSuccess,
+    totalErrors,
+    totalDuplicates,
+  };
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export const POST: RequestHandler = async ({ request, fetch }) => {
   try {
-    // 認証チェック
     validateCronAuth(request);
 
-    const body: BatchRegisterRequest = await request.json();
-
-    const maxPages = body.maxPages || 2;
-    const perPage = body.perPage || 10;
-    const generateSummary = body.generateSummary !== false;
-    const tags = body.tags || DEFAULT_GAS_TAGS;
+    const config = await parseRequest(request);
+    const { tags, maxPages, perPage } = config;
 
     console.log(
       `🚀 全タグ一括登録開始: ${tags.length}タグ, maxPages=${maxPages}, perPage=${perPage}`
     );
 
-    const tagResults: Array<{
-      tag: string;
-      success: boolean;
-      total: number;
-      successCount: number;
-      errorCount: number;
-      duplicateCount: number;
-      errors?: string[];
-    }> = [];
-
-    let totalLibraries = 0;
-    let totalSuccess = 0;
-    let totalErrors = 0;
-    let totalDuplicates = 0;
-    let successTags = 0;
-
-    // 各タグを順次処理
-    for (const [index, tag] of tags.entries()) {
-      try {
-        console.log(`📋 処理中: ${tag} (${index + 1}/${tags.length})`);
-
-        // 個別タグ用APIを呼び出し
-        const response = await fetch('/api/libraries/bulk-register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: request.headers.get('Authorization') || '',
-          },
-          body: JSON.stringify({
-            tags: [tag],
-            maxPages,
-            perPage,
-            generateSummary,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-
-        tagResults.push({
-          tag,
-          success: result.success,
-          total: result.summary.total,
-          successCount: result.summary.successCount,
-          errorCount: result.summary.errorCount,
-          duplicateCount: result.summary.duplicateCount,
-          errors: result.errors,
-        });
-
-        if (result.success) {
-          successTags++;
-        }
-
-        totalLibraries += result.summary.total;
-        totalSuccess += result.summary.successCount;
-        totalErrors += result.summary.errorCount;
-        totalDuplicates += result.summary.duplicateCount;
-
-        console.log(
-          `✅ ${tag}完了: 成功=${result.summary.successCount}件, エラー=${result.summary.errorCount}件`
-        );
-
-        // タグ間の待機時間（レート制限対策）
-        if (index < tags.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
-        }
-      } catch (error) {
-        console.error(`❌ ${tag}でエラー:`, error);
-
-        tagResults.push({
-          tag,
-          success: false,
-          total: 0,
-          successCount: 0,
-          errorCount: 1,
-          duplicateCount: 0,
-          errors: [ErrorUtils.getMessage(error, '不明なエラー')],
-        });
-
-        totalErrors++;
-      }
-    }
-
-    const response: BatchRegisterResponse = {
-      success: successTags > 0,
-      message: `全タグ処理完了: ${successTags}/${tags.length}タグ成功、合計${totalSuccess}件のライブラリを登録`,
-      overallResults: {
-        totalTags: tags.length,
-        successTags,
-        failedTags: tags.length - successTags,
-        totalLibraries,
-        totalSuccess,
-        totalErrors,
-        totalDuplicates,
-      },
-      tagResults,
-    };
+    const tagResults = await processAllTags(tags, config, request, fetch);
+    const overallResults = aggregateResults(tagResults, tags.length);
+    const successTags = overallResults.successTags;
 
     console.log(
-      `🎉 全タグ一括登録完了: ${successTags}/${tags.length}タグ成功, 合計${totalSuccess}件登録`
+      `🎉 全タグ一括登録完了: ${successTags}/${tags.length}タグ成功, 合計${overallResults.totalSuccess}件登録`
     );
 
-    return json(response);
+    return json({
+      success: successTags > 0,
+      message: `全タグ処理完了: ${successTags}/${tags.length}タグ成功、合計${overallResults.totalSuccess}件のライブラリを登録`,
+      overallResults,
+      tagResults,
+    } satisfies BatchRegisterResponse);
   } catch (error) {
     return ActionErrorHandler.handleBatchRegisterError(error, '全タグ一括登録APIエラー:');
   }
