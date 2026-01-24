@@ -1,10 +1,17 @@
 <script lang="ts">
   import LibraryDetail from '$lib/components/LibraryDetail.svelte';
-  import { createAppUrl } from '$lib/constants/app-config.js';
-  import { copy_count_update_failed } from '$lib/paraglide/messages.js';
+  import SeoHead from '$lib/components/SeoHead.svelte';
+  import { APP_CONFIG, createAppUrl } from '$lib/constants/app-config.js';
+  import {
+    breadcrumb_home,
+    breadcrumb_libraries,
+    copy_count_update_failed,
+  } from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime.js';
   import {
     addJsonLdToHead,
+    generateBreadcrumbJsonLd,
+    generateHreflangLinks,
     generateJsonLd,
     generateKeywords,
     generateSeoDescription,
@@ -34,14 +41,39 @@
   const seoKeywords = $derived(generateKeywords(librarySummary, currentLocale));
   const jsonLd = $derived(generateJsonLd(library, librarySummary, currentLocale));
 
+  // ページパスとURL
+  const pagePath = $derived(`/user/libraries/${library.id}`);
+  const pageUrl = $derived(createAppUrl(pagePath));
+  const ogpImageUrl = $derived(createAppUrl(`${pagePath}/ogp-image`));
+  const hreflangLinks = $derived(generateHreflangLinks(pagePath));
+
+  // BreadcrumbList JSON-LD
+  const breadcrumbItems = $derived([
+    { name: breadcrumb_home(), url: createAppUrl('/user') },
+    { name: breadcrumb_libraries(), url: createAppUrl('/user/search') },
+    { name: library.name, url: pageUrl },
+  ]);
+  const breadcrumbJsonLd = $derived(generateBreadcrumbJsonLd(breadcrumbItems));
+
   // コンポーネントマウント時にJSON-LDを動的に追加（$derivedメモ化済みのjsonLdを使用）
   onMount(() => {
-    // JSON-LDを追加
+    // SoftwareSourceCode JSON-LDを追加
     addJsonLdToHead(jsonLd);
+
+    // BreadcrumbList JSON-LDを追加
+    const breadcrumbScript = document.createElement('script');
+    breadcrumbScript.type = 'application/ld+json';
+    breadcrumbScript.id = 'breadcrumb-jsonld';
+    breadcrumbScript.textContent = JSON.stringify(breadcrumbJsonLd);
+    document.head.appendChild(breadcrumbScript);
 
     // クリーンアップ関数を返す
     return () => {
       removeJsonLdFromHead();
+      const breadcrumbScriptToRemove = document.getElementById('breadcrumb-jsonld');
+      if (breadcrumbScriptToRemove) {
+        breadcrumbScriptToRemove.remove();
+      }
     };
   });
 
@@ -123,36 +155,22 @@
   }
 </script>
 
-<svelte:head>
-  <title>{seoTitle}</title>
-  <meta name="description" content={seoDescription} />
-  <meta name="keywords" content={seoKeywords} />
-  <meta name="author" content={library.authorName} />
-
-  <!-- Open Graph tags -->
-  <meta property="og:title" content={seoTitle} />
-  <meta property="og:description" content={seoDescription} />
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content={createAppUrl(`/user/libraries/${library.id}`)} />
-  <meta property="og:site_name" content="GAS Library Hub" />
-  <meta property="og:image" content={createAppUrl(`/user/libraries/${library.id}/ogp-image`)} />
-  <meta property="article:author" content={library.authorName} />
-  <meta property="article:section" content="Google Apps Script" />
-  <meta property="article:tag" content="Google Apps Script" />
-  <meta property="article:tag" content="GAS" />
-  <meta property="article:tag" content="ライブラリ" />
-
-  <!-- Twitter Card tags -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content={createAppUrl(`/user/libraries/${library.id}`)} />
-  <meta name="twitter:title" content={seoTitle} />
-  <meta name="twitter:description" content={seoDescription} />
-  <meta name="twitter:image" content={createAppUrl(`/user/libraries/${library.id}/ogp-image`)} />
-  <meta name="twitter:creator" content={`@${library.authorName}`} />
-
-  <!-- Additional SEO Meta Tags -->
-  <link rel="canonical" href={createAppUrl(`/user/libraries/${library.id}`)} />
-</svelte:head>
+<SeoHead
+  title={seoTitle}
+  description={seoDescription}
+  keywords={seoKeywords}
+  canonical={pageUrl}
+  author={library.authorName}
+  ogType="article"
+  ogUrl={pageUrl}
+  ogImage={ogpImageUrl}
+  ogSiteName={APP_CONFIG.SITE_NAME}
+  ogAuthor={library.authorName}
+  ogSection="Google Apps Script"
+  ogTags={['Google Apps Script', 'GAS', 'ライブラリ']}
+  twitterCreator={`@${library.authorName}`}
+  {hreflangLinks}
+/>
 
 <main>
   <article>

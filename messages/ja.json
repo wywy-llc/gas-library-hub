@@ -242,5 +242,7 @@
   "copy_button": "コピー",
   "script_validation_inaccessible": "このスクリプトにはアクセス権がないか、非公開に設定されています。",
   "script_validation_not_found": "このスクリプトは存在しないか、削除されています。",
-  "script_validation_warning_title": "スクリプトアクセス警告"
+  "script_validation_warning_title": "スクリプトアクセス警告",
+  "breadcrumb_home": "ホーム",
+  "breadcrumb_libraries": "ライブラリ"
 }

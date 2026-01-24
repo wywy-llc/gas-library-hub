@@ -2,7 +2,8 @@
   import Button from '$lib/components/Button.svelte';
   import LibraryCard from '$lib/components/LibraryCard.svelte';
   import SearchBox from '$lib/components/SearchBox.svelte';
-  import { createAppUrl, getLogoUrl } from '$lib/constants/app-config.js';
+  import SeoHead from '$lib/components/SeoHead.svelte';
+  import { APP_CONFIG, createAppUrl, getLogoUrl } from '$lib/constants/app-config.js';
   import {
     featured_libraries,
     gas_library_search,
@@ -12,34 +13,28 @@
     view_all_libraries,
     welcome_user,
   } from '$lib/paraglide/messages.js';
+  import { generateHreflangLinks } from '$lib/utils/seo.js';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
+
+  const pagePath = '/user';
+  const pageUrl = createAppUrl(pagePath);
+  const logoUrl = getLogoUrl();
+  const hreflangLinks = generateHreflangLinks(pagePath);
 </script>
 
-<svelte:head>
-  <title>{meta_title_home()}</title>
-  <meta name="description" content={meta_description_home()} />
-  <meta name="keywords" content={meta_keywords_home()} />
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={createAppUrl('/user')} />
-  <meta property="og:title" content={meta_title_home()} />
-  <meta property="og:description" content={meta_description_home()} />
-  <meta property="og:image" content={getLogoUrl()} />
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content={createAppUrl('/user')} />
-  <meta property="twitter:title" content={meta_title_home()} />
-  <meta property="twitter:description" content={meta_description_home()} />
-  <meta property="twitter:image" content={getLogoUrl()} />
-
-  <!-- Additional SEO Meta Tags -->
-  <meta name="author" content="wywy LLC" />
-  <link rel="canonical" href={createAppUrl('/user')} />
-</svelte:head>
+<SeoHead
+  title={meta_title_home()}
+  description={meta_description_home()}
+  keywords={meta_keywords_home()}
+  canonical={pageUrl}
+  author="wywy LLC"
+  ogUrl={pageUrl}
+  ogImage={logoUrl}
+  ogSiteName={APP_CONFIG.SITE_NAME}
+  {hreflangLinks}
+/>
 
 <!-- GASライブラリ検索ヘッダー -  Hero -->
 <div class="hero bg-base-200 py-12">

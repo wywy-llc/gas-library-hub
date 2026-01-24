@@ -2,7 +2,8 @@
   import LibraryCard from '$lib/components/LibraryCard.svelte';
   import Pagination from '$lib/components/Pagination.svelte';
   import SearchBox from '$lib/components/SearchBox.svelte';
-  import { createFullUrl, getLogoUrl } from '$lib/constants/app-config.js';
+  import SeoHead from '$lib/components/SeoHead.svelte';
+  import { APP_CONFIG, createFullUrl, getLogoUrl } from '$lib/constants/app-config.js';
   import {
     all_libraries_count,
     meta_keywords_home,
@@ -12,6 +13,7 @@
     search_results_for,
     try_different_keywords,
   } from '$lib/paraglide/messages.js';
+  import { generateHreflangLinks } from '$lib/utils/seo.js';
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import type { PageData } from './$types.js';
 
@@ -51,6 +53,10 @@
     data.currentPage < totalPages ? getPageUrl(data.currentPage + 1) : ''
   );
 
+  // hreflangはベースパス（クエリパラメータなし）で生成
+  const hreflangLinks = generateHreflangLinks('/user/search');
+  const logoUrl = getLogoUrl();
+
   // ページURL生成関数
   function getPageUrl(pageNum: number): string {
     const params = new SvelteURLSearchParams();
@@ -62,30 +68,19 @@
   }
 </script>
 
+<SeoHead
+  title={pageTitle}
+  description={pageDescription}
+  keywords={meta_keywords_home()}
+  canonical={currentUrl}
+  ogUrl={currentUrl}
+  ogImage={logoUrl}
+  ogSiteName={APP_CONFIG.SITE_NAME}
+  {hreflangLinks}
+/>
+
+<!-- Pagination Meta Tags -->
 <svelte:head>
-  <title>{pageTitle}</title>
-  <meta name="description" content={pageDescription} />
-  <meta name="keywords" content={meta_keywords_home()} />
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={currentUrl} />
-  <meta property="og:title" content={pageTitle} />
-  <meta property="og:description" content={pageDescription} />
-  <meta property="og:image" content={getLogoUrl()} />
-  <meta property="og:site_name" content="GAS Library Hub" />
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content={currentUrl} />
-  <meta property="twitter:title" content={pageTitle} />
-  <meta property="twitter:description" content={pageDescription} />
-  <meta property="twitter:image" content={getLogoUrl()} />
-
-  <!-- Additional SEO Meta Tags -->
-  <link rel="canonical" href={currentUrl} />
-
-  <!-- Pagination Meta Tags -->
   {#if data.currentPage > 1}
     <link rel="prev" href={prevPageUrl} />
   {/if}

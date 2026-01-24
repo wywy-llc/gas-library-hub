@@ -2,6 +2,23 @@ import { createAppUrl, APP_CONFIG } from '$lib/constants/app-config.js';
 import { company_name } from '$lib/paraglide/messages.js';
 import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
 import type { LibraryEntity } from '$lib/types/index.js';
+import { SUPPORTED_LOCALES } from '$lib/types/locale.js';
+
+/**
+ * hreflangリンク情報
+ */
+export interface HreflangLink {
+  hreflang: string; // 'en', 'ja', 'x-default'
+  href: string;
+}
+
+/**
+ * パンくずリストのアイテム
+ */
+export interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
 
 /**
  * SEO関連のユーティリティ関数
@@ -229,5 +246,48 @@ export function generateDatasetJsonLd(): object {
       name: 'wywy LLC',
       url: 'https://wywy.jp/',
     },
+  };
+}
+
+/**
+ * hreflangリンクを生成
+ * 多言語SEO対応のためのhreflangタグ用リンクを生成
+ * @param path - 現在のパス（ロケールプレフィックス付きの場合あり）
+ * @returns hreflangリンクの配列
+ */
+export function generateHreflangLinks(path: string): HreflangLink[] {
+  // パスからロケールプレフィックスを除去してベースパスを取得
+  const basePath = path.replace(/^\/ja/, '') || '/';
+
+  const links: HreflangLink[] = SUPPORTED_LOCALES.map(locale => ({
+    hreflang: locale,
+    href: createAppUrl(locale === 'ja' ? `/ja${basePath}` : basePath),
+  }));
+
+  // x-default（デフォルト言語=en）を追加
+  links.push({
+    hreflang: 'x-default',
+    href: createAppUrl(basePath),
+  });
+
+  return links;
+}
+
+/**
+ * BreadcrumbList JSON-LDを生成
+ * パンくずリストの構造化データを生成
+ * @param items - パンくずリストのアイテム配列
+ * @returns JSON-LD構造化データ
+ */
+export function generateBreadcrumbJsonLd(items: BreadcrumbItem[]): object {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   };
 }

@@ -242,5 +242,7 @@
   "copy_button": "Copy",
   "script_validation_inaccessible": "This script is inaccessible or set to private.",
   "script_validation_not_found": "This script does not exist or has been deleted.",
-  "script_validation_warning_title": "Script Access Warning"
+  "script_validation_warning_title": "Script Access Warning",
+  "breadcrumb_home": "Home",
+  "breadcrumb_libraries": "Libraries"
 }
