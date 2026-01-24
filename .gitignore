@@ -157,3 +157,7 @@ storybook-static/
 .DS_Store
 
 .claude/settings.local.json
+
+# MCP Registry tokens
+.mcpregistry_github_token
+.mcpregistry_registry_token

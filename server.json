@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.wywy-llc/gas-library-hub",
+  "description": "Search and discover Google Apps Script libraries with AI-generated summaries",
+  "repository": {
+    "url": "https://github.com/wywy-llc/app-script-hub",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://appscripthub.com/api/mcp"
+    }
+  ]
+}
