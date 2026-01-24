@@ -175,19 +175,24 @@ usage: |
 
 ```yaml
 ALWAYS:
-  - テストデータ生成にファクトリ使用（fishery）
+  - テストデータ生成にファクトリ使用（factory.ts）
+  - ファクトリ規約に従う: test/factories/CLAUDE.md
   - src/routes/ → src/stories/pages/ にStorybookストーリー作成
 
 NEVER:
+  - オブジェクトリテラル手動作成（テストデータ）
   - Storybookでplay関数使用
 ```
 
 ### §6.2 Test Factory
 
 ```yaml
-library: fishery
+library: factory.ts
 location: test/factories/
-naming: "{entity}.factory.ts"
+naming: "{entity}-test-data.factory.ts"
+export: "{Entity}TestDataFactories"
+database: "Database{Entity}DataFactory"
+詳細規約: test/factories/CLAUDE.md
 ```
 
 ### §6.3 E2Eテスト
@@ -314,7 +319,9 @@ types: src/lib/types/
 utils:
   retry: src/lib/server/utils/retry-util.ts
   error: src/lib/server/utils/service-error-util.ts
-factories: test/factories/
+factories:
+  location: test/factories/
+  規約: test/factories/CLAUDE.md
 scripts: scripts/dev.sh
 claude_config: .claude/settings.json
 ```
