@@ -16,19 +16,25 @@ import type { ScraperConfig } from '$lib/types/github-scraper.js';
  *    - /macros/d/ エディタURL
  *    - /macros/s/ Web App公開URL
  *    - /home/projects/ 新UI形式
- * 4. インラインコード記法（高精度）
- * 5. コードブロック内のライブラリID（高精度・GASコンテキスト必須）
- * 6. 明示的な「スクリプトID」「Script ID」ラベル付き（高精度）
+ * 4. ライブラリ検索ダイアログでのID入力（高精度）
+ *    - "Find a Library" テキストボックス
+ *    - "Input the Script ID in the text box"
+ * 5. インラインコード記法（高精度）
+ * 6. コードブロック内のライブラリID（高精度）
+ *    - GASコンテキスト必須のパターン
+ *    - ヘッダー直後のコードブロック（単独ID）
+ * 7. 明示的な「スクリプトID」「Script ID」ラベル付き（高精度）
  *    - Resources > Libraries での記載も含む
  *    - appsscript.json内のdependencies/libraryId
- * 7. claspコマンド内のスクリプトID（高精度）
- * 8. マークダウンテーブル内のスクリプトID（中精度）
- * 9. script.google.comドメインの一般URL（中精度）
- * 10. GAS特有のコンテキストでの文字列リテラル（中精度）
+ * 8. claspコマンド内のスクリプトID（高精度）
+ * 9. マークダウンテーブル内のスクリプトID（中精度）
+ * 10. script.google.comドメインの一般URL（中精度）
+ * 11. GAS特有のコンテキストでの文字列リテラル（中精度）
  *     - library_id, clasp, ScriptApp.getProjectKey() 等
- * 11. 基本的な1で始まる文字列（低精度・最終フォールバック）
  *
- * 注意: 誤検出を防ぐため、JSON形式のemail_idやAWSキー等を除外パターンで排除
+ * 注意:
+ * - 誤検出を防ぐため、JSON形式のemail_idやAWSキー等を除外パターンで排除
+ * - 低精度パターン（1で始まる任意の文字列等）は誤検知リスクが高いため削除済み
  */
 export const DEFAULT_SCRIPT_ID_PATTERNS: RegExp[] = [
   // 1. clasp.json内のscriptId（最高精度）
@@ -39,6 +45,9 @@ export const DEFAULT_SCRIPT_ID_PATTERNS: RegExp[] = [
   /(?:library(?:['']s)?|project)\s*(?:project\s+)?key[^\r\n:]{0,50}[:：]?\s*(?:is\s+)?(?:as\s+follows[.。]?)?\s*`?\s*(1[A-Za-z0-9_-]{24,69})\s*`?/gi,
   /(?:ライブラリ|プロジェクト).{0,30}?(?:プロジェクト.{0,10}?)?キー[^\r\n:]{0,30}[:：]?\s*(1[A-Za-z0-9_-]{24,69})/gi,
 
+  // 2.1. Library's project key is **`ID`** 形式（ボールド+バッククォート）
+  /library['']?s?\s*project\s*key\s*is\s*\*{0,2}`(1[A-Za-z0-9_-]{24,69})`\*{0,2}/gi,
+
   // 3. Google Script URL形式（高精度）
   // /macros/d/ 形式（/edit はオプショナル）
   /https?:\/\/script\.google\.com\/macros\/d\/(1[A-Za-z0-9_-]{24,69})(?:\/edit)?/gi,
@@ -47,47 +56,64 @@ export const DEFAULT_SCRIPT_ID_PATTERNS: RegExp[] = [
   // /home/projects/ 形式（新UI）
   /https?:\/\/script\.google\.com\/home\/projects\/(1[A-Za-z0-9_-]{24,69})/gi,
 
-  // 4. インラインコード記法（高精度）
+  // 4. ライブラリ検索ダイアログでのID入力（高精度）
+  // "Find a Library" テキストボックスへの入力指示
+  /(?:find\s*a?\s*library|ライブラリ.{0,20}?(?:検索|追加)).{0,100}?(?:enter|input|type|paste|入力).{0,50}?(?:script\s*id|スクリプト\s*ID|ライブラリ.{0,10}?ID)?[^\r\n]*?[`"']?(1[A-Za-z0-9_-]{24,69})[`"']?/gi,
+  // "Input the Script ID in the text box" 形式
+  /input\s*the\s*script\s*id.{0,50}?(1[A-Za-z0-9_-]{24,69})/gi,
+  // "Script ID of the library is" 形式
+  /script\s*id\s*of\s*(?:the\s*)?library\s*is\s*[`"']?(1[A-Za-z0-9_-]{24,69})[`"']?/gi,
+
+  // 5. インラインコード記法（高精度）
   /`(1[A-Za-z0-9_-]{24,69})`/g,
 
-  // 5. コードブロック内のライブラリID（高精度・GASコンテキスト必須）
+  // 6. コードブロック内のライブラリID（高精度・GASコンテキスト必須）
   // Markdownコードブロック内でGAS関連キーワードがある場合のみ
   /```(?:javascript|js|gas|appsscript)?[^`]{0,500}?(?:library|script.{0,10}?id|project.{0,10}?key)[^`]{0,200}?(1[A-Za-z0-9_-]{24,69})[^`]{0,200}?```/gis,
 
-  // 6. 明示的ラベル付き（高精度）
+  // 6.1. "# Library's project key" ヘッダー直後のコードブロック（単独ID）
+  /(?:^|\n)#+ *(?:library(?:['']s)?|project)?\s*(?:project\s+)?key[^\r\n]*\r?\n+```[a-z]*\s*\r?\n(1[A-Za-z0-9_-]{24,69})\s*\r?\n```/gim,
+
+  // 6.2. コードブロック内の単独ID（改行で囲まれた単独行）
+  /```[a-z]*\s*\r?\n(1[A-Za-z0-9_-]{24,69})\s*\r?\n```/gim,
+
+  // 7. 明示的ラベル付き（高精度）
   /(?:スクリプト|script)\s*(?:id|ID)[：:\s=]{0,3}["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
   /(?:gas|GAS)\s*(?:id|ID)[：:\s=]{0,3}["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 6.1. ライブラリインストール手順でのスクリプトID（高精度）
+  // 7.1. ライブラリインストール手順でのスクリプトID（高精度）
   /(?:library|ライブラリ).{0,100}?(?:script\s*id|スクリプトID)[：:\s]{0,3}["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
-  /(?:find\s*a\s*library|ライブラリ.{0,30}?検索).{0,50}?["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 6.2. Resources > Libraries での記載（高精度）
-  /(?:resources?|リソース).{0,50}?(?:libraries|ライブラリ).{0,100}?["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
-  /(?:add\s*(?:a\s*)?library|ライブラリ.{0,30}?追加).{0,100}?["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
+  // 7.2. Resources > Libraries での記載（高精度）
+  // GASエディタのメニュー操作を明示的に記述している場合のみ
+  /(?:resources?\s*>\s*libraries|リソース\s*>\s*ライブラリ).{0,100}?["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 6.3. appsscript.json内のdependencies（高精度）
+  // 7.3. appsscript.json内のdependencies（高精度）
   /["']dependencies["'].{0,200}?["'](?:libraries|userSymbol)["'].{0,200}?(1[A-Za-z0-9_-]{24,69})/gis,
   /["']libraryId["']\s*:\s*["'](1[A-Za-z0-9_-]{24,69})["']/gi,
 
-  // 7. claspコマンド内のスクリプトID（高精度）
+  // 7.4. "The Script ID is" 形式（高精度）
+  /the\s*script\s*id\s*is\s*\*{0,2}[`"']?(1[A-Za-z0-9_-]{24,69})[`"']?\*{0,2}/gi,
+
+  // 8. claspコマンド内のスクリプトID（高精度）
   /clasp\s+(?:clone|pull|push)\s+["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 8. マークダウンテーブル内のスクリプトID（中精度）
+  // 9. マークダウンテーブル内のスクリプトID（中精度）
   /\|\s*(1[A-Za-z0-9_-]{24,69})\s*\|/g,
 
-  // 9. script.google.comドメインの一般URL（中精度）
+  // 10. script.google.comドメインの一般URL（中精度）
   /script\.google\.com\/[^\s)]{0,100}\/(1[A-Za-z0-9_-]{24,69})/gi,
 
-  // 10. GAS特有のコンテキストでの文字列リテラル（中精度）
+  // 11. GAS特有のコンテキストでの文字列リテラル（中精度）
   // 'library_id'や'clasp'等のコンテキストの近くにある場合のみ
   /(?:library_id|libraryId|clasp|apps[\s-]?script)[^a-zA-Z0-9_-]{0,10}["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 10.1. ScriptApp.getProjectKey()やPropertiesServiceでの定数定義（中精度）
+  // 11.1. ScriptApp.getProjectKey()やPropertiesServiceでの定数定義（中精度）
   /(?:ScriptApp\.getProjectKey|PropertiesService|SCRIPT_ID|PROJECT_KEY)[^=\r\n]{0,30}=\s*["']?(1[A-Za-z0-9_-]{24,69})["']?/gi,
 
-  // 11. 基本的な1で始まる文字列（低精度・最終フォールバック）
-  /\b(1[A-Za-z0-9_-]{24,69})\b/g,
+  // 注意: 以下のパターンは誤検知リスクが高いため削除
+  // - "install this library" 付近のID: 一般的なnpmライブラリインストール説明にもマッチ
+  // - 基本的な1で始まる文字列: Google Sheets APIなど無関係な文字列にもマッチ
 ];
 
 /**

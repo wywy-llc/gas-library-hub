@@ -85,7 +85,7 @@ Also, you can see the official document of Gemini API at [https://ai.google.dev/
     expect(result).toBe(expectedLibraryId);
   });
 
-  it('コードブロック内のライブラリIDが最初に抽出されることを確認', () => {
+  it('コードブロック内の単独IDが抽出されることを確認', () => {
     const readmeWithCodeBlock = `# Library Usage
 
 Install the library:
@@ -98,8 +98,9 @@ Alternative method:
 Script ID: 1AnotherScriptId1234567890123456789012345678901234567890123`;
 
     const result = GASScriptIdExtractor.extractScriptId(readmeWithCodeBlock);
-    // 「Script ID:」ラベル付きの方が優先度が高いため、そちらが抽出される
-    const expectedFirstId = '1AnotherScriptId1234567890123456789012345678901234567890123';
+    // コードブロック内の単独IDパターンが先にマッチするため、コードブロック内のIDが抽出される
+    // これはGASライブラリでよく使われるパターン（tanaikech氏のライブラリなど）に対応
+    const expectedFirstId = '1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC';
 
     expect(result).toBe(expectedFirstId);
   });

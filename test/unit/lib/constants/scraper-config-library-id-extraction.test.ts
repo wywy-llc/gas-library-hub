@@ -71,15 +71,54 @@ If you use this library in your own Google Apps Script project, please copy and 
       content: `スクリプトID: 1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC`,
       expectedId: '1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC',
     },
+    // 以下は誤検知リスクが高いため削除
+    // - "Library ID:" ラベルのみ: GASライブラリ以外の一般的なライブラリIDにもマッチ
+    // - クォート内のID: コンテキストなしでは誤検知リスクが高い
+    // 新規追加パターン
     {
-      name: 'Library IDラベル付き',
-      content: `Library ID: 1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC`,
-      expectedId: '1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC',
+      name: 'Find a Library テキストボックス形式（OAuth2ライブラリ）',
+      content: `In the "Find a Library" text box, enter the script ID \`1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF\``,
+      expectedId: '1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF',
     },
     {
-      name: 'クォート内のID',
-      content: `"1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC"`,
-      expectedId: '1dolXnIeXKz-BH1BlwRDaKhzC2smJcGyVxMxGYhaY2kqiLa857odLXrIC',
+      name: 'Input the Script ID in the text box形式',
+      content: `Input the Script ID in the text box. The Script ID is 108j6x_ZX544wEhGkgddFYM6Ie09edDqXaFwnW3RVFQCLHw_mEueqUHTW`,
+      expectedId: '108j6x_ZX544wEhGkgddFYM6Ie09edDqXaFwnW3RVFQCLHw_mEueqUHTW',
+    },
+    {
+      name: 'Script ID of the library is形式',
+      content: `Script ID of the library is 115-19njNHlbT-NI0hMPDnVO1sdrw2tJKCAJgOTIAPbi_jq3tOo4lVRov`,
+      expectedId: '115-19njNHlbT-NI0hMPDnVO1sdrw2tJKCAJgOTIAPbi_jq3tOo4lVRov',
+    },
+    {
+      name: 'Library project key is **`ID`** 形式（ボールド+バッククォート）',
+      content: `Library's project key is **\`1HLv6tWz0oXFOJHerBTP8HsNmhpRqssijJatC92bv9Ym6HSN69_UuzcDk\`**`,
+      expectedId: '1HLv6tWz0oXFOJHerBTP8HsNmhpRqssijJatC92bv9Ym6HSN69_UuzcDk',
+    },
+    {
+      name: '# Library project key ヘッダー直後のコードブロック',
+      content: `# Library's project key
+
+\`\`\`
+1FWYhQFhL7UIAZJn-FR3TlcHvXwHPJc2HwI4vtmNUAQv2OybGe-S97Lal
+\`\`\``,
+      expectedId: '1FWYhQFhL7UIAZJn-FR3TlcHvXwHPJc2HwI4vtmNUAQv2OybGe-S97Lal',
+    },
+    {
+      name: 'The Script ID is 形式',
+      content: `The Script ID is **\`1Xmtr5XXEakVql7N6FqwdCNdpdijsJOxgqH173JSB0UOwdb0GJYJbnJLk\`**`,
+      expectedId: '1Xmtr5XXEakVql7N6FqwdCNdpdijsJOxgqH173JSB0UOwdb0GJYJbnJLk',
+    },
+    {
+      name: 'install this library付近のID',
+      content: `1. [Install this library](https://developers.google.com/apps-script/guides/libraries).
+
+   - Library's project key is as follows.
+
+\`\`\`
+1g0_wywpigtU_xA01D5IrRuBuDD5unieYl7nVXQR8DM_An0eUnB0NcTcx
+\`\`\``,
+      expectedId: '1g0_wywpigtU_xA01D5IrRuBuDD5unieYl7nVXQR8DM_An0eUnB0NcTcx',
     },
   ];
 
@@ -106,6 +145,46 @@ If you use this library in your own Google Apps Script project, please copy and 
     {
       name: '画像ファイルURL',
       content: 'https://example.com/image_1a2b3c4d5e6f7890abcdef1234567890.png',
+    },
+    // 誤検知防止: GASライブラリではない一般的なAPI/ライブラリ説明
+    {
+      name: 'Google Sheets API使用説明（誤検知防止）',
+      content: `# Google Sheets API Example
+
+This project uses the Google Sheets API to read and write spreadsheet data.
+
+## Setup
+
+1. Enable the Google Sheets API in your Google Cloud Console
+2. Add the library to your project
+
+The Google Sheets API provides powerful features for spreadsheet manipulation.`,
+    },
+    {
+      name: 'npmライブラリインストール説明（誤検知防止）',
+      content: `## Installation
+
+Install this library using npm:
+
+\`\`\`bash
+npm install my-awesome-library
+\`\`\`
+
+Or add a library using yarn:
+
+\`\`\`bash
+yarn add my-awesome-library
+\`\`\``,
+    },
+    {
+      name: 'Resources > Libraries以外のリソース説明（誤検知防止）',
+      content: `## Resources
+
+Check out these resources and libraries for more information:
+
+- [Official Documentation](https://example.com/docs)
+- [API Reference](https://example.com/api)
+- [Community Libraries](https://example.com/libs)`,
     },
   ];
 

@@ -36,11 +36,12 @@ describe('GASScriptIdExtractor', () => {
       expect(result).toBe('1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF');
     });
 
-    test('1で始まる25文字以上の文字列から抽出する（修正されたパターンで完全なIDが抽出される）', () => {
+    test('バッククォートで囲まれたスクリプトIDを抽出する', () => {
+      // 誤検知を防ぐため、コンテキストなしの裸のIDは抽出しない
+      // バッククォートやScript ID:ラベルなど、明確なコンテキストが必要
       const readme =
-        'Use this script: 1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF for testing';
+        'Use this script: `1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF` for testing';
       const result = GASScriptIdExtractor.extractScriptId(readme);
-      // 修正されたパターンでは先頭の「1」も含めて完全なIDが抽出される
       expect(result).toBe('1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF');
     });
 
@@ -159,9 +160,9 @@ describe('GASScriptIdExtractor', () => {
         shouldMatch: true,
       },
       {
-        name: 'ID ラベル付き',
-        text: 'ID: 1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF',
-        shouldMatch: true, // 改善されたパターンでは1で始まる文字列も抽出される
+        name: 'ID ラベル付き（バッククォート囲み）',
+        text: 'ID: `1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF`',
+        shouldMatch: true, // インラインコード記法パターンで抽出される
       },
     ];
 
@@ -199,7 +200,7 @@ describe('GASScriptIdExtractor', () => {
     test('画像ファイルの拡張子を持つ1で始まる文字列は除外される', () => {
       const readme = `
         Check this image: https://example.com/images/103873116-2dd87e00-5084-11eb-8ab6-d4c1b7be8ec6.png
-        But this script ID should work: 1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF
+        But this script ID should work: \`1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF\`
       `;
       const result = GASScriptIdExtractor.extractScriptId(readme);
       expect(result).toBe('1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF');
@@ -208,7 +209,7 @@ describe('GASScriptIdExtractor', () => {
     test('ファイル拡張子付きの文字列は除外される', () => {
       const readme = `
         Image file: 123456789abcdef123456789abcdef.png
-        Script file: 1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF
+        Script ID: 1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF
       `;
       const result = GASScriptIdExtractor.extractScriptId(readme);
       expect(result).toBe('1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF');
