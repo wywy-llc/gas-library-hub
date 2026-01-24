@@ -225,8 +225,9 @@ config:
   setup_script: scripts/setup-test-db.js
 
 warning: |
-  ⚠️ スキーマ変更時: 新テーブル追加時は clear-test-data.js のDELETE文も追加
-  （外部キー制約順序に注意）
+  ⚠️ スキーマ変更時:
+    - 新テーブル追加時は clear-test-data.js のDELETE文も追加（外部キー制約順序に注意）
+    - setup-test-db.js のスキーマ定義を必ず更新（テスト環境のテーブル構造を本番と同期）
 
 delete_order: [library_summary, library, user]
 ```

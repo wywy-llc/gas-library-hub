@@ -55,7 +55,23 @@ export interface LibrarySearchResult {
 // ロケール関連
 export type { Locale } from './locale';
 
-// API レスポンス型
+// 公開API レスポンス型
+export type {
+  ApiErrorCode,
+  ApiErrorResponse,
+  LibrarySummaryApiData,
+  LibraryDetailApiData,
+  LibraryDetailApiResponse,
+  LibraryDetailApiErrorResponse,
+  LibrarySearchApiParams,
+  LibrarySearchItemApiData,
+  LibrarySearchApiResponse,
+  LibrarySearchApiErrorResponse,
+} from './api-response';
+
+export { createApiErrorResponse, API_CACHE_HEADERS } from './api-response';
+
+// 内部API レスポンス型
 export interface BulkRegisterResponse {
   success: boolean;
   message: string;

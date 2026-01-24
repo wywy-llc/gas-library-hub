@@ -6,7 +6,7 @@
 import { config } from 'dotenv';
 import { sql } from 'drizzle-orm';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 
 // 環境変数を読み込み
 config({ quiet: true });
@@ -28,6 +28,10 @@ const poolConfig = {
 // シングルトンプールインスタンス
 let pool: Pool | null = null;
 let db: NodePgDatabase | null = null;
+
+// トランザクション管理用
+let transactionClient: PoolClient | null = null;
+let savepointCounter = 0;
 
 /**
  * DB接続プールを取得（遅延初期化）
@@ -69,6 +73,68 @@ export async function closePool(): Promise<void> {
     await pool.end();
     pool = null;
     db = null;
+  }
+}
+
+// ========================================
+// トランザクション管理関数（改善3）
+// ========================================
+
+/**
+ * トランザクションモードかどうかを判定
+ */
+export function isTransactionMode(): boolean {
+  return process.env.E2E_TRANSACTION_MODE === 'true';
+}
+
+/**
+ * トランザクションを開始
+ * globalSetupで呼び出し
+ */
+export async function beginTransaction(): Promise<void> {
+  const poolInstance = getPool();
+  transactionClient = await poolInstance.connect();
+  await transactionClient.query('BEGIN');
+  console.log('🔄 トランザクションを開始しました');
+}
+
+/**
+ * セーブポイントを作成
+ * 各テストの開始時に呼び出し
+ * @returns セーブポイント名
+ */
+export async function createSavepoint(): Promise<string> {
+  if (!transactionClient) {
+    throw new Error('トランザクションが開始されていません');
+  }
+  const name = `sp_${++savepointCounter}`;
+  await transactionClient.query(`SAVEPOINT ${name}`);
+  return name;
+}
+
+/**
+ * 指定したセーブポイントまでロールバック
+ * 各テストの終了時に呼び出し
+ * @param name セーブポイント名
+ */
+export async function rollbackToSavepoint(name: string): Promise<void> {
+  if (!transactionClient) {
+    throw new Error('トランザクションが開始されていません');
+  }
+  await transactionClient.query(`ROLLBACK TO SAVEPOINT ${name}`);
+}
+
+/**
+ * トランザクション全体をロールバック
+ * globalTeardownで呼び出し
+ */
+export async function rollbackTransaction(): Promise<void> {
+  if (transactionClient) {
+    await transactionClient.query('ROLLBACK');
+    transactionClient.release();
+    transactionClient = null;
+    savepointCounter = 0;
+    console.log('🔄 トランザクションをロールバックしました');
   }
 }
 

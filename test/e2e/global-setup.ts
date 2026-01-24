@@ -1,4 +1,4 @@
-import { clearTestData } from '../scripts/db-pool.js';
+import { beginTransaction, clearTestData, isTransactionMode } from '../scripts/db-pool.js';
 import { setupTestDatabase } from '../scripts/setup-test-db.js';
 
 async function globalSetup(): Promise<void> {
@@ -18,8 +18,16 @@ async function globalSetup(): Promise<void> {
     // テストデータベースをセットアップ
     await setupTestDatabase();
 
-    // テストデータをクリア（プール接続を使用）
-    await clearTestData();
+    // トランザクションモードの場合はトランザクションを開始
+    // それ以外の場合は従来通りテストデータをクリア
+    if (isTransactionMode()) {
+      console.log('📝 トランザクションモードで実行します');
+      await beginTransaction();
+    } else {
+      // テストデータをクリア（プール接続を使用）
+      await clearTestData();
+    }
+
     console.log('✅ E2Eテストのセットアップが完了しました');
   } catch (error) {
     console.error('❌ E2Eテストのセットアップに失敗しました:', error);

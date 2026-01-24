@@ -166,3 +166,68 @@ export function removeJsonLdFromHead(): void {
     scriptToRemove.remove();
   }
 }
+
+/**
+ * 検索結果ページ用のItemList JSON-LDを生成
+ * @param libraries - 検索結果のライブラリ一覧
+ * @param searchQuery - 検索クエリ（オプション）
+ * @param currentPage - 現在のページ番号
+ * @param itemsPerPage - 1ページあたりの件数
+ * @returns JSON-LD構造化データ
+ */
+export function generateSearchResultsJsonLd(
+  libraries: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    repositoryUrl: string;
+  }>,
+  searchQuery: string | null,
+  currentPage: number,
+  itemsPerPage: number
+): object {
+  const listName = searchQuery
+    ? `"${searchQuery}" の検索結果`
+    : 'Google Apps Script ライブラリ一覧';
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: libraries.length,
+    itemListElement: libraries.map((lib, index) => ({
+      '@type': 'ListItem',
+      position: (currentPage - 1) * itemsPerPage + index + 1,
+      item: {
+        '@type': 'SoftwareSourceCode',
+        '@id': createAppUrl(`/user/libraries/${lib.id}`),
+        name: lib.name,
+        description: lib.description,
+        url: createAppUrl(`/user/libraries/${lib.id}`),
+        codeRepository: lib.repositoryUrl,
+        programmingLanguage: 'JavaScript',
+        runtimePlatform: 'Google Apps Script',
+      },
+    })),
+  };
+}
+
+/**
+ * Dataset JSON-LDを生成（API用）
+ * @returns JSON-LD構造化データ
+ */
+export function generateDatasetJsonLd(): object {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: 'GAS Library Hub Database',
+    description: 'Google Apps Script ライブラリのオープンデータセット',
+    url: createAppUrl('/api/libraries'),
+    license: 'https://creativecommons.org/licenses/by/4.0/',
+    creator: {
+      '@type': 'Organization',
+      name: 'wywy LLC',
+      url: 'https://wywy.jp/',
+    },
+  };
+}

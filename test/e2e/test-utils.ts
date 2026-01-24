@@ -1,20 +1,60 @@
 import type { Page } from '@playwright/test';
-import { clearTestData } from '../scripts/db-pool.js';
+import {
+  clearTestData,
+  createSavepoint,
+  isTransactionMode,
+  rollbackToSavepoint,
+} from '../scripts/db-pool.js';
 
 /**
  * E2Eテスト用のユーティリティ関数
  */
 
+// 現在のセーブポイント名を保持
+let currentSavepoint: string | null = null;
+
 /**
  * テストデータをクリアする
  * テストの前に呼び出して、データベースの状態をリセットする
+ *
+ * トランザクションモード（E2E_TRANSACTION_MODE=true）の場合:
+ * - セーブポイントを作成
+ *
+ * 通常モードの場合:
+ * - DELETE文でデータをクリア
+ *
  * ※プール接続を使用するため、接続オーバーヘッドが削減される
  */
 export async function clearTestDataBeforeTest(): Promise<void> {
   try {
-    await clearTestData();
+    if (isTransactionMode()) {
+      // トランザクションモード: セーブポイントを作成
+      currentSavepoint = await createSavepoint();
+    } else {
+      // 通常モード: DELETEでクリア
+      await clearTestData();
+    }
   } catch (error) {
     console.error('❌ テストデータのクリアに失敗しました:', error);
+    throw error;
+  }
+}
+
+/**
+ * テストデータをロールバックする
+ * テストの後に呼び出して、データベースの状態を戻す
+ *
+ * トランザクションモード（E2E_TRANSACTION_MODE=true）の場合のみ有効
+ * 通常モードでは何もしない
+ */
+export async function rollbackTestData(): Promise<void> {
+  try {
+    if (isTransactionMode() && currentSavepoint) {
+      await rollbackToSavepoint(currentSavepoint);
+      currentSavepoint = null;
+    }
+  } catch (error) {
+    console.error('❌ テストデータのロールバックに失敗しました:', error);
     throw error;
   }
 }

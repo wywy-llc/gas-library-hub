@@ -1,9 +1,14 @@
-import { closePool } from '../scripts/db-pool.js';
+import { closePool, isTransactionMode, rollbackTransaction } from '../scripts/db-pool.js';
 
 async function globalTeardown(): Promise<void> {
   console.log('🧹 E2Eテスト後のクリーンアップを開始...');
 
   try {
+    // トランザクションモードの場合はロールバック
+    if (isTransactionMode()) {
+      await rollbackTransaction();
+    }
+
     // DB接続プールを終了
     await closePool();
     console.log('✅ E2Eテストのクリーンアップが完了しました');
