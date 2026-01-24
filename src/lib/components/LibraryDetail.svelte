@@ -216,7 +216,13 @@
 
       <!-- AI による要約セクション -->
       {#if librarySummary}
-        <LibrarySummarySection {librarySummary} libraryName={library.name} {isAdminMode} />
+        <LibrarySummarySection
+          {librarySummary}
+          libraryName={library.name}
+          scriptId={library.scriptId}
+          {isAdminMode}
+          {onCopyScriptId}
+        />
       {/if}
 
       {#if isAdminMode}

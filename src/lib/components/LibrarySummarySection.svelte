@@ -5,15 +5,39 @@
   import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
   import TagButton from '$lib/components/TagButton.svelte';
   import * as m from '$lib/paraglide/messages.js';
+  import { toastStore } from '$lib/stores/toast-store.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
 
   interface Props {
     librarySummary: LibrarySummaryRecord;
     libraryName: string;
+    scriptId?: string;
     isAdminMode?: boolean;
+    onCopyScriptId?: () => Promise<void>;
   }
 
-  let { librarySummary, libraryName, isAdminMode = false }: Props = $props();
+  let {
+    librarySummary,
+    libraryName,
+    scriptId,
+    isAdminMode = false,
+    onCopyScriptId,
+  }: Props = $props();
+
+  // スクリプトIDをクリップボードにコピー
+  async function copyScriptId() {
+    if (!scriptId) return;
+    try {
+      await navigator.clipboard.writeText(scriptId);
+      toastStore.success(m.copied_success());
+      if (onCopyScriptId) {
+        await onCopyScriptId();
+      }
+    } catch (err) {
+      console.error('Copy failed', err);
+      toastStore.error(m.copy_failed());
+    }
+  }
 
   // Paraglide の現在の言語設定を使用（自動的に更新される） // cspell:ignore Paraglide
   let currentLocale = $derived<Locale>(getLocale());
@@ -127,6 +151,52 @@
           </div>
         {/if}
       </div>
+
+      <!-- スクリプトID（ユーザーモードのみ表示） -->
+      {#if scriptId && !isAdminMode}
+        <div class="my-6">
+          <h4 class="mb-3 flex items-center text-base font-semibold">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              ></path>
+            </svg>
+            {m.script_id()}
+          </h4>
+          <div class="join w-full max-w-md">
+            <input
+              type="text"
+              readonly
+              value={scriptId}
+              class="input input-bordered join-item flex-1 font-mono text-sm"
+            />
+            <button
+              onclick={copyScriptId}
+              aria-label={m.copy_script_id_aria()}
+              class="btn btn-primary join-item"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                ></path>
+              </svg>
+              {m.copy_button()}
+            </button>
+          </div>
+          <ol class="mt-3 list-inside list-decimal space-y-1 text-sm opacity-70">
+            <li>{m.script_id_install_step1()}</li>
+            <li>{m.script_id_install_step2({ libraryName: libraryName })}</li>
+            <li>{m.script_id_install_step3()}</li>
+            <li>{m.script_id_install_step4()}</li>
+          </ol>
+        </div>
+      {/if}
 
       <!-- タグ -->
       {#if (currentLocale === 'ja' ? librarySummary.tagsJa : librarySummary.tagsEn) && (currentLocale === 'ja' ? librarySummary.tagsJa || [] : librarySummary.tagsEn || []).length > 0}
