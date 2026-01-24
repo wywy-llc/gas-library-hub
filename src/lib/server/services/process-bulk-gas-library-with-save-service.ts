@@ -55,7 +55,63 @@ export type LibrarySaveWithSummaryCallback = (
  * 6. 必要に応じてAI要約を生成
  */
 export class ProcessBulkGASLibraryWithSaveService {
-  private static readonly BATCH_SIZE = 5; // 並列処理のバッチサイズ
+  /** 並列処理のバッチサイズ */
+  private static readonly BATCH_SIZE = 5;
+  /** コミット日時の有効期限（年） */
+  private static readonly COMMIT_AGE_THRESHOLD_YEARS = 2;
+  /** ページ間の待機時間（ミリ秒） */
+  private static readonly PAGE_DELAY_MS = 500;
+
+  /**
+   * 詳細ログ出力（verbose有効時のみ）
+   * @private
+   */
+  private static log(config: ScraperConfig, message: string): void {
+    if (config.verbose) console.log(message);
+  }
+
+  /**
+   * エラーログ出力（verbose有効時のみ）
+   * @private
+   */
+  private static logError(config: ScraperConfig, message: string, error?: unknown): void {
+    if (config.verbose) console.error(message, error);
+  }
+
+  /**
+   * コミットが古すぎるかチェック
+   * @private
+   */
+  private static isCommitTooOld(lastCommitAt: Date): boolean {
+    const threshold = new Date();
+    threshold.setFullYear(threshold.getFullYear() - this.COMMIT_AGE_THRESHOLD_YEARS);
+    return lastCommitAt < threshold;
+  }
+
+  /**
+   * AI要約を生成すべきか判定
+   * @private
+   */
+  private static async shouldGenerateAiSummary(
+    repoUrl: string,
+    lastCommitAt: Date,
+    generateSummary: boolean
+  ): Promise<boolean> {
+    if (!generateSummary) return false;
+
+    const commitStatus = await CheckLibraryCommitStatusService.call(repoUrl, lastCommitAt);
+
+    // 新規ライブラリの場合は常にAI要約生成
+    if (!commitStatus.libraryId) {
+      return true;
+    }
+
+    // 既存ライブラリの場合、library_summaryの存在をチェック
+    const summaryExists = await CheckLibrarySummaryExistenceService.call(commitStatus.libraryId);
+
+    // 新規、更新が必要、またはサマリーが存在しない場合に生成
+    return commitStatus.isNew || commitStatus.shouldUpdate || !summaryExists;
+  }
   /**
    * ページ範囲指定でGASライブラリを検索・保存・AI要約生成
    *
@@ -84,17 +140,14 @@ export class ProcessBulkGASLibraryWithSaveService {
     let totalProcessedCount = 0;
 
     try {
-      if (config.verbose) {
-        console.log(
-          `ページ範囲指定一括検索・保存・AI要約生成開始: ページ ${startPage}-${endPage} (${perPage}件/ページ, AI要約: ${generateSummary ? '有効' : '無効'})`
-        );
-      }
+      this.log(
+        config,
+        `ページ範囲指定一括検索・保存・AI要約生成開始: ページ ${startPage}-${endPage} (${perPage}件/ページ, AI要約: ${generateSummary ? '有効' : '無効'})`
+      );
 
       // ページごとに処理
       for (let currentPage = startPage; currentPage <= endPage; currentPage++) {
-        if (config.verbose) {
-          console.log(`\n=== ページ ${currentPage} の処理開始 ===`);
-        }
+        this.log(config, `\n=== ページ ${currentPage} の処理開始 ===`);
 
         try {
           // 1ページ分のリポジトリを検索
@@ -107,9 +160,7 @@ export class ProcessBulkGASLibraryWithSaveService {
           );
 
           if (!searchResult.success) {
-            if (config.verbose) {
-              console.log(`ページ ${currentPage} の検索に失敗: ${searchResult.error}`);
-            }
+            this.log(config, `ページ ${currentPage} の検索に失敗: ${searchResult.error}`);
             // 検索失敗をエラー結果として記録
             allResults.push({
               success: false,
@@ -118,11 +169,10 @@ export class ProcessBulkGASLibraryWithSaveService {
             continue;
           }
 
-          if (config.verbose) {
-            console.log(
-              `ページ ${currentPage}: ${searchResult.processedCount}件のリポジトリを検索`
-            );
-          }
+          this.log(
+            config,
+            `ページ ${currentPage}: ${searchResult.processedCount}件のリポジトリを検索`
+          );
 
           totalProcessedCount += searchResult.processedCount;
 
@@ -138,18 +188,14 @@ export class ProcessBulkGASLibraryWithSaveService {
           totalDuplicateCount += batchResults.duplicateCount;
           allResults.push(...batchResults.results);
 
-          if (config.verbose) {
-            console.log(`=== ページ ${currentPage} の処理完了 ===\n`);
-          }
+          this.log(config, `=== ページ ${currentPage} の処理完了 ===\n`);
 
           // ページ間の待機
           if (currentPage < endPage) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, this.PAGE_DELAY_MS));
           }
         } catch (pageError) {
-          if (config.verbose) {
-            console.error(`ページ ${currentPage} の処理エラー:`, pageError);
-          }
+          this.logError(config, `ページ ${currentPage} の処理エラー:`, pageError);
           allResults.push({
             success: false,
             error: `ページ ${currentPage}: ${ErrorUtils.getMessage(pageError, '処理に失敗しました')}`,
@@ -160,11 +206,10 @@ export class ProcessBulkGASLibraryWithSaveService {
       const successCount = allResults.filter(r => r.success).length;
       const errorCount = allResults.filter(r => !r.success).length;
 
-      if (config.verbose) {
-        console.log(
-          `\n一括処理完了: 成功 ${successCount}件 / エラー ${errorCount}件 / 重複 ${totalDuplicateCount}件 / 処理済み ${totalProcessedCount}件`
-        );
-      }
+      this.log(
+        config,
+        `\n一括処理完了: 成功 ${successCount}件 / エラー ${errorCount}件 / 重複 ${totalDuplicateCount}件 / 処理済み ${totalProcessedCount}件`
+      );
 
       return {
         success: successCount > 0,
@@ -261,17 +306,14 @@ export class ProcessBulkGASLibraryWithSaveService {
         };
       }
 
-      // 2年前以降のコミットかチェック
-      const twoYearsAgo = new Date();
-      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       const lastCommitAt = new Date(scrapeResult.data.lastCommitAt);
 
-      if (lastCommitAt < twoYearsAgo) {
-        if (config.verbose) {
-          console.log(
-            `古いコミットのためスキップ: ${repo.name} (最終コミット: ${lastCommitAt.toISOString()})`
-          );
-        }
+      // 古いコミットはスキップ
+      if (this.isCommitTooOld(lastCommitAt)) {
+        this.log(
+          config,
+          `古いコミットのためスキップ: ${repo.name} (最終コミット: ${lastCommitAt.toISOString()})`
+        );
         return { type: 'skip' };
       }
 
@@ -279,71 +321,29 @@ export class ProcessBulkGASLibraryWithSaveService {
       if (scrapeResult.data.scriptId) {
         const isDuplicate = await duplicateChecker(scrapeResult.data.scriptId);
         if (isDuplicate) {
-          if (config.verbose) {
-            console.log(`重複スキップ: ${repo.name} (Script ID: ${scrapeResult.data.scriptId})`);
-          }
+          this.log(config, `重複スキップ: ${repo.name} (Script ID: ${scrapeResult.data.scriptId})`);
           return { type: 'duplicate' };
         }
       }
 
       // AI要約生成が必要かチェック
-      let shouldGenerateAiSummary = generateSummary;
+      const needsAiSummary = await this.shouldGenerateAiSummary(
+        repo.html_url,
+        lastCommitAt,
+        generateSummary
+      );
 
-      if (generateSummary) {
-        // 既存ライブラリかどうかとAI要約の存在をチェック
-        const commitStatus = await CheckLibraryCommitStatusService.call(
-          repo.html_url,
-          new Date(scrapeResult.data.lastCommitAt)
+      if (generateSummary && !needsAiSummary) {
+        this.log(
+          config,
+          `AI要約生成スキップ: ${repo.name} (既存ライブラリで変更なし、AI要約も存在)`
         );
-
-        let summaryExists = false;
-        if (commitStatus.libraryId) {
-          // 既存ライブラリの場合、library_summaryの存在をチェック
-          summaryExists = await CheckLibrarySummaryExistenceService.call(commitStatus.libraryId);
-        }
-
-        // 新規ライブラリ、lastCommitAtに変化、またはlibrary_summaryが存在しない場合
-        shouldGenerateAiSummary = commitStatus.isNew || commitStatus.shouldUpdate || !summaryExists;
-
-        if (config.verbose && !shouldGenerateAiSummary) {
-          console.log(`AI要約生成スキップ: ${repo.name} (既存ライブラリで変更なし、AI要約も存在)`);
-        }
       }
 
       // データベースに保存
-      const saveResult = await saveCallback(scrapeResult.data, shouldGenerateAiSummary);
+      const saveResult = await saveCallback(scrapeResult.data, needsAiSummary);
 
-      if (saveResult.success) {
-        // 保存成功時にAI要約生成（必要な場合）
-        if (shouldGenerateAiSummary && saveResult.id) {
-          try {
-            await GenerateAiSummaryService.call({
-              libraryId: saveResult.id,
-              githubUrl: repo.html_url,
-              skipOnError: true,
-              logContext: `バルク処理 AI要約生成[${repo.name}]`,
-              verbose: config.verbose,
-            });
-          } catch (summaryError) {
-            if (config.verbose) {
-              console.warn(`AI要約生成に失敗: ${repo.name} - ${summaryError}`);
-            }
-            // AI要約生成の失敗は全体の処理失敗とはしない
-          }
-        }
-
-        if (config.verbose) {
-          console.log(`保存完了: ${repo.name} (ID: ${saveResult.id})`);
-        }
-
-        return {
-          type: 'result',
-          data: {
-            success: true,
-            data: scrapeResult.data,
-          },
-        };
-      } else {
+      if (!saveResult.success) {
         return {
           type: 'result',
           data: {
@@ -352,6 +352,32 @@ export class ProcessBulkGASLibraryWithSaveService {
           },
         };
       }
+
+      // 保存成功時にAI要約生成（必要な場合）
+      if (needsAiSummary && saveResult.id) {
+        try {
+          await GenerateAiSummaryService.call({
+            libraryId: saveResult.id,
+            githubUrl: repo.html_url,
+            skipOnError: true,
+            logContext: `バルク処理 AI要約生成[${repo.name}]`,
+            verbose: config.verbose,
+          });
+        } catch (summaryError) {
+          this.log(config, `AI要約生成に失敗: ${repo.name} - ${summaryError}`);
+          // AI要約生成の失敗は全体の処理失敗とはしない
+        }
+      }
+
+      this.log(config, `保存完了: ${repo.name} (ID: ${saveResult.id})`);
+
+      return {
+        type: 'result',
+        data: {
+          success: true,
+          data: scrapeResult.data,
+        },
+      };
     } catch (error) {
       return {
         type: 'result',
