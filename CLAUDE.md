@@ -1,155 +1,269 @@
 # CLAUDE.md - Svelte 5
 
-> **グローバル規約**: `~/.claude/CLAUDE.md`のMCP Autonomous Agent規約に準拠
-> **ワークフロー**: `~/.claude/specifications/workflow/workflow-guide.md`参照
-
-## Svelte 5 + SvelteKit規約
-
-### Runes徹底活用
+## §0 Identity
 
 ```yaml
-絶対原則: リアクティブ状態管理はRunes第一選択
-状態宣言: { 使用: $state, 禁止: letリアクティブ宣言 }
-算出プロパティ: { 使用: $derived }
-副作用: { 使用: $effect }
-Props: { 使用: $props, 禁止: export let }
-イベント: { 推奨: Propsコールバック, 非推奨: createEventDispatcher }
+identity:
+  name: GAS Library Hub
+  role: Google Apps Script ライブラリ管理プラットフォーム
+  mission: GASライブラリの検索・登録・AI要約を提供
+  tech_foundation: Svelte 5 + SvelteKit + PostgreSQL
 ```
 
-### ページテスト配置
+---
+
+## §1 Tech Stack
 
 ```yaml
-原則: src/routes/ → src/stories/pages/にStorybookストーリー作成
-命名: '{PageName}.stories.svelte'
-例: src/routes/double-check/+page.svelte → src/stories/pages/DoubleCheckPage.stories.svelte
-制約: play関数使用禁止
+framework:
+  runtime: Svelte 5 + SvelteKit 2
+  styling: Tailwind CSS 4 + daisyUI 5
+  database: Drizzle ORM + PostgreSQL
+  auth: Auth.js
+  i18n: Paraglide JS
+
+external_api:
+  ai: OpenAI API（AI要約生成）
+  github: GitHub API（リポジトリ情報取得）
+
+testing:
+  unit: Vitest
+  e2e: Playwright
+  component: Storybook
 ```
 
-## E2Eデータベース管理
+---
 
-**自動管理**:
+## §2 Svelte 5 Conventions
 
-- テストDB: `gas_library_hub_test_db`（本番DBと分離）
-- データクリア: `scripts/clear-test-data.js`（テスト前自動実行）
-- スキーマ作成: `scripts/setup-test-db.js`
+```yaml
+runes:
+  principle: リアクティブ状態管理はRunes第一選択
 
-**⚠️ スキーマ変更時の必須作業**:
-新テーブル追加時は`test/scripts/clear-test-data.js`のDELETE文も追加（外部キー制約順序に注意）
+  ALWAYS:
+    - 状態宣言: $state()
+    - 算出プロパティ: $derived()
+    - 副作用: $effect()
+    - Props: $props()
+    - イベント: Propsコールバック
 
-```javascript
-// 現在の削除順序（外部キー制約を考慮）
-await db.execute(sql`DELETE FROM "library_summary"`);
-await db.execute(sql`DELETE FROM "library"`);
-await db.execute(sql`DELETE FROM "user"`);
+  NEVER:
+    - letリアクティブ宣言
+    - export let（レガシー）
+    - createEventDispatcher
+
+legacy_components:
+  note: 以下は$props()への移行が必要
+  files:
+    - src/lib/components/Button.svelte
+    - src/lib/components/SearchBox.svelte
+    - src/lib/components/UserDropdown.svelte
+    - src/lib/components/AdminHeader.svelte
+    - src/lib/components/UserHeader.svelte
+
+page_tests:
+  rule: src/routes/ → src/stories/pages/にStorybookストーリー作成
+  naming: "{PageName}.stories.svelte"
+  constraint: play関数使用禁止
 ```
 
-## サービス層規約
+---
 
-### オブジェクトリテラルパターン
+## §3 Architecture Patterns
 
-**絶対原則**: IIFE+as constパターン徹底。クラス静的メソッド禁止。
+```yaml
+service_layer:
+  patterns:
+    iife_as_const:
+      use_when: 複雑な内部状態・ヘルパー関数が必要
+      examples: [GenerateAiSummaryService, CreateLibraryService]
+    class_static:
+      use_when: シンプルなCRUD操作
+      examples: [UpdateLibraryFromGithubService, FetchGitHubRepoDataService]
+
+dependency_injection:
+  ALWAYS:
+    - インターフェース定義: src/lib/types/
+    - 本番実装: Production[Name]
+    - モック実装: Mock[Name]
+    - テスト時: ファクトリ経由でモック注入
+
+repository:
+  location: src/lib/server/repositories/
+  naming: "[Entity]Repository"
+  responsibility: データアクセス層の抽象化
+
+ssr_client_pattern:
+  server: "+page.server.ts → GetDataServerService.call()"
+  client: "+page.svelte → $state() + クライアントサービス呼び出し"
+
+naming_conventions:
+  service: 動詞+名詞+Service
+  crud: [Get, Post, Put, Delete] + 名詞 + Service
+  list: GetAll + 名詞複数形 + Service
+  conditional: Get + 名詞複数形 + By + 条件 + Service
+  repository: 名詞 + Repository
+  factory: 名詞 + Factory
+```
+
+**コード例（IIFE+as const）:**
 
 ```typescript
-export const ProcessQuotePdfService = (() => {
-  const privateHelper = () => {
-    /* ... */
-  };
+export const GenerateAiSummaryService = (() => {
+  const privateHelper = () => { /* ... */ };
   return {
-    call: () => {
-      /* 公開メソッド */
-    },
+    call: async () => { /* 公開メソッド */ },
+    callBackground: async () => { /* Fire-and-Forget */ },
   } as const;
 })();
 ```
 
-### SSR+クライアント更新パターン
+---
 
-```typescript
-// +page.server.ts
-export const load: PageServerLoad = async () => {
-  const data = await GetDataServerService.call(); // SSR
-  return { data };
-};
-
-// +page.svelte
-let { data } = $props();
-let items = $state(data.items);
-const handleUpdate = async () => {
-  items = await GetDataService.call(); // クライアント
-};
-```
-
-### 命名規則
+## §4 Resilience Patterns
 
 ```yaml
-パターン: 動詞+名詞+Service
-データ取得系:
-  単体: [GetCommentService, PostCommentService, PutCommentService, DeleteCommentService]
-  一覧: GetAllCommentsService
-  条件付: [GetCommentsByUserService, GetProductsByCategoryService]
+retry:
+  ALWAYS:
+    - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
+    - 指数バックオフ: baseDelay * 2^attempt
+    - 最大リトライ回数: 3回
+  implementation: src/lib/server/utils/retry-util.ts
+
+caching:
+  ALWAYS:
+    - 高頻度API呼び出しにTTL付きキャッシュ適用
+    - キャッシュキー: 一意識別子（owner/repo等）
+  example: ProductionGitHubApiClient（インメモリキャッシュ、TTL 5分）
+
+error_handling:
+  ALWAYS:
+    - ServiceErrorUtil使用
+    - 構造化エラーレスポンス
+    - ログ出力
+  implementation: src/lib/server/utils/service-error-util.ts
+
+background:
+  pattern: Fire-and-Forget
+  example: GenerateAiSummaryService.callBackground(libraryId)
+  behavior: レスポンス待機なし、エラーはログ出力のみ
+
+parallel:
+  ALWAYS:
+    - 独立した処理: Promise.all()
+    - 部分失敗許容: Promise.allSettled()
+  NEVER:
+    - 順次処理可能な場合のPromise.all（エラー時全体失敗リスク）
 ```
 
 ---
 
-## スタイリング規約
-
-### daisyUI v5
+## §5 Styling Conventions
 
 ```yaml
-絶対原則: btn・card・modal・input等を第一選択
-Usage調査: 不明時はContext7 MCPで公式ドキュメント調査（推測禁止）
-デザイン方針: Outline基本（btn-outline等）、Primary actionのみソリッド
-カスタム: daisyUI対応不可時のみTailwindクラス補完
-例外: padding・margin調整はTailwindクラス推奨
-```
+daisyui_v5:
+  ALWAYS:
+    - btn・card・modal・input等を第一選択
+    - 不明時はContext7 MCPで公式ドキュメント調査（推測禁止）
+  design:
+    default: Outline（btn-outline等）
+    primary_action: ソリッド
+    custom: daisyUI対応不可時のみTailwindクラス補完
+    exception: padding・margin調整はTailwindクラス推奨
 
-### Tailwind CSS
-
-```yaml
-禁止: '@apply多用'
-推奨: Svelteコンポーネント化
-一貫性: プロジェクト全体でdaisyUI v5設計システム視覚一貫性
-```
-
-### テストコマンド
-
-```yaml
-関連テスト: ./scripts/dev.sh related '<修正ファイルパス>'
-全体テスト: npm run test
-Storybook起動: npm run story
-Test Runner: npm run test:storybook
+tailwind:
+  NEVER:
+    - "@apply多用"
+  ALWAYS:
+    - Svelteコンポーネント化
+    - daisyUI v5設計システムで視覚一貫性
 ```
 
 ---
 
-## デバッグ規約
-
-**絶対原則**: UI/画面バグは実動作確認の再現ファーストアプローチ徹底。
-
-### デバッグツール選択
+## §6 I18n Conventions
 
 ```yaml
-第一選択: /debug-ui（Chrome DevTools MCP統合）
-対象:
-  - UI要素動作異常
-  - データ不整合表示問題
-  - イベントハンドラー不具合
-  - レスポンシブデザイン崩れ
-第二選択: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
+ALWAYS:
+  - UI文字列: messages/*.json で管理
+  - インポート: $lib/paraglide/messages.js
+  - 言語取得: getLocale()
+
+NEVER:
+  - ハードコードされた日本語/英語文字列（UI表示用）
+
+usage: |
+  import * as m from '$lib/paraglide/messages.js';
+  <p>{m.welcome_message()}</p>
 ```
 
-### デバッグ実行フロー
+---
+
+## §7 Testing Conventions
 
 ```yaml
-基本コマンド: /debug-ui [対象URL]
-詳細: .claude/commands/debug-ui.md参照
+commands:
+  related: "./scripts/dev.sh related '<修正ファイルパス>'"
+  all: npm run test
+  storybook: npm run story
+  test_runner: npm run test:storybook
 
-手順概要: 1. サーバー起動確認（http://localhost:5173）
-  2. データ整合性確認（src/lib/data/テストデータ）
-  3. バグ再現（Chrome DevTools MCP自動操作）
-  4. インタラクティブデバッグ（AI提案に基づき段階的調査）
-  5. 根本原因特定
-  6. 修正実装
-  7. 自動検証（--verifyオプション）
-  8. 全体テスト（npm run test）
+factory:
+  library: fishery
+  location: test/factories/
+  naming: "[entity].factory.ts"
+  ALWAYS:
+    - テストデータ生成にファクトリ使用
+    - 一貫したテストデータ構造
+```
+
+---
+
+## §8 Debugging Conventions
+
+```yaml
+principle: UI/画面バグは実動作確認の再現ファーストアプローチ徹底
+
+tool_selection:
+  primary: /debug-ui（Chrome DevTools MCP統合）
+  targets:
+    - UI要素動作異常
+    - データ不整合表示問題
+    - イベントハンドラー不具合
+    - レスポンシブデザイン崩れ
+  fallback: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
+
+execution_flow:
+  command: "/debug-ui [対象URL]"
+  reference: .claude/commands/debug-ui.md
+  steps:
+    1: サーバー起動確認（http://localhost:5173）
+    2: データ整合性確認（src/lib/data/テストデータ）
+    3: バグ再現（Chrome DevTools MCP自動操作）
+    4: インタラクティブデバッグ
+    5: 根本原因特定
+    6: 修正実装
+    7: 自動検証（--verifyオプション）
+    8: 全体テスト（npm run test）
+```
+
+---
+
+## §9 E2E Database Management
+
+```yaml
+config:
+  test_db: gas_library_hub_test_db（本番DBと分離）
+  clear_script: scripts/clear-test-data.js（テスト前自動実行）
+  setup_script: scripts/setup-test-db.js
+
+warning: |
+  ⚠️ スキーマ変更時の必須作業:
+  新テーブル追加時はtest/scripts/clear-test-data.jsのDELETE文も追加
+  （外部キー制約順序に注意）
+
+current_delete_order:
+  - DELETE FROM "library_summary"
+  - DELETE FROM "library"
+  - DELETE FROM "user"
 ```
