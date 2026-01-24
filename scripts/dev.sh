@@ -513,7 +513,7 @@ main() {
             cmd_check
             ;;
         "fix")
-            cmd_fix "${2:-}"
+            cmd_fix "${2:-.}"
             ;;
         "-h"|"--help"|"help")
             show_usage

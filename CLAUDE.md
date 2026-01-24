@@ -296,16 +296,8 @@ features:
 ```yaml
 config: .claude/settings.json
 
-hooks:
-  PostToolUse:
-    trigger: Edit | Write | MultiEdit
-    action: "./docker/dev.sh fix"
-    purpose: ファイル編集後に自動フォーマット・lint修正
-
-  Stop:
-    trigger: Edit | Write | MultiEdit
-    action: "./docker/dev.sh check"
-    purpose: セッション終了前に型チェック実行
+NEVER:
+  - hookエラーを無視する（必ず原因を調査・修正すること）
 ```
 
 ---

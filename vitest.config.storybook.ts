@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { sveltekit } from '@sveltejs/kit/vite';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
@@ -10,7 +11,13 @@ const dirname =
 
 // https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
+  plugins: [
+    sveltekit(),
+    storybookTest({
+      configDir: path.join(dirname, '.storybook'),
+      tags: { exclude: ['no-vitest'] },
+    }),
+  ],
   test: {
     name: 'storybook',
     browser: {

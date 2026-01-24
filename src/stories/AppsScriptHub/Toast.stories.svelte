@@ -62,7 +62,15 @@
 </Story>
 
 <!-- Long Message -->
-<Story name="Long Message">
+<Story
+  name="Long Message"
+  args={{
+    toast: createMockToast(
+      TOAST_TYPE.SUCCESS,
+      'これは非常に長いメッセージの例です。複数行に渡ってテキストが表示される場合の動作を確認できます。'
+    ),
+  }}
+>
   <Toast
     toast={createMockToast(
       TOAST_TYPE.SUCCESS,
@@ -72,7 +80,18 @@
 </Story>
 
 <!-- All Types Showcase -->
-<Story name="All Types">
+<Story
+  name="All Types"
+  tags={['no-vitest']}
+  args={{
+    toasts: [
+      createMockToast(TOAST_TYPE.SUCCESS, '操作が正常に完了しました', 'success-toast'),
+      createMockToast(TOAST_TYPE.ERROR, 'エラーが発生しました', 'error-toast'),
+      createMockToast(TOAST_TYPE.WARNING, '注意: この操作は元に戻せません', 'warning-toast'),
+      createMockToast(TOAST_TYPE.INFO, '新しい機能が利用可能です', 'info-toast'),
+    ],
+  }}
+>
   <div class="space-y-3">
     <Toast
       toast={createMockToast(TOAST_TYPE.SUCCESS, '操作が正常に完了しました', 'success-toast')}
@@ -86,7 +105,11 @@
 </Story>
 
 <!-- Copy Button Example -->
-<Story name="Copy Button Example">
+<Story
+  name="Copy Button Example"
+  tags={['no-vitest']}
+  args={{ toast: createMockToast(TOAST_TYPE.SUCCESS, 'コピーしました') }}
+>
   <div class="space-y-4">
     <p class="text-sm text-gray-600">
       以下のボタンをクリックするとトーストが表示されます（実際のアプリでの使用例）
