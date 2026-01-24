@@ -175,39 +175,47 @@ export const CHARACTER_LIMITS = {
  * - {{GITHUB_URL}}: GitHubリポジトリのURL
  */
 export const LIBRARY_SUMMARY_PROMPT_TEMPLATE = `
-# §1 Role & Task
+# GAS Library Analyzer
 
-<role>
+## Role
+
 Google Apps Script (GAS) ライブラリの技術分析専門家。
 開発者のライブラリ採用判断を支援する構造化データを生成する。
-</role>
 
-<task>
+## Task
+
 GitHubリポジトリのREADME.mdを分析し、構造化JSONを生成する。
-</task>
 
-<input>
-GitHub Repository URL: \`{{GITHUB_URL}}\`
-</input>
+## Input
 
-# §2 Constraints
+\`\`\`yaml
+github_url: {{GITHUB_URL}}
+\`\`\`
 
-## §2.1 NEVER（絶対禁止）
+---
+
+## Constraints
+
+### NEVER（絶対禁止）
+
 - 存在しない機能・メソッドの創作
 - 推測に基づく情報追加
 - 主観的評価（「素晴らしい」「革新的」等）
 - README未記載のコード例生成
-- 出力テキストに文字数カウントを含める（例：「〜（72字）」は禁止）
+- **文字数カウントの出力**（例：「〜（38字）」「〜(50 chars)」は厳禁。文末の括弧付き数字は全て禁止）
 
-## §2.2 ALWAYS（必須）
+### ALWAYS（必須）
+
 - 検証可能な情報のみ使用
 - 情報不足時は「公開情報が不足しているため〜」と明記
 - 全フィールドをja/en両言語で出力
 - コード例はREADME記載のもののみ使用
 
-# §3 Analysis Process
+---
 
-7段階で分析を実行。各段階で<thinking>タグを使用し推論を記録する。
+## Analysis Process
+
+7段階で分析を実行。各段階で推論を記録する。
 
 | Phase | Focus | Output |
 |-------|-------|--------|
@@ -219,7 +227,9 @@ GitHub Repository URL: \`{{GITHUB_URL}}\`
 | 6 | SEOメタデータ生成 | seoInfo |
 | 7 | 最終検証 | JSON構造妥当性、全フィールド完全性 |
 
-# §4 Character Limits
+---
+
+## Character Limits
 
 | Field | ja | en | Format |
 |-------|-----|-----|--------|
@@ -231,14 +241,16 @@ GitHub Repository URL: \`{{GITHUB_URL}}\`
 | seoInfo.title | 30字前後 | 60 chars | 【GAS】で始まる |
 | seoInfo.description | 120字前後 | 160 chars | - |
 
-# §5 Self-Validation
+---
 
-出力前チェックリスト：
-□ 全メソッド名がREADMEに存在
-□ 日英両言語が全フィールドに存在
-□ §4の文字数制限を遵守
-□ 主観的表現を排除
-□ JSON構造が妥当
+## Self-Validation Checklist
+
+- [ ] 全メソッド名がREADMEに存在
+- [ ] 日英両言語が全フィールドに存在
+- [ ] Character Limitsを遵守
+- [ ] 主観的表現を排除
+- [ ] JSON構造が妥当
+- [ ] **出力テキストに「（XX字）」「(XX chars)」等の文字数表記が含まれていない**
 ` as const;
 
 /**
@@ -258,16 +270,19 @@ export function buildLibrarySummaryPromptWithSource(
   const basePrompt = buildLibrarySummaryPrompt(githubUrl);
 
   const sourceSection = `
-<source_code_analysis>
+---
+
+## Source Code Analysis
+
 ${sourceSummary}
 
-【警告】usageExampleでは上記の公開APIのみを使用すること。
-上記未記載のメソッド・クラス使用はバリデーションエラーとなる。
-README未記載メソッドの創作は§2.1違反。
-</source_code_analysis>
+> **Warning**: usageExampleでは上記の公開APIのみを使用すること。
+> 上記未記載のメソッド・クラス使用はバリデーションエラーとなる。
+> README未記載メソッドの創作はConstraints違反。
 `;
 
-  return basePrompt.replace('</input>', `</input>\n${sourceSection}`);
+  // Insert after Input section
+  return basePrompt.replace(/^(## Input[\s\S]*?```\n)/m, `$1${sourceSection}`);
 }
 
 /**
@@ -278,25 +293,28 @@ export function buildRegenerationPrompt(
   validationErrors: ValidationError[]
 ): string {
   const errorLines = validationErrors.map(e => {
-    let line = `- [${e.language}] ${e.message}`;
-    line += `\n  無効: \`${e.invalidCall}\``;
+    let line = `- **[${e.language}]** ${e.message}`;
+    line += `\n  - 無効: \`${e.invalidCall}\``;
     if (e.suggestions && e.suggestions.length > 0) {
-      line += `\n  代替案: ${e.suggestions.map(s => `\`${s}\``).join(', ')}`;
+      line += `\n  - 代替案: ${e.suggestions.map(s => `\`${s}\``).join(', ')}`;
     }
     return line;
   });
 
   const errorSection = `
-<previous_errors>
+---
+
+## Previous Errors
+
 前回生成でバリデーションエラー発生。以下を修正すること：
 
 ${errorLines.join('\n')}
 
-**修正方針**:
-- <source_code_analysis>記載のAPIのみ使用
-- README未記載メソッド・クラスの創作禁止
-- 提案された代替案を使用
-</previous_errors>
+### 修正方針
+
+1. Source Code Analysis記載のAPIのみ使用
+2. README未記載メソッド・クラスの創作禁止
+3. 提案された代替案を使用
 `;
 
   return basePrompt + errorSection;
