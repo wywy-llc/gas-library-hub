@@ -16,7 +16,7 @@
   }
 
   let { data, form }: Props = $props();
-  let library = $state(data.library);
+  let library = $derived(data.library);
 
   let isScrapingInProgress = $state(false);
   let scrapingMessage = $state('');

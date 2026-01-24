@@ -3,6 +3,7 @@ import { GitHubMockData } from '$lib/server/factories/github-api-client-factory.
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
 import type {
   GitHubRepository,
+  GitHubTreeResponse,
   ScraperConfig,
   TagSearchResult,
 } from '$lib/types/github-scraper.js';
@@ -136,5 +137,85 @@ export class MockGitHubApiClient implements GitHubApiClient {
 
     // モックコミット日時を返す
     return GitHubMockData.getMockCommitDate();
+  }
+
+  /**
+   * モックファイル内容を取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param path ファイルパス
+   * @returns モックファイル内容
+   */
+  async fetchFileContent(owner: string, repo: string, path: string): Promise<string | undefined> {
+    console.log(`🤖 [E2E Mock] ファイル内容取得中: ${owner}/${repo}/${path} (モックデータを使用)`);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // 存在しないファイルのテストケース
+    if (path.includes('nonexistent')) {
+      return undefined;
+    }
+
+    // .gsファイルの場合はモックGASコードを返す
+    if (path.endsWith('.gs')) {
+      return `// Mock GAS file: ${path}\nfunction mockFunction() {\n  console.log('Mock implementation');\n}`;
+    }
+
+    return `// Mock content for: ${path}`;
+  }
+
+  /**
+   * モックリポジトリツリーを取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param _sha ツリーSHA
+   * @param _recursive 再帰的に取得するか
+   * @returns モックファイルツリー
+   */
+  async fetchRepositoryTree(
+    owner: string,
+    repo: string,
+    _sha: string = 'HEAD',
+    _recursive: boolean = true
+  ): Promise<GitHubTreeResponse | undefined> {
+    console.log(`🤖 [E2E Mock] リポジトリツリー取得中: ${owner}/${repo} (モックデータを使用)`);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // 存在しないリポジトリのテストケース
+    if (owner === 'nonexistent-user-999999' && repo === 'nonexistent-repo-999999') {
+      return undefined;
+    }
+
+    // モックツリーを返す
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/git/blobs`;
+    return {
+      sha: 'mock-sha-12345',
+      url: `https://api.github.com/repos/${owner}/${repo}/git/trees/mock-sha-12345`,
+      tree: [
+        {
+          path: 'README.md',
+          mode: '100644',
+          type: 'blob' as const,
+          sha: 'readme-sha',
+          size: 1024,
+          url: `${baseUrl}/readme-sha`,
+        },
+        {
+          path: 'Code.gs',
+          mode: '100644',
+          type: 'blob' as const,
+          sha: 'code-sha',
+          size: 512,
+          url: `${baseUrl}/code-sha`,
+        },
+        {
+          path: 'src',
+          mode: '040000',
+          type: 'tree' as const,
+          sha: 'src-sha',
+          url: `${baseUrl}/src-sha`,
+        },
+      ],
+      truncated: false,
+    };
   }
 }

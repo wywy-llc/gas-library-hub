@@ -59,14 +59,27 @@ import { ValidateLibraryUniquenessService } from '../../../../../src/lib/server/
 import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-utils.js';
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
 
-const mockTestConnection = vi.mocked(testConnection);
-const mockLibraryRepository = vi.mocked(LibraryRepository);
-const mockFetchGitHubRepoDataService = vi.mocked(FetchGitHubRepoDataService);
-const mockValidateLibraryUniquenessService = vi.mocked(ValidateLibraryUniquenessService);
-const mockGenerateAiSummaryService = vi.mocked(GenerateAiSummaryService);
-const mockGitHubApiUtils = vi.mocked(GitHubApiUtils);
-const mockServiceErrorUtil = vi.mocked(ServiceErrorUtil);
-const mockNanoid = vi.mocked(nanoid);
+const mockTestConnection = testConnection as ReturnType<typeof vi.fn>;
+const mockLibraryRepository = LibraryRepository as unknown as {
+  create: ReturnType<typeof vi.fn>;
+};
+const mockFetchGitHubRepoDataService = FetchGitHubRepoDataService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockValidateLibraryUniquenessService = ValidateLibraryUniquenessService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockGenerateAiSummaryService = GenerateAiSummaryService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+  callBackground: ReturnType<typeof vi.fn>;
+};
+const mockGitHubApiUtils = GitHubApiUtils as unknown as {
+  parseGitHubUrl: ReturnType<typeof vi.fn>;
+};
+const mockServiceErrorUtil = ServiceErrorUtil as unknown as {
+  assertCondition: ReturnType<typeof vi.fn>;
+};
+const mockNanoid = nanoid as unknown as ReturnType<typeof vi.fn>;
 
 describe('CreateLibraryService', () => {
   const mockParams = {

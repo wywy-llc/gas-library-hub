@@ -48,6 +48,15 @@ export {
   type ScrapeResultTestData,
 } from './github-scraper-test-data.factory';
 
+// ソースコード分析関連のfactory
+export {
+  PublicApiTestDataFactories,
+  RepositoryAnalysisTestDataFactories,
+  SourceFileTestDataFactories,
+  ValidationErrorTestDataFactories,
+  ValidationResultTestDataFactories,
+} from './source-analysis-test-data.factory';
+
 /**
  * 使用例:
  *

@@ -4,9 +4,11 @@ import { GITHUB_SEARCH_SORT_OPTIONS } from '$lib/constants/github-search.js';
 import { ErrorUtils } from '$lib/server/utils/error-utils.js';
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
 import type {
+  GitHubContentResponse,
   GitHubReadmeResponse,
   GitHubRepository,
   GitHubSearchResponse,
+  GitHubTreeResponse,
   ScraperConfig,
   TagSearchResult,
 } from '$lib/types/github-scraper.js';
@@ -570,6 +572,130 @@ export class ProductionGitHubApiClient implements GitHubApiClient {
         ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
       );
       return null;
+    }
+  }
+
+  /**
+   * ファイル内容を取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param path ファイルパス
+   * @returns ファイル内容（取得できない場合はundefined）
+   */
+  async fetchFileContent(owner: string, repo: string, path: string): Promise<string | undefined> {
+    const cacheKey = `content:${owner}/${repo}/${path}`;
+
+    // キャッシュから取得を試行
+    const cached = ProductionGitHubApiClient.getFromCache<string>(cacheKey);
+    if (cached !== null) {
+      return cached || undefined;
+    }
+
+    try {
+      const headers = this.createHeaders();
+      const url = `${ProductionGitHubApiClient.GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+
+      const response = await ProductionGitHubApiClient.fetchWithRetry(url, { headers });
+
+      if (!response.ok) {
+        // 404の場合もキャッシュして重複リクエストを防ぐ
+        ProductionGitHubApiClient.setCache(
+          cacheKey,
+          '',
+          ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
+        );
+        return undefined;
+      }
+
+      const fileData: GitHubContentResponse = await response.json();
+
+      // ディレクトリの場合はundefinedを返す
+      if (fileData.type !== 'file') {
+        ProductionGitHubApiClient.setCache(
+          cacheKey,
+          '',
+          ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
+        );
+        return undefined;
+      }
+
+      let content: string;
+      // Base64デコード
+      if (fileData.encoding === 'base64') {
+        content = atob(fileData.content.replace(/\n/g, ''));
+      } else {
+        content = fileData.content;
+      }
+
+      // 成功時はキャッシュに保存
+      ProductionGitHubApiClient.setCache(cacheKey, content);
+
+      return content;
+    } catch (error) {
+      console.warn('ファイル取得に失敗:', error);
+      // エラーの場合は短時間キャッシュして連続エラーを防ぐ
+      ProductionGitHubApiClient.setCache(
+        cacheKey,
+        '',
+        ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * リポジトリのファイルツリーを取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param sha ツリーSHA（デフォルトはHEAD）
+   * @param recursive 再帰的に取得するか（デフォルトはtrue）
+   * @returns ファイルツリー（取得できない場合はundefined）
+   */
+  async fetchRepositoryTree(
+    owner: string,
+    repo: string,
+    sha: string = 'HEAD',
+    recursive: boolean = true
+  ): Promise<GitHubTreeResponse | undefined> {
+    const cacheKey = `tree:${owner}/${repo}/${sha}/${recursive}`;
+
+    // キャッシュから取得を試行
+    const cached = ProductionGitHubApiClient.getFromCache<GitHubTreeResponse>(cacheKey);
+    if (cached !== null) {
+      return cached || undefined;
+    }
+
+    try {
+      const headers = this.createHeaders();
+      const url = `${ProductionGitHubApiClient.GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/${sha}${recursive ? '?recursive=1' : ''}`;
+
+      const response = await ProductionGitHubApiClient.fetchWithRetry(url, { headers });
+
+      if (!response.ok) {
+        // 404の場合もキャッシュして重複リクエストを防ぐ
+        ProductionGitHubApiClient.setCache(
+          cacheKey,
+          null,
+          ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
+        );
+        return undefined;
+      }
+
+      const treeData: GitHubTreeResponse = await response.json();
+
+      // 成功時はキャッシュに保存
+      ProductionGitHubApiClient.setCache(cacheKey, treeData);
+
+      return treeData;
+    } catch (error) {
+      console.warn('ツリー取得に失敗:', error);
+      // エラーの場合は短時間キャッシュして連続エラーを防ぐ
+      ProductionGitHubApiClient.setCache(
+        cacheKey,
+        null,
+        ProductionGitHubApiClient.RATE_LIMIT_CACHE_TTL
+      );
+      return undefined;
     }
   }
 

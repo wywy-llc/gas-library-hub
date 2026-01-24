@@ -112,6 +112,9 @@ describe('JSON-LD構造化データ', () => {
     licenseUrl: 'https://opensource.org/licenses/MIT',
     lastCommitAt: new Date('2023-01-01'),
     status: 'published' as const,
+    scriptType: 'library' as const,
+    requesterId: null,
+    requestNote: null,
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date('2023-01-01'),
   };

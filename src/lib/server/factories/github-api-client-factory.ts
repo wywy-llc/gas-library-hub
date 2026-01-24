@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { MockGitHubApiClient } from '$lib/server/services/mock-github-api-client.js';
 import { ProductionGitHubApiClient } from '$lib/server/services/production-github-api-client.js';
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
-import type { GitHubRepository } from '$lib/types/github-scraper.js';
+import type { GitHubRepository, GitHubTreeResponse } from '$lib/types/github-scraper.js';
 
 /**
  * E2Eテスト用のGitHubモックデータ
@@ -119,6 +119,141 @@ lib.doSomething();
     const mockCommitDate = new Date();
     mockCommitDate.setDate(mockCommitDate.getDate() - 3);
     return mockCommitDate;
+  }
+
+  /**
+   * モックソースコードを取得
+   * @param path ファイルパス
+   * @returns モックソースコード
+   */
+  static getMockSourceCode(path: string): string | undefined {
+    // OAuth2ライブラリの場合
+    if (path.includes('OAuth2') || path.includes('oauth2')) {
+      return `/**
+ * OAuth2 Library for Google Apps Script
+ */
+class OAuth2Service {
+  constructor(config) {
+    this.clientId = config.clientId;
+    this.clientSecret = config.clientSecret;
+  }
+
+  getAuthorizationUrl() {
+    return 'https://accounts.google.com/o/oauth2/v2/auth';
+  }
+
+  getAccessToken(authCode) {
+    return { access_token: 'mock-token', expires_in: 3600 };
+  }
+
+  hasAccess() {
+    return true;
+  }
+}
+
+function createService(serviceName) {
+  return new OAuth2Service({ serviceName });
+}`;
+    }
+
+    // .gsファイルの場合
+    if (path.endsWith('.gs') || path.endsWith('.js')) {
+      return `/**
+ * Mock GAS file: ${path}
+ */
+function mockFunction() {
+  console.log('Mock implementation');
+}
+
+function initialize() {
+  return new MockLibrary();
+}
+
+class MockLibrary {
+  doSomething() {
+    return 'done';
+  }
+}`;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * モックリポジトリツリーを取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @returns モックファイルツリー
+   */
+  static getMockRepositoryTree(owner: string, repo: string): GitHubTreeResponse {
+    // OAuth2ライブラリの場合
+    if (owner === 'googleworkspace' && repo === 'apps-script-oauth2') {
+      return {
+        sha: 'oauth2-mock-sha',
+        url: `https://api.github.com/repos/${owner}/${repo}/git/trees/oauth2-mock-sha`,
+        tree: [
+          {
+            path: 'README.md',
+            mode: '100644',
+            type: 'blob',
+            sha: 'readme-sha',
+            size: 2048,
+            url: '',
+          },
+          {
+            path: 'src/OAuth2.gs',
+            mode: '100644',
+            type: 'blob',
+            sha: 'oauth2-sha',
+            size: 4096,
+            url: '',
+          },
+          {
+            path: 'src/Service.gs',
+            mode: '100644',
+            type: 'blob',
+            sha: 'service-sha',
+            size: 2048,
+            url: '',
+          },
+        ],
+        truncated: false,
+      };
+    }
+
+    // デフォルトモックツリー
+    return {
+      sha: 'mock-sha-12345',
+      url: `https://api.github.com/repos/${owner}/${repo}/git/trees/mock-sha-12345`,
+      tree: [
+        {
+          path: 'README.md',
+          mode: '100644',
+          type: 'blob',
+          sha: 'readme-sha',
+          size: 1024,
+          url: '',
+        },
+        {
+          path: 'Code.gs',
+          mode: '100644',
+          type: 'blob',
+          sha: 'code-sha',
+          size: 512,
+          url: '',
+        },
+        { path: 'src', mode: '040000', type: 'tree', sha: 'src-sha', url: '' },
+        {
+          path: 'src/main.gs',
+          mode: '100644',
+          type: 'blob',
+          sha: 'main-sha',
+          size: 256,
+          url: '',
+        },
+      ],
+      truncated: false,
+    };
   }
 }
 

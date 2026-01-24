@@ -1,5 +1,5 @@
 import * as Factory from 'factory.ts';
-import { LIBRARY_STATUS, LibraryStatus } from '../../src/lib/constants/library-status';
+import { LIBRARY_STATUS, type LibraryStatus } from '../../src/lib/constants/library-status';
 import { LICENSE_TYPES } from '../../src/lib/constants/license-types';
 import { library } from '../../src/lib/server/db/schema';
 import {

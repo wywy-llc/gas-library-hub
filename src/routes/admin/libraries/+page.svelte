@@ -28,11 +28,13 @@
 
   let { data, form }: Props = $props();
 
-  let libraries: typeof data.libraries = $state(data.libraries);
-  let currentPage = $state(data.currentPage);
+  let libraries: typeof data.libraries = $state([]);
+  let currentPage = $state(1);
+  let searchValue = $state('');
 
-  // dataが更新された時にcurrentPageと検索値も同期
+  // dataが更新された時に状態を同期
   $effect(() => {
+    libraries = data.libraries;
     currentPage = data.currentPage;
     searchValue = data.searchQuery; // 検索値をサーバーサイドの値と同期
 
@@ -60,7 +62,6 @@
   let bulkValidateInProgress = $state(false);
   let bulkValidateMessage = $state('');
   let selectedTags = $state(resetSelectedTags()); // 初期値は全タグ選択
-  let searchValue = $state(data.searchQuery); // 検索入力の状態管理
 
   /**
    * selectedTagsを初期値にリセット

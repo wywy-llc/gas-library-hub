@@ -60,13 +60,27 @@ import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-u
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
 
 // モックされたインスタンスを取得
-const mockDb = vi.mocked(db);
-const mockLibraryRepository = vi.mocked(LibraryRepository);
-const mockLibrarySummaryRepository = vi.mocked(LibrarySummaryRepository);
-const mockFetchGitHubRepoDataService = vi.mocked(FetchGitHubRepoDataService);
-const mockScrapeGASLibraryService = vi.mocked(ScrapeGASLibraryService);
-const mockGitHubApiUtils = vi.mocked(GitHubApiUtils);
-const mockServiceErrorUtil = vi.mocked(ServiceErrorUtil);
+const mockDb = db as unknown as {
+  update: ReturnType<typeof vi.fn>;
+};
+const mockLibraryRepository = LibraryRepository as unknown as {
+  findById: ReturnType<typeof vi.fn>;
+};
+const mockLibrarySummaryRepository = LibrarySummaryRepository as unknown as {
+  exists: ReturnType<typeof vi.fn>;
+};
+const mockFetchGitHubRepoDataService = FetchGitHubRepoDataService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockScrapeGASLibraryService = ScrapeGASLibraryService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockGitHubApiUtils = GitHubApiUtils as unknown as {
+  parseGitHubUrl: ReturnType<typeof vi.fn>;
+};
+const mockServiceErrorUtil = ServiceErrorUtil as unknown as {
+  assertCondition: ReturnType<typeof vi.fn>;
+};
 
 describe('UpdateLibraryFromGithubService - スクレイピング機能', () => {
   const libraryId = 'test_lib_123';
@@ -110,7 +124,7 @@ describe('UpdateLibraryFromGithubService - スクレイピング機能', () => {
       }),
     };
 
-    mockDb.update.mockReturnValue(mockUpdateChain as unknown as ReturnType<typeof mockDb.update>);
+    mockDb.update.mockReturnValue(mockUpdateChain);
     mockLibraryRepository.findById.mockResolvedValue(mockLibraryData);
     mockLibrarySummaryRepository.exists.mockResolvedValue(true);
     mockFetchGitHubRepoDataService.call.mockResolvedValue(mockRepoData);

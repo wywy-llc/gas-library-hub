@@ -1,5 +1,6 @@
 import type {
   GitHubRepository,
+  GitHubTreeResponse,
   ScraperConfig,
   TagSearchResult,
 } from '$lib/types/github-scraper.js';
@@ -64,4 +65,28 @@ export interface GitHubApiClient {
    * @returns 最終コミット日時（取得できない場合はnull）
    */
   fetchLastCommitDate(owner: string, repo: string): Promise<Date | null>;
+
+  /**
+   * ファイル内容を取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param path ファイルパス
+   * @returns ファイル内容（取得できない場合はundefined）
+   */
+  fetchFileContent(owner: string, repo: string, path: string): Promise<string | undefined>;
+
+  /**
+   * リポジトリのファイルツリーを取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param sha ツリーSHA（デフォルトはHEAD）
+   * @param recursive 再帰的に取得するか（デフォルトはtrue）
+   * @returns ファイルツリー（取得できない場合はundefined）
+   */
+  fetchRepositoryTree(
+    owner: string,
+    repo: string,
+    sha?: string,
+    recursive?: boolean
+  ): Promise<GitHubTreeResponse | undefined>;
 }

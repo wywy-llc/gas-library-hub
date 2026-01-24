@@ -208,9 +208,10 @@ describe('ProductionGitHubApiClient', () => {
   describe('searchRepositoriesByTags', () => {
     const mockConfig = {
       gasTags: ['google-apps-script'],
+      scriptIdPatterns: [] as RegExp[],
+      webAppPatterns: [] as RegExp[],
       verbose: false,
-      rateLimit: {},
-      github: { sortBy: 'stars' as const },
+      rateLimit: { maxRequestsPerHour: 5000 },
     };
 
     it('リポジトリ検索を正常に実行できる', async () => {
@@ -285,9 +286,10 @@ describe('ProductionGitHubApiClient', () => {
   describe('searchRepositoriesByPageRange', () => {
     const mockConfig = {
       gasTags: ['google-apps-script'],
+      scriptIdPatterns: [] as RegExp[],
+      webAppPatterns: [] as RegExp[],
       verbose: false,
-      rateLimit: {},
-      github: { sortBy: 'stars' as const },
+      rateLimit: { maxRequestsPerHour: 5000 },
     };
 
     it('ページ範囲指定での検索を正常に実行できる', async () => {
@@ -359,9 +361,10 @@ describe('ProductionGitHubApiClient', () => {
       const result = await client.searchRepositoriesByPageRange(
         {
           gasTags: ['google-apps-script'],
+          scriptIdPatterns: [] as RegExp[],
+          webAppPatterns: [] as RegExp[],
           verbose: false,
-          rateLimit: {},
-          github: { sortBy: 'stars' as const },
+          rateLimit: { maxRequestsPerHour: 5000 },
         },
         1,
         3,

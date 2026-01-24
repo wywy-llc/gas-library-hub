@@ -6,6 +6,11 @@ import {
   LIBRARY_SUMMARY_JSON_SCHEMA,
   buildLibrarySummaryPrompt,
 } from '$lib/server/prompts/library-summary-prompt.js';
+import {
+  ValidatedSummaryGeneratorService,
+  type GenerationOptions,
+  type ValidatedSummaryResult,
+} from '$lib/server/services/validated-summary-generator-service.js';
 
 /**
  * E2Eテスト用のモックデータを取得
@@ -257,7 +262,37 @@ export const GenerateLibrarySummaryService = (() => {
     }
   };
 
+  /**
+   * バリデーション付きでライブラリ要約を生成する
+   *
+   * ソースコード分析 + AI生成 + バリデーション + 自動再生成を統合。
+   * ハルシネーション（存在しないメソッドの創作）を防止する。
+   *
+   * @param params ライブラリ要約生成パラメータ
+   * @param options 生成オプション
+   * @returns 検証済み要約生成結果
+   */
+  const callWithValidation = async (
+    params: LibrarySummaryParams,
+    options: GenerationOptions = {}
+  ): Promise<ValidatedSummaryResult> => {
+    // E2Eテストモードの場合はモックデータを返す
+    if (env.PLAYWRIGHT_TEST_MODE === 'true') {
+      console.log('🤖 [E2E Mock] バリデーション付きAI要約を生成中... (モックデータを使用)');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return {
+        summary: getE2EMockSummary(params.githubUrl),
+        validationResult: undefined,
+        attempts: 1,
+        sourceAnalysis: undefined,
+      };
+    }
+
+    return ValidatedSummaryGeneratorService.call(params.githubUrl, options);
+  };
+
   return {
     call,
+    callWithValidation,
   } as const;
 })();

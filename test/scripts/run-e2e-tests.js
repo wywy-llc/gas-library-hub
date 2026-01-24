@@ -13,6 +13,12 @@ import { cleanupTestDatabase } from './cleanup-test-db.js';
 // 環境変数を読み込み（メッセージ非表示）
 config({ quiet: true });
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {object} options
+ * @returns {Promise<void>}
+ */
 function runCommand(command, args = [], options = {}) {
   return new Promise((resolve, reject) => {
     const childProcess = spawn(command, args, {

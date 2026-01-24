@@ -22,7 +22,8 @@
   }
 
   let { data }: Props = $props();
-  const { library, librarySummary } = data;
+  const library = $derived(data.library);
+  const librarySummary = $derived(data.librarySummary);
 
   // 現在のロケールを取得
   const currentLocale = getLocale();
@@ -45,7 +46,12 @@
   });
 
   // データベースのコピー回数を表示用の状態として管理
-  let displayCopyCount = $state(library.copyCount);
+  let displayCopyCount = $state(0);
+
+  // library.copyCountが変更された時に同期
+  $effect(() => {
+    displayCopyCount = library.copyCount;
+  });
 
   // localStorageのキー（重複カウント防止用）
   const COPIED_SCRIPTS_KEY = 'copied-script-ids';

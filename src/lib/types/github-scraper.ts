@@ -42,6 +42,46 @@ export interface GitHubReadmeResponse {
   encoding: string;
 }
 
+/**
+ * GitHub Contents API レスポンス型
+ * /repos/{owner}/{repo}/contents/{path} エンドポイント
+ */
+export interface GitHubContentResponse {
+  content: string;
+  encoding: 'base64' | 'utf-8';
+  sha: string;
+  size: number;
+  name: string;
+  path: string;
+  type: 'file' | 'dir' | 'symlink' | 'submodule';
+  url: string;
+  html_url: string;
+  download_url: string | null;
+}
+
+/**
+ * GitHub Tree API のファイル/ディレクトリ情報
+ */
+export interface GitHubTreeItem {
+  path: string;
+  mode: string;
+  type: 'blob' | 'tree';
+  sha: string;
+  size?: number;
+  url: string;
+}
+
+/**
+ * GitHub Tree API レスポンス型
+ * /repos/{owner}/{repo}/git/trees/{sha} エンドポイント
+ */
+export interface GitHubTreeResponse {
+  sha: string;
+  url: string;
+  tree: GitHubTreeItem[];
+  truncated: boolean;
+}
+
 export interface ScrapedLibraryData {
   name: string;
   scriptId: string;

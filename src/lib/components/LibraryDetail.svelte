@@ -70,10 +70,12 @@
     onCopyScriptId,
   }: Props = $props();
 
-  // scriptTypeに応じてURL生成
-  const libraryUrl = `https://script.google.com/macros/library/d/${library.scriptId}/0`;
-  const gasProjectUrl = `https://script.google.com/u/1/home/projects/${library.scriptId}/edit`;
-  const sampleAppUrl = `https://script.google.com/macros/s/${library.scriptId}/exec`;
+  // scriptTypeに応じてURL生成（propsの変更に追従するため$derivedを使用）
+  const libraryUrl = $derived(`https://script.google.com/macros/library/d/${library.scriptId}/0`);
+  const gasProjectUrl = $derived(
+    `https://script.google.com/u/1/home/projects/${library.scriptId}/edit`
+  );
+  const sampleAppUrl = $derived(`https://script.google.com/macros/s/${library.scriptId}/exec`);
 
   // WebアプリのURLまたはGitHubリポジトリを開く
   function getWebAppUrl(): string {

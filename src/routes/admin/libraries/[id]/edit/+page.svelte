@@ -46,9 +46,9 @@
     return JSON.stringify(tags);
   }
 
-  // タグの表示用状態
-  let tagsJaDisplay = $state(tagsToString(data.library.tagsJa));
-  let tagsEnDisplay = $state(tagsToString(data.library.tagsEn));
+  // タグの表示用状態（dataの変更に追従）
+  let tagsJaDisplay = $derived(tagsToString(data.library.tagsJa));
+  let tagsEnDisplay = $derived(tagsToString(data.library.tagsEn));
 </script>
 
 <svelte:head>

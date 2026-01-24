@@ -13,6 +13,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
+  "include": ["src/**/*", "test/**/*"],
   "exclude": [".svelte-kit/**/*"]
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
   // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

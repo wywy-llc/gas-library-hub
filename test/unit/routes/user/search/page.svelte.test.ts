@@ -12,6 +12,7 @@ describe('SearchPage', () => {
     searchQuery: '',
     currentPage: 1,
     itemsPerPage: 10,
+    scriptType: 'library' as const,
   };
 
   // 基本的なレンダリングテスト

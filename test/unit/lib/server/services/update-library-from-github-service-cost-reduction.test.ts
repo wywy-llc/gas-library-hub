@@ -66,14 +66,35 @@ import { GitHubApiUtils } from '../../../../../src/lib/server/utils/github-api-u
 import { ServiceErrorUtil } from '../../../../../src/lib/server/utils/service-error-util.js';
 
 // モックされたインスタンスを取得
-const mockDb = vi.mocked(db);
-const mockLibraryRepository = vi.mocked(LibraryRepository);
-const mockLibrarySummaryRepository = vi.mocked(LibrarySummaryRepository);
-const mockFetchGitHubRepoDataService = vi.mocked(FetchGitHubRepoDataService);
-const mockGenerateAiSummaryService = vi.mocked(GenerateAiSummaryService);
-const mockScrapeGASLibraryService = vi.mocked(ScrapeGASLibraryService);
-const mockGitHubApiUtils = vi.mocked(GitHubApiUtils);
-const mockServiceErrorUtil = vi.mocked(ServiceErrorUtil);
+const mockDb = db as unknown as {
+  select: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+};
+const mockLibraryRepository = LibraryRepository as unknown as {
+  findById: ReturnType<typeof vi.fn>;
+};
+const mockLibrarySummaryRepository = LibrarySummaryRepository as unknown as {
+  exists: ReturnType<typeof vi.fn>;
+};
+const mockFetchGitHubRepoDataService = FetchGitHubRepoDataService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockGenerateAiSummaryService = GenerateAiSummaryService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+  callBackground: ReturnType<typeof vi.fn>;
+};
+const mockScrapeGASLibraryService = ScrapeGASLibraryService as unknown as {
+  call: ReturnType<typeof vi.fn>;
+};
+const mockGitHubApiUtils = GitHubApiUtils as unknown as {
+  parseGitHubUrl: ReturnType<typeof vi.fn>;
+  fetchRepositoryInfo: ReturnType<typeof vi.fn>;
+  fetchReadme: ReturnType<typeof vi.fn>;
+  fetchLastCommitDate: ReturnType<typeof vi.fn>;
+};
+const mockServiceErrorUtil = ServiceErrorUtil as unknown as {
+  assertCondition: ReturnType<typeof vi.fn>;
+};
 
 describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
   const libraryId = 'test_lib_123';
@@ -124,7 +145,7 @@ describe('UpdateLibraryFromGithubService - コスト削減機能', () => {
         where: vi.fn().mockResolvedValue(undefined),
       }),
     };
-    mockDb.update.mockReturnValue(mockUpdateChain as unknown as ReturnType<typeof mockDb.update>);
+    mockDb.update.mockReturnValue(mockUpdateChain);
 
     // 新しい構造のモック設定
     mockLibraryRepository.findById.mockResolvedValue(mockLibraryData);

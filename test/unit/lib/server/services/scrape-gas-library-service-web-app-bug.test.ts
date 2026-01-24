@@ -66,15 +66,17 @@ Create a Google Apps Script project and copy the files from the \`src\` folder.
       description: 'Create and view schedules in a web app',
       stargazers_count: 5,
       html_url: 'https://github.com/UplandJacob2/Schedules-App',
+      clone_url: 'https://github.com/UplandJacob2/Schedules-App.git',
       owner: {
         login: 'UplandJacob2',
         html_url: 'https://github.com/UplandJacob2',
       },
       license: {
-        key: 'mit',
         name: 'MIT License',
         url: 'https://api.github.com/licenses/mit',
       },
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     });
 
     vi.mocked(GitHubApiUtils.fetchReadme).mockResolvedValue(readmeContent);
@@ -85,7 +87,7 @@ Create a Google Apps Script project and copy the files from the \`src\` folder.
     );
 
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data) {
       // WebアプリURLのみが検出されているため、web_appに分類されるべき
       expect(result.data.scriptType).toBe('web_app');
       // 最初に見つかったWebアプリURLのスクリプトIDが使用されるべき
@@ -118,15 +120,17 @@ Available at: https://script.google.com/macros/s/AKfycby2WEDnie17ngh3Ra4n-2wvR5u
       description: 'A project with both library and web app',
       stargazers_count: 15,
       html_url: 'https://github.com/example/mixed-project',
+      clone_url: 'https://github.com/example/mixed-project.git',
       owner: {
         login: 'example',
         html_url: 'https://github.com/example',
       },
       license: {
-        key: 'mit',
         name: 'MIT License',
         url: 'https://api.github.com/licenses/mit',
       },
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     });
 
     vi.mocked(GitHubApiUtils.fetchReadme).mockResolvedValue(readmeContent);
@@ -135,7 +139,7 @@ Available at: https://script.google.com/macros/s/AKfycby2WEDnie17ngh3Ra4n-2wvR5u
     const result = await ScrapeGASLibraryService.call('https://github.com/example/mixed-project');
 
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data) {
       // WebアプリURLとスクリプトIDの両方があるため、libraryに分類されるべき
       expect(result.data.scriptType).toBe('library');
       // 通常のスクリプトIDが使用されるべき（WebアプリURLのIDではない）
@@ -171,15 +175,17 @@ const lib = LibraryName.doSomething();
       description: 'A GAS library',
       stargazers_count: 10,
       html_url: 'https://github.com/example/gas-library',
+      clone_url: 'https://github.com/example/gas-library.git',
       owner: {
         login: 'example',
         html_url: 'https://github.com/example',
       },
       license: {
-        key: 'mit',
         name: 'MIT License',
         url: 'https://api.github.com/licenses/mit',
       },
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     });
 
     vi.mocked(GitHubApiUtils.fetchReadme).mockResolvedValue(readmeContent);
@@ -188,7 +194,7 @@ const lib = LibraryName.doSomething();
     const result = await ScrapeGASLibraryService.call('https://github.com/example/gas-library');
 
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data) {
       // 1から始まるスクリプトIDで、WebアプリURLがないため、libraryに分類されるべき
       expect(result.data.scriptType).toBe('library');
       expect(result.data.scriptId).toBe(

@@ -3,6 +3,7 @@ import { GitHubApiClientFactory } from '$lib/server/factories/github-api-client-
 import type { GitHubApiClient } from '$lib/types/github-api-client.js';
 import type {
   GitHubRepository,
+  GitHubTreeResponse,
   ScraperConfig,
   TagSearchResult,
 } from '$lib/types/github-scraper.js';
@@ -125,5 +126,37 @@ export class GitHubApiUtils {
    */
   public static async fetchLastCommitDate(owner: string, repo: string): Promise<Date | null> {
     return this.getClient().fetchLastCommitDate(owner, repo);
+  }
+
+  /**
+   * ファイル内容を取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param path ファイルパス
+   * @returns ファイル内容（取得できない場合はundefined）
+   */
+  public static async fetchFileContent(
+    owner: string,
+    repo: string,
+    path: string
+  ): Promise<string | undefined> {
+    return this.getClient().fetchFileContent(owner, repo, path);
+  }
+
+  /**
+   * リポジトリのファイルツリーを取得
+   * @param owner リポジトリオーナー名
+   * @param repo リポジトリ名
+   * @param sha ツリーSHA（デフォルトはHEAD）
+   * @param recursive 再帰的に取得するか（デフォルトはtrue）
+   * @returns ファイルツリー（取得できない場合はundefined）
+   */
+  public static async fetchRepositoryTree(
+    owner: string,
+    repo: string,
+    sha?: string,
+    recursive?: boolean
+  ): Promise<GitHubTreeResponse | undefined> {
+    return this.getClient().fetchRepositoryTree(owner, repo, sha, recursive);
   }
 }

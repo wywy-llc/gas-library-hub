@@ -17,8 +17,10 @@ const GitHubRepoInfoFactory = createFactoryWrapper(
   Factory.Sync.makeFactory({
     name: 'testrepo',
     html_url: 'https://github.com/testowner/testrepo',
+    clone_url: 'https://github.com/testowner/testrepo.git',
     owner: {
       login: 'testowner',
+      html_url: 'https://github.com/testowner',
     },
     description: 'Test repository description',
     stargazers_count: 123,
@@ -26,6 +28,8 @@ const GitHubRepoInfoFactory = createFactoryWrapper(
       name: 'MIT License',
       url: 'https://api.github.com/licenses/mit',
     },
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z',
   })
 );
 
@@ -174,8 +178,10 @@ describe('FetchGitHubRepoDataService', () => {
       const complexRepoInfo = GitHubRepoInfoFactory.build({
         name: 'complex-repo-name',
         html_url: 'https://github.com/complex-owner/complex-repo-name',
+        clone_url: 'https://github.com/complex-owner/complex-repo-name.git',
         owner: {
           login: 'complex-owner',
+          html_url: 'https://github.com/complex-owner',
         },
         description: 'A very detailed description with special characters',
         stargazers_count: 9999,
@@ -199,6 +205,7 @@ describe('FetchGitHubRepoDataService', () => {
       const repoWithSpecialOwner = GitHubRepoInfoFactory.build({
         owner: {
           login: 'user-with-dashes_and_underscores',
+          html_url: 'https://github.com/user-with-dashes_and_underscores',
         },
       });
 

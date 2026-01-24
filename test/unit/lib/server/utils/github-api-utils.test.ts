@@ -183,6 +183,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script', 'apps-script'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -209,6 +210,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script', 'apps-script', 'gas-library'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -231,6 +233,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['test'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -274,6 +277,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -345,6 +349,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -389,6 +394,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script', 'apps-script'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: true,
       };
@@ -415,6 +421,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: [], // 空の配列
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -439,6 +446,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: undefined as unknown as string[], // 未定義
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -463,6 +471,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script', 'apps-script', 'gas-library', 'clasp', 'googleappsscript'], // cspell:disable-line
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -495,6 +504,7 @@ describe('GitHubApiUtils', () => {
           'automation',
         ],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -520,6 +530,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['test'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -546,6 +557,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['test'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
@@ -592,6 +604,7 @@ describe('GitHubApiUtils', () => {
       const config = {
         gasTags: ['google-apps-script', 'apps-script'],
         scriptIdPatterns: [],
+        webAppPatterns: [],
         rateLimit: { maxRequestsPerHour: 5000 },
         verbose: false,
       };
