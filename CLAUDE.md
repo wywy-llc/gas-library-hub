@@ -9,7 +9,7 @@ mission: GASライブラリの検索・登録・AI要約を提供
 tech_foundation: Svelte 5 + SvelteKit + PostgreSQL
 ```
 
-* * *
+---
 
 ## §1 Tech Stack
 
@@ -22,8 +22,8 @@ framework:
   i18n: Paraglide JS
 
 external_api:
-  ai: OpenAI API（AI要約生成）
-  github: GitHub API（リポジトリ情報取得）
+  ai: OpenAI API
+  github: GitHub API
 
 testing:
   unit: Vitest
@@ -31,46 +31,60 @@ testing:
   component: Storybook
 ```
 
-* * *
+---
 
-## §2 Svelte 5 Conventions
+## §2 Core Constraints
 
 ```yaml
-runes:
-  principle: リアクティブ状態管理はRunes第一選択
+# ── Architecture ──
+ALWAYS:
+  - インターフェース定義: src/lib/types/
+  - 本番実装: Production[Name]
+  - モック実装: Mock[Name]
+  - テスト時: ファクトリ経由でモック注入
 
-  ALWAYS:
-    - $state(): 状態宣言
-    - $derived(): 算出プロパティ
-    - $effect(): 副作用
-    - $props(): Props定義
-    - Propsコールバック: イベント処理
+# ── Resilience ──
+ALWAYS:
+  - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
+  - 指数バックオフ: baseDelay × 2^attempt（最大3回）
+  - 高頻度API呼び出しにTTL付きキャッシュ適用
+  - ServiceErrorUtilで構造化エラーレスポンス
+  - 独立処理: Promise.all() / 部分失敗許容: Promise.allSettled()
 
-  NEVER:
-    - letリアクティブ宣言
-    - export let（レガシー）
-    - createEventDispatcher
-
-legacy_migration:
-  note: 以下は$props()への移行が必要
-  files:
-    - src/lib/components/Button.svelte
-    - src/lib/components/SearchBox.svelte
-    - src/lib/components/UserDropdown.svelte
-    - src/lib/components/AdminHeader.svelte
-    - src/lib/components/UserHeader.svelte
-
-page_tests:
-  rule: src/routes/ → src/stories/pages/にStorybookストーリー作成
-  naming: "{PageName}.stories.svelte"
-  constraint: play関数使用禁止
+NEVER:
+  - 順次処理可能な場合のPromise.all（全体失敗リスク）
 ```
 
-* * *
+---
 
-## §3 Architecture Patterns
+## §3 Svelte 5 Rules
 
-### §3.1 Service Layer
+```yaml
+ALWAYS:
+  - $state(): 状態宣言
+  - $derived(): 算出プロパティ
+  - $effect(): 副作用
+  - $props(): Props定義
+  - Propsコールバック: イベント処理
+
+NEVER:
+  - letリアクティブ宣言
+  - export let（レガシー）
+  - createEventDispatcher
+
+migration_pending:
+  - src/lib/components/Button.svelte
+  - src/lib/components/SearchBox.svelte
+  - src/lib/components/UserDropdown.svelte
+  - src/lib/components/AdminHeader.svelte
+  - src/lib/components/UserHeader.svelte
+```
+
+---
+
+## §4 Architecture Patterns
+
+### §4.1 Service Layer
 
 ```yaml
 patterns:
@@ -83,10 +97,10 @@ patterns:
     examples: [UpdateLibraryFromGithubService, FetchGitHubRepoDataService]
 
 naming:
-  service: 動詞 + 名詞 + Service
-  crud: [Get, Post, Put, Delete] + 名詞 + Service
-  list: GetAll + 名詞複数形 + Service
-  conditional: Get + 名詞複数形 + By + 条件 + Service
+  pattern: "{Verb}{Noun}Service"
+  crud: [Get, Post, Put, Delete]{Noun}Service
+  list: GetAll{Nouns}Service
+  conditional: Get{Nouns}By{Condition}Service
 ```
 
 **コード例（IIFE+as const）:**
@@ -101,65 +115,18 @@ export const GenerateAiSummaryService = (() => {
 })();
 ```
 
-### §3.2 Repository Layer
+### §4.2 Repository Layer
 
 ```yaml
 location: src/lib/server/repositories/
-naming: "[Entity]Repository"
-responsibility: データアクセス層の抽象化
+naming: "{Entity}Repository"
 ```
 
-### §3.3 Dependency Injection
-
-```yaml
-ALWAYS:
-  - インターフェース定義: src/lib/types/
-  - 本番実装: Production[Name]
-  - モック実装: Mock[Name]
-  - テスト時: ファクトリ経由でモック注入
-```
-
-### §3.4 SSR/Client Pattern
+### §4.3 SSR/Client Pattern
 
 ```yaml
 server: "+page.server.ts → GetDataServerService.call()"
 client: "+page.svelte → $state() + クライアントサービス呼び出し"
-```
-
-* * *
-
-## §4 Resilience Patterns
-
-### §4.1 Retry
-
-```yaml
-ALWAYS:
-  - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
-  - 指数バックオフ: baseDelay * 2^attempt
-  - 最大リトライ回数: 3回
-
-implementation: src/lib/server/utils/retry-util.ts
-```
-
-### §4.2 Caching
-
-```yaml
-ALWAYS:
-  - 高頻度API呼び出しにTTL付きキャッシュ適用
-  - キャッシュキー: 一意識別子（owner/repo等）
-
-example: ProductionGitHubApiClient（インメモリキャッシュ、TTL 5分）
-```
-
-### §4.3 Error Handling
-
-```yaml
-ALWAYS:
-  - ServiceErrorUtil使用
-  - 構造化エラーレスポンス
-  - ログ出力
-
-implementation: src/lib/server/utils/service-error-util.ts
 ```
 
 ### §4.4 Background Processing
@@ -170,77 +137,56 @@ example: GenerateAiSummaryService.callBackground(libraryId)
 behavior: レスポンス待機なし、エラーはログ出力のみ
 ```
 
-### §4.5 Parallel Execution
+---
+
+## §5 UI & I18n
+
+### §5.1 Constraints
 
 ```yaml
 ALWAYS:
-  - 独立した処理: Promise.all()
-  - 部分失敗許容: Promise.allSettled()
+  - daisyUI v5コンポーネント（btn, card, modal, input）を第一選択
+  - UI文字列: messages/*.json で管理
+  - 不明時: Context7 MCPで公式ドキュメント調査
 
 NEVER:
-  - 順次処理可能な場合のPromise.all（エラー時全体失敗リスク）
+  - "@apply"多用
+  - ハードコードされた日本語/英語文字列（UI表示用）
 ```
 
-* * *
-
-## §5 UI Conventions
-
-### §5.1 daisyUI v5
+### §5.2 daisyUI v5
 
 ```yaml
-ALWAYS:
-  - btn・card・modal・input等を第一選択
-  - 不明時: Context7 MCPで公式ドキュメント調査（推測禁止）
-
 design:
   default: Outline（btn-outline等）
   primary_action: ソリッド
   custom: daisyUI対応不可時のみTailwindクラス補完
 ```
 
-### §5.2 Tailwind
+### §5.3 I18n（Paraglide）
 
 ```yaml
-ALWAYS:
-  - Svelteコンポーネント化
-  - daisyUI v5設計システムで視覚一貫性
-  - padding・margin調整はTailwindクラス使用
-
-NEVER:
-  - "@apply多用"
-```
-
-### §5.3 I18n
-
-```yaml
-ALWAYS:
-  - UI文字列: messages/*.json で管理
-  - インポート: $lib/paraglide/messages.js
-  - 言語取得: getLocale()
-
-NEVER:
-  - ハードコードされた日本語/英語文字列（UI表示用）
+import: $lib/paraglide/messages.js
+locale: getLocale()
 
 usage: |
   import * as m from '$lib/paraglide/messages.js';
   <p>{m.welcome_message()}</p>
 ```
 
-* * *
+---
 
 ## §6 Testing & Quality
 
-### §6.1 Test Commands
+### §6.1 Constraints
 
 ```yaml
-commands:
-  test: "./scripts/dev.sh test '<ファイルパス or パターン>'"
-  test_fast: "./scripts/dev.sh test:fast"
-  check: "./scripts/dev.sh check"
-  fix: "./scripts/dev.sh fix [path]"
-  all: npm run test
-  storybook: npm run story
-  test_runner: npm run test:storybook
+ALWAYS:
+  - テストデータ生成にファクトリ使用（fishery）
+  - src/routes/ → src/stories/pages/ にStorybookストーリー作成
+
+NEVER:
+  - Storybookでplay関数使用
 ```
 
 ### §6.2 Test Factory
@@ -248,40 +194,134 @@ commands:
 ```yaml
 library: fishery
 location: test/factories/
-naming: "[entity].factory.ts"
-
-ALWAYS:
-  - テストデータ生成にファクトリ使用
-  - 一貫したテストデータ構造
+naming: "{entity}.factory.ts"
 ```
 
-### §6.3 E2E Database
+### §6.3 E2Eテスト
+
+```yaml
+command: npm run test:e2e
+script: test/scripts/run-e2e-tests.js
+
+workflow:
+  1_setup: PlaywrightのglobalSetupでDB初期化
+  2_test: Playwrightテスト実行
+  3_cleanup: テストDB自動クリーンアップ
+
+prerequisites:
+  GITHUB_TOKEN: .envに設定必須（public_repoスコープ）
+
+related_scripts:
+  setup: npm run test:e2e:setup
+  cleanup: npm run test:e2e:cleanup
+```
+
+### §6.4 E2E Database
 
 ```yaml
 config:
-  test_db: gas_library_hub_test_db（本番DBと分離）
-  clear_script: scripts/clear-test-data.js（テスト前自動実行）
+  test_db: gas_library_hub_test_db
+  clear_script: scripts/clear-test-data.js
   setup_script: scripts/setup-test-db.js
 
 warning: |
-  ⚠️ スキーマ変更時の必須作業:
-  新テーブル追加時はtest/scripts/clear-test-data.jsのDELETE文も追加
+  ⚠️ スキーマ変更時: 新テーブル追加時は clear-test-data.js のDELETE文も追加
   （外部キー制約順序に注意）
 
-delete_order:
-  - DELETE FROM "library_summary"
-  - DELETE FROM "library"
-  - DELETE FROM "user"
+delete_order: [library_summary, library, user]
 ```
 
-* * *
+---
 
 ## §7 Debugging
 
 ```yaml
-principle: UI/画面バグは実動作確認の再現ファーストアプローチ徹底
+principle: UI/画面バグは実動作確認の再現ファーストアプローチ
 
 command: /debug-ui [対象URL]
 skill: ~/.claude/skills/debugging-browser-ui/SKILL.md
 fallback: 手動ブラウザ操作（Chrome DevTools MCP使用不可時）
+```
+
+---
+
+## §8 Development Workflow
+
+### §8.1 dev.sh コマンド
+
+```yaml
+script: ./scripts/dev.sh
+version: v3.0
+
+commands:
+  test: "./scripts/dev.sh test '<ファイルパス or パターン>'"
+  test_fast: "./scripts/dev.sh test:fast"
+  check: "./scripts/dev.sh check"
+  fix: "./scripts/dev.sh fix [path]"
+
+npm_commands:
+  test: npm run test              # ユニットテスト実行
+  test_e2e: npm run test:e2e      # E2Eテスト実行
+  test_storybook: npm run test:storybook  # Storybookテスト実行
+  story: npm run story            # Storybook開発サーバー起動
+
+options:
+  --verbose: 詳細ログ表示（VITEST_CONSOLE_LOG連携）
+
+features:
+  auto_resolve: ソースファイル → テストファイル自動推論
+  pattern_search: パターンでテストファイル検索
+  storybook_detect: .svelteファイル → Storybookストーリー検出
+```
+
+**使用例:**
+
+```bash
+# ソースファイルから関連テスト検出・実行
+./scripts/dev.sh test src/lib/services/foo-service.ts
+
+# テストファイル直接実行
+./scripts/dev.sh test test/lib/services/foo.test.ts
+
+# パターンでテスト検索
+./scripts/dev.sh test foo-service
+
+# 高速テスト（型チェック・lintスキップ）
+./scripts/dev.sh test:fast --verbose
+
+# 自動修正
+./scripts/dev.sh fix src/lib/components/Button.svelte
+```
+
+### §8.2 Claude Code Hooks
+
+```yaml
+config: .claude/settings.json
+
+hooks:
+  PostToolUse:
+    trigger: Edit | Write | MultiEdit
+    action: "./docker/dev.sh fix"
+    purpose: ファイル編集後に自動フォーマット・lint修正
+
+  Stop:
+    trigger: Edit | Write | MultiEdit
+    action: "./docker/dev.sh check"
+    purpose: セッション終了前に型チェック実行
+```
+
+---
+
+## §9 Reference Paths
+
+```yaml
+services: src/lib/server/services/
+repositories: src/lib/server/repositories/
+types: src/lib/types/
+utils:
+  retry: src/lib/server/utils/retry-util.ts
+  error: src/lib/server/utils/service-error-util.ts
+factories: test/factories/
+scripts: scripts/dev.sh
+claude_config: .claude/settings.json
 ```
