@@ -21,7 +21,7 @@
           },
           {
             "type": "command",
-            "command": "./scripts/dev.sh test:fast --verbose"
+            "command": "./scripts/dev.sh test:fast"
           }
         ]
       }
