@@ -19,6 +19,28 @@ interface ChangeDetection {
 }
 
 /**
+ * 変更検出用の新データ型定義
+ */
+interface NewLibraryData {
+  name: string;
+  description: string;
+  authorName: string;
+  authorUrl: string;
+  repositoryUrl: string;
+  starCount: number;
+  licenseType: string;
+  licenseUrl: string;
+  scriptId: string;
+  scriptType: string;
+  lastCommitAt: Date;
+}
+
+/**
+ * 比較対象フィールドの定義（AI要約が必要なフィールドを明示）
+ */
+const AI_SUMMARY_TRIGGER_FIELDS = new Set(['lastCommitAt', 'scriptId', 'scriptType']);
+
+/**
  * GitHub リポジトリ情報を再取得するサービス
  *
  * 動作原理:
@@ -29,64 +51,54 @@ interface ChangeDetection {
  */
 export class UpdateLibraryFromGithubService {
   /**
-   * 変更検出による差分更新の判定
+   * 変更検出による差分更新の判定（最適化版）
+   * - マッピングベースの比較でコード重複を削減
+   * - Set使用でO(1)のフィールドチェック
    * @private
    */
   private static detectChanges(
-    existingData: {
-      name: string;
-      description: string;
-      authorName: string;
-      authorUrl: string;
-      repositoryUrl: string;
-      starCount: number;
-      licenseType: string;
-      licenseUrl: string;
-      scriptId: string;
-      scriptType: string;
-      lastCommitAt: Date;
-    },
-    newRepoInfo: {
-      name: string;
-      description: string;
-      authorName: string;
-      authorUrl: string;
-      repositoryUrl: string;
-      starCount: number;
-    },
-    newLicenseInfo: {
-      type: string;
-      url: string;
-    },
-    newLastCommitAt: Date,
-    newScriptId: string,
-    newScriptType: string
+    existingData: NewLibraryData,
+    newData: NewLibraryData
   ): ChangeDetection {
+    // 比較対象フィールドのマッピング（Date型以外）
+    const stringFields = [
+      'name',
+      'description',
+      'authorName',
+      'authorUrl',
+      'repositoryUrl',
+      'licenseType',
+      'licenseUrl',
+      'scriptId',
+      'scriptType',
+    ] as const;
+
     const changedFields: string[] = [];
 
-    // 各フィールドの変更をチェック
-    if (existingData.name !== newRepoInfo.name) changedFields.push('name');
-    if (existingData.description !== newRepoInfo.description) changedFields.push('description');
-    if (existingData.authorName !== newRepoInfo.authorName) changedFields.push('authorName');
-    if (existingData.authorUrl !== newRepoInfo.authorUrl) changedFields.push('authorUrl');
-    if (existingData.repositoryUrl !== newRepoInfo.repositoryUrl)
-      changedFields.push('repositoryUrl');
-    if (existingData.starCount !== newRepoInfo.starCount) changedFields.push('starCount');
-    if (existingData.licenseType !== newLicenseInfo.type) changedFields.push('licenseType');
-    if (existingData.licenseUrl !== newLicenseInfo.url) changedFields.push('licenseUrl');
-    if (existingData.scriptId !== newScriptId) changedFields.push('scriptId');
-    if (existingData.scriptType !== newScriptType) changedFields.push('scriptType');
+    // 文字列・数値フィールドの比較（ループで効率化）
+    for (const field of stringFields) {
+      if (existingData[field] !== newData[field]) {
+        changedFields.push(field);
+      }
+    }
 
-    const hasCommitChanges = existingData.lastCommitAt.getTime() !== newLastCommitAt.getTime();
-    if (hasCommitChanges) changedFields.push('lastCommitAt');
+    // 数値フィールド
+    if (existingData.starCount !== newData.starCount) {
+      changedFields.push('starCount');
+    }
+
+    // Date型フィールドの比較（getTime()で数値比較）
+    if (existingData.lastCommitAt.getTime() !== newData.lastCommitAt.getTime()) {
+      changedFields.push('lastCommitAt');
+    }
+
+    // AI要約が必要かどうかをSet.has()でO(1)チェック
+    const requiresAISummary = changedFields.some(field => AI_SUMMARY_TRIGGER_FIELDS.has(field));
 
     return {
       hasChanges: changedFields.length > 0,
       changedFields,
-      requiresAISummary:
-        hasCommitChanges ||
-        changedFields.includes('scriptId') ||
-        changedFields.includes('scriptType'),
+      requiresAISummary,
     };
   }
 
@@ -129,17 +141,19 @@ export class UpdateLibraryFromGithubService {
    * @param options オプション設定
    */
   static async call(libraryId: string, options: { skipAiSummary?: boolean } = {}) {
-    // ライブラリを取得
+    // ライブラリを取得（型ガードでnull assertionを排除）
     const libraryData = await LibraryRepository.findById(libraryId);
     ServiceErrorUtil.assertCondition(
       !!libraryData,
       'ライブラリが見つかりません。',
       'UpdateLibraryFromGithubService.call'
     );
+    // assertCondition通過後はnon-nullが保証される
+    const existingLibrary = libraryData!;
 
     // 外部データ取得とサマリー存在確認を並行実行
     const [externalData, summaryExists] = await Promise.all([
-      this.fetchExternalData(libraryData!.repositoryUrl),
+      this.fetchExternalData(existingLibrary.repositoryUrl),
       LibrarySummaryRepository.exists(libraryId),
     ]);
 
@@ -147,34 +161,42 @@ export class UpdateLibraryFromGithubService {
     const { repoInfo, licenseInfo, lastCommitAt } = githubData;
 
     // スクリプトID情報を取得（既存値をデフォルトに使用）
-    let scriptId = libraryData!.scriptId;
-    let scriptType = libraryData!.scriptType;
+    let scriptId = existingLibrary.scriptId;
+    let scriptType = existingLibrary.scriptType;
 
     if (scrapeResult?.success && scrapeResult.data) {
       const newScriptId = scrapeResult.data.scriptId;
       const newScriptType = scrapeResult.data.scriptType;
 
       // 変更があった場合のみログ出力
-      if (newScriptId !== libraryData!.scriptId) {
-        console.log(`スクリプトID更新: ${libraryData!.scriptId} → ${newScriptId}`);
+      if (newScriptId !== existingLibrary.scriptId) {
+        console.log(`スクリプトID更新: ${existingLibrary.scriptId} → ${newScriptId}`);
         scriptId = newScriptId;
       }
 
-      if (newScriptType !== libraryData!.scriptType) {
-        console.log(`スクリプトタイプ更新: ${libraryData!.scriptType} → ${newScriptType}`);
+      if (newScriptType !== existingLibrary.scriptType) {
+        console.log(`スクリプトタイプ更新: ${existingLibrary.scriptType} → ${newScriptType}`);
         scriptType = newScriptType;
       }
     }
 
-    // 変更検出による差分更新判定
-    const changeDetection = this.detectChanges(
-      libraryData!,
-      repoInfo,
-      licenseInfo,
-      lastCommitAt,
+    // 新データオブジェクトを構築（detectChanges用）
+    const newData: NewLibraryData = {
+      name: repoInfo.name,
+      description: repoInfo.description,
+      authorName: repoInfo.authorName,
+      authorUrl: repoInfo.authorUrl,
+      repositoryUrl: repoInfo.repositoryUrl,
+      starCount: repoInfo.starCount,
+      licenseType: licenseInfo.type,
+      licenseUrl: licenseInfo.url,
       scriptId,
-      scriptType
-    );
+      scriptType,
+      lastCommitAt,
+    };
+
+    // 変更検出による差分更新判定（最適化されたシグネチャ）
+    const changeDetection = this.detectChanges(existingLibrary, newData);
 
     // 変更がある場合のみデータベース更新
     if (changeDetection.hasChanges) {
@@ -183,17 +205,17 @@ export class UpdateLibraryFromGithubService {
       await db
         .update(library)
         .set({
-          name: repoInfo.name,
-          description: repoInfo.description,
-          authorName: repoInfo.authorName,
-          authorUrl: repoInfo.authorUrl,
-          repositoryUrl: repoInfo.repositoryUrl,
-          starCount: repoInfo.starCount,
-          licenseType: licenseInfo.type,
-          licenseUrl: licenseInfo.url,
-          lastCommitAt: lastCommitAt,
-          scriptId: scriptId,
-          scriptType: scriptType,
+          name: newData.name,
+          description: newData.description,
+          authorName: newData.authorName,
+          authorUrl: newData.authorUrl,
+          repositoryUrl: newData.repositoryUrl,
+          starCount: newData.starCount,
+          licenseType: newData.licenseType,
+          licenseUrl: newData.licenseUrl,
+          lastCommitAt: newData.lastCommitAt,
+          scriptId: newData.scriptId,
+          scriptType: newData.scriptType as 'library' | 'web_app',
           updatedAt: new Date(),
         })
         .where(eq(library.id, libraryId));
@@ -215,7 +237,7 @@ export class UpdateLibraryFromGithubService {
       // バックグラウンドでAI要約生成（更新処理をブロックしない）
       GenerateAiSummaryService.callBackground({
         libraryId,
-        githubUrl: repoInfo.repositoryUrl,
+        githubUrl: newData.repositoryUrl,
         skipOnError: true,
         logContext: reason,
       });

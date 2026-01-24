@@ -2,16 +2,25 @@ import { UpdateLibraryFromGithubService } from '$lib/server/services/update-libr
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 
-export const POST: RequestHandler = async ({ params }) => {
+export const POST: RequestHandler = async ({ params, request }) => {
   const libraryId = params.id;
 
   if (!libraryId) {
     throw error(400, { message: 'ライブラリIDが指定されていません。' });
   }
 
+  // リクエストボディからオプションを取得（ボディがない場合はデフォルト値）
+  let skipAiSummary = true;
   try {
-    // GitHubからライブラリ情報を更新（AI要約生成はスキップ）
-    await UpdateLibraryFromGithubService.call(libraryId, { skipAiSummary: true });
+    const body = await request.json();
+    skipAiSummary = body.skipAiSummary ?? true;
+  } catch {
+    // JSONパースエラーの場合はデフォルト値を使用
+  }
+
+  try {
+    // GitHubからライブラリ情報を更新
+    await UpdateLibraryFromGithubService.call(libraryId, { skipAiSummary });
 
     return json({
       success: true,

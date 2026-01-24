@@ -61,6 +61,8 @@
   let bulkUpdateMessage = $state('');
   let bulkValidateInProgress = $state(false);
   let bulkValidateMessage = $state('');
+  let showBulkUpdateModal = $state(false);
+  let includeAiSummary = $state(false);
   let selectedTags = $state(resetSelectedTags()); // 初期値は全タグ選択
 
   /**
@@ -156,22 +158,23 @@
     }
   }
 
-  async function handleBulkUpdate() {
+  function openBulkUpdateModal() {
     if (bulkUpdateInProgress) return;
+    includeAiSummary = false; // モーダルを開くたびにリセット
+    showBulkUpdateModal = true;
+  }
+
+  function closeBulkUpdateModal() {
+    showBulkUpdateModal = false;
+  }
+
+  async function executeBulkUpdate() {
+    showBulkUpdateModal = false;
+    bulkUpdateInProgress = true;
+    bulkUpdateMessage = '既存ライブラリのGitHub情報を一括更新中...';
 
     // 却下ステータスのライブラリを除外
     const targetLibraries = libraries.filter(lib => lib.status !== ('rejected' as LibraryStatus));
-
-    if (
-      !confirm(
-        `既存の${targetLibraries.length}件のライブラリのGitHub情報（Star数等）を一括更新しますか？\n\n却下ステータスのライブラリは対象外です。\nAI要約の更新は行われません。\nこの処理には時間がかかる場合があります。`
-      )
-    ) {
-      return;
-    }
-
-    bulkUpdateInProgress = true;
-    bulkUpdateMessage = '既存ライブラリのGitHub情報を一括更新中...';
 
     try {
       let successCount = 0;
@@ -180,11 +183,16 @@
 
       for (let i = 0; i < targetLibraries.length; i++) {
         const library = targetLibraries[i];
-        bulkUpdateMessage = `${i + 1}/${totalLibraries} GitHub情報を更新中: ${library.name}`;
+        const updateType = includeAiSummary ? 'GitHub情報とAI要約' : 'GitHub情報';
+        bulkUpdateMessage = `${i + 1}/${totalLibraries} ${updateType}を更新中: ${library.name}`;
 
         try {
           const response = await fetch(`/admin/libraries/${library.id}/scraping`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ skipAiSummary: !includeAiSummary }),
           });
 
           if (response.ok) {
@@ -364,7 +372,7 @@
           一括新規追加
         </button>
         <button
-          onclick={handleBulkUpdate}
+          onclick={openBulkUpdateModal}
           disabled={bulkUpdateInProgress}
           class="inline-flex items-center justify-center rounded-md border border-transparent bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
           title="既存ライブラリのGitHub情報を一括更新（Star数等）"
@@ -1125,4 +1133,41 @@
 
   <!-- Footer -->
   <Footer variant="admin" />
+
+  <!-- 一括更新確認モーダル -->
+  {#if showBulkUpdateModal}
+    <dialog class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="text-lg font-bold">既存ライブラリの一括更新</h3>
+        <p class="py-4">
+          既存の{libraries.filter(lib => lib.status !== 'rejected')
+            .length}件のライブラリのGitHub情報（Star数等）を一括更新しますか？
+        </p>
+        <div class="text-base-content/70 text-sm">
+          <p>・却下ステータスのライブラリは対象外です。</p>
+          <p>・この処理には時間がかかる場合があります。</p>
+        </div>
+        <div class="form-control mt-4">
+          <label class="label cursor-pointer justify-start gap-3">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-primary"
+              bind:checked={includeAiSummary}
+            />
+            <span class="label-text">AI要約も更新する</span>
+          </label>
+          {#if includeAiSummary}
+            <p class="text-warning ml-9 text-sm">⚠️ AI要約の更新にはAPIコストがかかります</p>
+          {/if}
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-ghost" onclick={closeBulkUpdateModal}>キャンセル</button>
+          <button class="btn btn-primary" onclick={executeBulkUpdate}>更新を実行</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button onclick={closeBulkUpdateModal}>close</button>
+      </form>
+    </dialog>
+  {/if}
 </main>
