@@ -6,6 +6,7 @@
   import TagButton from '$lib/components/TagButton.svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
+  // refreshed
 
   interface Props {
     librarySummary: LibrarySummaryRecord;
@@ -249,7 +250,7 @@
                   {currentLocale === 'ja' ? example.title.ja : example.title.en}
                 </h5>
                 <CodeBlock code={example.code} class="mb-3" />
-                <p class="text-sm leading-relaxed opacity-80">
+                <p class="text-sm leading-relaxed whitespace-pre-line opacity-80">
                   {currentLocale === 'ja' ? example.explanation.ja : example.explanation.en}
                 </p>
               </div>

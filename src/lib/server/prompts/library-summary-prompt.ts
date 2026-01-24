@@ -114,8 +114,16 @@ export const LIBRARY_SUMMARY_JSON_SCHEMA = {
                     explanation: {
                       type: 'object',
                       properties: {
-                        ja: { type: 'string', description: 'コードの解説（日本語）' },
-                        en: { type: 'string', description: 'コードの解説（英語）' },
+                        ja: {
+                          type: 'string',
+                          description:
+                            'コード例のJSDocとして記載する実装ポイント3点（例: "・認証サービスの初期化\\n・スコープの設定\\n・コールバックURLの指定"）',
+                        },
+                        en: {
+                          type: 'string',
+                          description:
+                            '3 implementation points as JSDoc for the code example (e.g., "・Initialize auth service\\n・Configure scopes\\n・Set callback URL")',
+                        },
                       },
                       required: ['ja', 'en'],
                       additionalProperties: false,
@@ -193,16 +201,16 @@ export const CHARACTER_LIMITS = {
 export const LIBRARY_SUMMARY_PROMPT_TEMPLATE = `
 # GAS Library Analyzer
 
-## Role
+## §1 Role
 
 Google Apps Script (GAS) ライブラリの技術分析専門家。
 開発者のライブラリ採用判断を支援する構造化データを生成する。
 
-## Task
+## §2 Task
 
 GitHubリポジトリのREADME.mdを分析し、構造化JSONを生成する。
 
-## Input
+### Input
 
 \`\`\`yaml
 github_url: {{GITHUB_URL}}
@@ -210,7 +218,7 @@ github_url: {{GITHUB_URL}}
 
 ---
 
-## Constraints
+## §3 Constraints
 
 ### NEVER（絶対禁止）
 
@@ -218,7 +226,7 @@ github_url: {{GITHUB_URL}}
 - 推測に基づく情報追加
 - 主観的評価（「素晴らしい」「革新的」等）
 - README未記載のコード例生成
-- **文字数カウントの出力**（例：「〜（38字）」「〜(50 chars)」は厳禁。文末の括弧付き数字は全て禁止）
+- **文字数カウントの出力**（「〜（38字）」「〜(50 chars)」は厳禁）
 
 ### ALWAYS（必須）
 
@@ -229,48 +237,9 @@ github_url: {{GITHUB_URL}}
 
 ---
 
-## Analysis Process
+## §4 Character Limits
 
-7段階で分析を実行。各段階で推論を記録する。
-
-| Phase | Focus | Output |
-|-------|-------|--------|
-| 1 | リポジトリ構造理解 | libraryName, tags (max 5) |
-| 2 | 価値提案明確化 | purpose, coreProblem |
-| 3 | ターゲットユーザー具体化 | targetUsers |
-| 4 | 主要メリット抽出 | mainBenefits (1-3個) |
-| 5 | 主要関数と使用例作成 | usageExample.functions (1-3個) + usageExample.examples (1-3個) |
-| 6 | SEOメタデータ生成 | seoInfo |
-| 7 | 最終検証 | JSON構造妥当性、全フィールド完全性 |
-
----
-
-## usageExample Format
-
-### functions（主要関数一覧）
-
-- README記載の主要関数/メソッドを1-3個抽出
-- 各関数に1行要約（ja: 20字以内, en: 30字以内）
-
-### examples（使用例）
-
-- README記載のコード例を1-3個抽出
-- 各例に title, code, explanation を含める
-- codeは言語タグなしの純粋なJavaScript（コメント付き可）
-
-### examples間の一貫性ルール（必須）
-
-- 複数の使用例がある場合、**後の例が前の例で定義した関数を参照する場合は、必ず同じ関数名を使用**
-- 例: 例1で \`getService_()\` を呼ぶなら、別の例で \`getService_()\` を定義
-- **禁止**: 例1で \`getService_()\` を呼び、例2で \`getDriveService_()\` を定義するような不整合
-- 使用例の構成パターン:
-  1. **サービス作成**（必須）: OAuth2.createService等でサービスを作成する関数を定義
-  2. **サービス利用**（任意）: 例1で定義した関数を呼び出して使用
-  3. **コールバック処理**（任意）: フローの完結処理
-
----
-
-## Character Limits
+全フィールドの文字数制限（単一定義）。
 
 | Field | ja | en | Format |
 |-------|-----|-----|--------|
@@ -285,18 +254,100 @@ github_url: {{GITHUB_URL}}
 
 ---
 
-## Self-Validation Checklist
+## §5 Analysis Process
+
+7段階で分析を実行。各段階で推論を記録する。
+
+### Phase 1: リポジトリ構造理解
+
+**Output:** libraryName, tags (max 5)
+
+### Phase 2: 価値提案明確化
+
+**Output:** purpose, coreProblem
+**Limits:** §4参照
+
+### Phase 3: ターゲットユーザー具体化
+
+**Output:** targetUsers
+**Limits:** §4参照
+
+### Phase 4: 主要メリット抽出
+
+**Output:** mainBenefits (1-3個)
+**Limits:** §4参照
+
+### Phase 5: 使用例作成
+
+**Output:** usageExample.functions (1-3個) + usageExample.examples (1-3個)
+
+#### §5.1 functions（主要関数一覧）
+
+- README記載の主要関数/メソッドを1-3個抽出
+- 各関数に1行要約（§4参照: ja 20字, en 30字）
+
+#### §5.2 examples（使用例）
+
+- README記載のコード例を1-3個抽出
+- 各例に title, code, explanation を含める
+- codeは言語タグなしの純粋なJavaScript（コメント付き可）
+- **explanation形式**: コード例のJSDocとして記載する実装ポイント3点
+  - 形式: \`"・ポイント1\\n・ポイント2\\n・ポイント3"\`
+  - 内容: 設定意図、API使用法、注意点など
+  - 用途: UIでコード例の上部にJSDocコメントとして表示される
+
+**code + explanation の出力イメージ:**
+\`\`\`javascript
+/**
+ * OAuth2サービスの作成
+ * ・認証サービスの初期化
+ * ・スコープの設定
+ * ・コールバックURLの指定
+ */
+function getService_() {
+  return OAuth2.createService('drive')
+    .setAuthorizationBaseUrl('https://accounts.google.com/o/oauth2/auth')
+    .setTokenUrl('https://oauth2.googleapis.com/token')
+    .setClientId(CLIENT_ID)
+    .setClientSecret(CLIENT_SECRET)
+    .setCallbackFunction('authCallback')
+    .setPropertyStore(PropertiesService.getUserProperties())
+    .setScope('https://www.googleapis.com/auth/drive');
+}
+\`\`\`
+
+#### §5.3 一貫性ルール（必須）
+
+- 複数の使用例がある場合、**後の例が前の例で定義した関数を参照する場合は、必ず同じ関数名を使用**
+- 例: 例1で \`getService_()\` を呼ぶなら、別の例で \`getService_()\` を定義
+- **禁止**: 例1で \`getService_()\` を呼び、例2で \`getDriveService_()\` を定義するような不整合
+- 使用例の構成パターン:
+  1. **サービス作成**（必須）: OAuth2.createService等でサービスを作成する関数を定義
+  2. **サービス利用**（任意）: 前の例で定義した関数を呼び出して使用
+  3. **コールバック処理**（任意）: フローの完結処理
+
+### Phase 6: SEOメタデータ生成
+
+**Output:** seoInfo
+**Limits:** §4参照
+
+### Phase 7: 最終検証
+
+**Output:** JSON構造妥当性、全フィールド完全性
+
+---
+
+## §6 Self-Validation Checklist
 
 - [ ] 全メソッド名がREADMEに存在
 - [ ] 日英両言語が全フィールドに存在
-- [ ] Character Limitsを遵守
+- [ ] §4 Character Limitsを遵守
 - [ ] 主観的表現を排除
 - [ ] JSON構造が妥当
-- [ ] usageExample.functions に1-3個の関数が含まれる
-- [ ] usageExample.examples に1-3個の例が含まれる
-- [ ] **出力テキストに「（XX字）」「(XX chars)」等の文字数表記が含まれていない**
-- [ ] **usageExample.examples内の関数呼び出しが他の例の関数定義と一致**
-- [ ] 使用例間で未定義の関数を呼び出していない（READMEに定義がある場合を除く）
+- [ ] usageExample: functions 1-3個、examples 1-3個（§5.1, §5.2）
+- [ ] explanation: JSDoc形式の実装ポイント3点（§5.2参照）
+- [ ] 出力テキストに文字数表記なし（§3 NEVER参照）
+- [ ] examples間の関数呼び出しが一致（§5.3参照）
 ` as const;
 
 /**
