@@ -14,7 +14,7 @@
 
 ### 🌟 特徴
 
-- **AI要約**: OpenAI APIによるライブラリの自動要約生成
+- **AI要約**: xAI Grok APIによるライブラリの自動要約生成
 - **GitHub連携**: リポジトリ情報の自動取得とStar数表示
 - **高速**: SvelteKit + Tailwind CSSによる最適化されたパフォーマンス
 
@@ -135,7 +135,7 @@ await db.execute(sql`DELETE FROM "user"`);
 
 - **データベース**: PostgreSQL + Drizzle ORM
 - **認証**: Auth.js + Google OAuth
-- **外部API**: OpenAI API、GitHub API
+- **外部API**: xAI Grok API、GitHub API
 
 ### 開発・テスト
 

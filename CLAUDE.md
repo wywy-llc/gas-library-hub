@@ -22,7 +22,7 @@ framework:
   i18n: Paraglide JS
 
 external_api:
-  ai: OpenAI API
+  ai: xAI Grok API
   github: GitHub API
 
 testing:
@@ -45,7 +45,7 @@ ALWAYS:
 
 # ── Resilience ──
 ALWAYS:
-  - 外部API呼び出し（GitHub, OpenAI）にリトライ適用
+  - 外部API呼び出し（GitHub, xAI）にリトライ適用
   - 指数バックオフ: baseDelay × 2^attempt（最大3回）
   - 高頻度API呼び出しにTTL付きキャッシュ適用
   - ServiceErrorUtilで構造化エラーレスポンス

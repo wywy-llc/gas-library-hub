@@ -5,22 +5,22 @@ import type {
   LibrarySummaryParams,
 } from '../../../../../src/lib/types/library-summary.js';
 
-// OpenAI SDK全体をモック
+// OpenAI SDK全体をモック（xAI APIはOpenAI SDK互換）
 vi.mock('openai', () => ({
   default: vi.fn(),
 }));
 
-// OpenAIUtilsをモック
-vi.mock('../../../../../src/lib/server/utils/openai-utils.js', () => ({
-  OpenAIUtils: {
+// XaiUtilsをモック
+vi.mock('../../../../../src/lib/server/utils/xai-utils.js', () => ({
+  XaiUtils: {
     getClient: vi.fn(),
   },
 }));
 
 import type OpenAI from 'openai';
-import { OpenAIUtils } from '../../../../../src/lib/server/utils/openai-utils.js';
+import { XaiUtils } from '../../../../../src/lib/server/utils/xai-utils.js';
 
-const mockedOpenAIUtils = vi.mocked(OpenAIUtils);
+const mockedXaiUtils = vi.mocked(XaiUtils, true);
 
 describe('GenerateLibrarySummaryService', () => {
   const mockParams: LibrarySummaryParams = {
@@ -80,9 +80,9 @@ describe('GenerateLibrarySummaryService', () => {
     },
   };
 
-  // OpenAIクライアントのモック
+  // xAIクライアントのモック（OpenAI SDK互換）
   const mockChatCompletionsCreate = vi.fn();
-  const mockOpenAIClient = {
+  const mockXaiClient = {
     chat: {
       completions: {
         create: mockChatCompletionsCreate,
@@ -92,8 +92,8 @@ describe('GenerateLibrarySummaryService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // OpenAIUtilsのgetClientメソッドをモック
-    mockedOpenAIUtils.getClient.mockReturnValue(mockOpenAIClient as unknown as OpenAI);
+    // XaiUtilsのgetClientメソッドをモック
+    mockedXaiUtils.getClient.mockReturnValue(mockXaiClient as unknown as OpenAI);
   });
 
   afterEach(() => {
@@ -102,7 +102,7 @@ describe('GenerateLibrarySummaryService', () => {
 
   describe('call', () => {
     test('正常なGitHubURLでライブラリ要約を生成できる', async () => {
-      // OpenAI APIのレスポンスをモック
+      // xAI Grok APIのレスポンスをモック
       const mockResponse = {
         choices: [
           {
@@ -118,9 +118,9 @@ describe('GenerateLibrarySummaryService', () => {
       const result = await GenerateLibrarySummaryService.call(mockParams);
 
       // 検証
-      expect(mockedOpenAIUtils.getClient).toHaveBeenCalled();
+      expect(mockedXaiUtils.getClient).toHaveBeenCalled();
       expect(mockChatCompletionsCreate).toHaveBeenCalledWith({
-        model: 'gpt-5',
+        model: 'grok-4-1-fast-reasoning',
         messages: [
           {
             role: 'user',
@@ -143,13 +143,12 @@ describe('GenerateLibrarySummaryService', () => {
             }),
           },
         },
-        reasoning_effort: 'medium',
       });
 
       expect(result).toEqual(mockLibrarySummary);
     });
 
-    test('OpenAI APIが空のレスポンスを返した場合エラーになる', async () => {
+    test('xAI Grok APIが空のレスポンスを返した場合エラーになる', async () => {
       // 空のレスポンスをモック
       const mockResponse = {
         choices: [
@@ -164,11 +163,11 @@ describe('GenerateLibrarySummaryService', () => {
 
       // テスト実行とエラー検証
       await expect(GenerateLibrarySummaryService.call(mockParams)).rejects.toThrow(
-        'OpenAI API からの応答が空です'
+        'xAI Grok API からの応答が空です'
       );
     });
 
-    test('OpenAI APIが不正なJSONを返した場合エラーになる', async () => {
+    test('xAI Grok APIが不正なJSONを返した場合エラーになる', async () => {
       // 不正なJSONレスポンスをモック
       const mockResponse = {
         choices: [
@@ -183,11 +182,11 @@ describe('GenerateLibrarySummaryService', () => {
 
       // テスト実行とエラー検証
       await expect(GenerateLibrarySummaryService.call(mockParams)).rejects.toThrow(
-        'OpenAI API からの応答をJSONとして解析できませんでした'
+        'xAI Grok API からの応答をJSONとして解析できませんでした'
       );
     });
 
-    test('OpenAI APIでネットワークエラーが発生した場合はエラーを透過する', async () => {
+    test('xAI Grok APIでネットワークエラーが発生した場合はエラーを透過する', async () => {
       // ネットワークエラーをモック
       const networkError = new Error('Network Error: Failed to fetch');
       mockChatCompletionsCreate.mockRejectedValue(networkError);
@@ -199,7 +198,7 @@ describe('GenerateLibrarySummaryService', () => {
     });
 
     test('buildPromptメソッドが適切なプロンプトを生成する', async () => {
-      // OpenAI APIのレスポンスをモック
+      // xAI Grok APIのレスポンスをモック
       const mockResponse = {
         choices: [
           {
@@ -221,7 +220,7 @@ describe('GenerateLibrarySummaryService', () => {
     });
 
     test('JSONスキーマが適切に定義されている', async () => {
-      // OpenAI APIのレスポンスをモック
+      // xAI Grok APIのレスポンスをモック
       const mockResponse = {
         choices: [
           {
@@ -276,8 +275,8 @@ describe('GenerateLibrarySummaryService', () => {
       expect(schema.properties.seoInfo.additionalProperties).toBe(false);
     });
 
-    test('o3モデルと推論設定が正しく使用される', async () => {
-      // OpenAI APIのレスポンスをモック
+    test('grok-4-1-fast-reasoningモデルと設定が正しく使用される', async () => {
+      // xAI Grok APIのレスポンスをモック
       const mockResponse = {
         choices: [
           {
@@ -294,8 +293,7 @@ describe('GenerateLibrarySummaryService', () => {
 
       // API呼び出し設定の検証
       const calledWith = mockChatCompletionsCreate.mock.calls[0][0];
-      expect(calledWith.model).toBe('gpt-5');
-      expect(calledWith.reasoning_effort).toBe('medium');
+      expect(calledWith.model).toBe('grok-4-1-fast-reasoning');
       expect(calledWith.response_format.type).toBe('json_schema');
       expect(calledWith.response_format.json_schema.strict).toBe(true);
     });

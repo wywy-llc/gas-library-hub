@@ -22,7 +22,7 @@ export default defineConfig({
       POSTGRES_DB: process.env.POSTGRES_TEST_DB || process.env.POSTGRES_DB || '',
       NODE_ENV: 'test',
       PLAYWRIGHT_TEST_MODE: 'true',
-      OPENAI_API_KEY: 'mock-api-key-for-e2e-testing',
+      XAI_API_KEY: 'mock-api-key-for-e2e-testing',
       GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
       PARAGLIDE_LOCALE: 'en',
     },

@@ -1,10 +1,10 @@
 import { env } from '$env/dynamic/private';
 import { GitHubApiUtils } from '$lib/server/utils/github-api-utils.js';
-import { OpenAIUtils } from '$lib/server/utils/openai-utils.js';
+import { XaiUtils } from '$lib/server/utils/xai-utils.js';
 import type { LibrarySummary, LibrarySummaryParams } from '$lib/types/library-summary.js';
 
 /**
- * OpenAI API用のJSON Schemaキャッシュ（メモリ使用量削減）
+ * xAI Grok API用のJSON Schemaキャッシュ（メモリ使用量削減）
  */
 const LIBRARY_SUMMARY_JSON_SCHEMA = {
   name: 'library_summary',
@@ -758,17 +758,16 @@ export const GenerateLibrarySummaryService = (() => {
     // プロンプト生成の最適化（テンプレート使用）
     const prompt = buildOptimizedPrompt(params.githubUrl);
 
-    const client = OpenAIUtils.getClient();
+    const client = XaiUtils.getClient();
 
-    // README内容を直接プロンプトに埋め込む形式に変更（OpenAI API互換性向上）
+    // README内容を直接プロンプトに埋め込む形式に変更
     const readmeSection = readmeContent
       ? `\n\n---\n\n## README.md Content\n\n${readmeContent}\n\n---`
       : '\n\n---\n\n## README.md Content\n\nREADME.mdが見つからないか、内容を取得できませんでした。\n\n---';
 
-    // 最適化されたAPI呼び出し（textタイプのみ使用）
+    // xAI Grok API呼び出し（OpenAI SDK互換）
     const response = await client.chat.completions.create({
-      model: 'gpt-5',
-      reasoning_effort: 'medium',
+      model: 'grok-4-1-fast-reasoning',
       messages: [
         {
           role: 'user',
@@ -783,14 +782,14 @@ export const GenerateLibrarySummaryService = (() => {
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      throw new Error('OpenAI API からの応答が空です');
+      throw new Error('xAI Grok API からの応答が空です');
     }
 
     try {
       const summary = JSON.parse(content) as LibrarySummary;
       return summary;
     } catch {
-      throw new Error('OpenAI API からの応答をJSONとして解析できませんでした');
+      throw new Error('xAI Grok API からの応答をJSONとして解析できませんでした');
     }
   };
 
