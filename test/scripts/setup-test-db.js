@@ -128,6 +128,7 @@ async function setupTestDatabase() {
         "main_benefits" jsonb,
         "usage_example_ja" text,
         "usage_example_en" text,
+        "usage_example" jsonb,
         "seo_title_ja" text,
         "seo_title_en" text,
         "seo_description_ja" text,
