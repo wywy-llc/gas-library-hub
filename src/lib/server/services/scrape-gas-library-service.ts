@@ -45,8 +45,7 @@ export class ScrapeGASLibraryService {
   private static extractWebAppInfo(
     readmeContent: string
   ): { scriptId: string; scriptType: 'web_app' } | null {
-    // 事前コンパイルされたパターンを使用してパフォーマンス向上
-    this.WEB_APP_URL_PATTERN.lastIndex = 0; // グローバル正規表現のインデックスをリセット
+    // matchAll()は内部でlastIndexをリセットするため手動リセット不要
     const matches = readmeContent.matchAll(this.WEB_APP_URL_PATTERN);
 
     for (const match of matches) {
@@ -62,19 +61,15 @@ export class ScrapeGASLibraryService {
   }
 
   /**
-   * READMEに.gsファイルの記載があるかチェックし、Web Appとして検知する（最適化版）
+   * READMEに.gsファイルの記載があるかチェックし、Web Appとして検知する
    *
    * @param readmeContent - README文字列
    * @returns .gsファイルが見つかればweb_app、そうでなければnull
    */
   private static detectWebAppFromGsFiles(readmeContent: string): 'web_app' | null {
-    // 事前コンパイル済みパターンを使用し、早期終了で高速化
-    for (const pattern of this.COMPILED_WEB_APP_PATTERNS) {
-      if (pattern.test(readmeContent)) {
-        return 'web_app';
-      }
-    }
-    return null;
+    // some()で早期終了を保証（最初のマッチで即座にtrue返却）
+    const found = this.COMPILED_WEB_APP_PATTERNS.some(pattern => pattern.test(readmeContent));
+    return found ? 'web_app' : null;
   }
 
   /**
