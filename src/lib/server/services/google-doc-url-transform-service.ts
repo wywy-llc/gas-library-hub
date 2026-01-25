@@ -109,8 +109,20 @@ export const GoogleDocUrlTransformService = (() => {
 
       const trimmedUrl = url.trim();
 
-      // URL形式の基本チェック
-      if (!trimmedUrl.includes('docs.google.com') && !trimmedUrl.includes('script.google.com')) {
+      // URL形式の基本チェック（ホスト名で検証）
+      let hostname: string;
+      try {
+        const urlObj = new URL(trimmedUrl);
+        hostname = urlObj.hostname;
+      } catch {
+        throw new GoogleDocUrlTransformError(
+          'GoogleドキュメントのURLを入力してください',
+          'INVALID_URL'
+        );
+      }
+
+      const allowedHosts = new Set(['docs.google.com', 'script.google.com']);
+      if (!allowedHosts.has(hostname)) {
         throw new GoogleDocUrlTransformError(
           'GoogleドキュメントのURLを入力してください',
           'INVALID_URL'
