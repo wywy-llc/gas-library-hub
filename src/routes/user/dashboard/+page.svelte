@@ -45,47 +45,75 @@
   <title>{dashboard_title()}</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8">
-  <h1 class="mb-6 text-2xl font-bold">{dashboard_title()}</h1>
+<main class="container mx-auto px-4 py-8">
+  <h1 class="mb-8 text-3xl font-bold">{dashboard_title()}</h1>
 
   {#if data.dashboard.summary.totalSamples === 0}
-    <div class="py-16 text-center">
-      <p class="text-base-content/60 mb-2 text-lg">{dashboard_no_data()}</p>
-      <p class="text-base-content/40 mb-6 text-sm">{dashboard_start_contributing()}</p>
-      <a href="/user/samples/new" class="btn btn-primary">
-        {sample_create_first()}
-      </a>
+    <div class="hero rounded-box bg-base-200 min-h-[60vh]">
+      <div class="hero-content text-center">
+        <div class="max-w-md">
+          <h2 class="text-base-content/80 text-2xl font-semibold">
+            {dashboard_no_data()}
+          </h2>
+          <p class="text-base-content/60 py-6">
+            {dashboard_start_contributing()}
+          </p>
+          <a href="/user/samples/new" class="btn btn-primary" aria-label={sample_create_first()}>
+            {sample_create_first()}
+          </a>
+        </div>
+      </div>
     </div>
   {:else}
-    <div class="space-y-6">
-      <section>
-        <h2 class="mb-4 text-lg font-medium">{dashboard_summary_title()}</h2>
-        <DashboardSummary
-          totalSamples={data.dashboard.summary.totalSamples}
-          totalCopies={data.dashboard.summary.totalCopies}
-          totalLikes={data.dashboard.summary.totalLikes}
-          totalViews={data.dashboard.summary.totalViews}
-        />
+    <div class="space-y-8">
+      <section aria-labelledby="summary-heading">
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body">
+            <h2 id="summary-heading" class="card-title text-lg">
+              {dashboard_summary_title()}
+            </h2>
+            <DashboardSummary
+              totalSamples={data.dashboard.summary.totalSamples}
+              totalCopies={data.dashboard.summary.totalCopies}
+              totalLikes={data.dashboard.summary.totalLikes}
+              totalViews={data.dashboard.summary.totalViews}
+            />
+          </div>
+        </div>
       </section>
 
-      <section>
-        <h2 class="mb-4 text-lg font-medium">{dashboard_trend_title()}</h2>
-        <TrendChart data={data.dashboard.trend} />
+      <section aria-labelledby="trend-heading">
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body">
+            <h2 id="trend-heading" class="card-title text-lg">
+              {dashboard_trend_title()}
+            </h2>
+            <TrendChart data={data.dashboard.trend} />
+          </div>
+        </div>
       </section>
 
-      <div class="grid gap-6 lg:grid-cols-2">
-        <section>
-          <SamplePerformanceTable samples={data.dashboard.topSamples} />
+      <div class="grid gap-8 lg:grid-cols-2">
+        <section aria-labelledby="performance-heading">
+          <div class="card bg-base-100 h-full shadow-sm">
+            <div class="card-body">
+              <SamplePerformanceTable samples={data.dashboard.topSamples} />
+            </div>
+          </div>
         </section>
 
-        <section>
-          <NotificationList
-            notifications={data.dashboard.recentNotifications}
-            onMarkAllRead={handleMarkAllRead}
-            onMarkRead={handleMarkRead}
-          />
+        <section aria-labelledby="notifications-heading">
+          <div class="card bg-base-100 h-full shadow-sm">
+            <div class="card-body">
+              <NotificationList
+                notifications={data.dashboard.recentNotifications}
+                onMarkAllRead={handleMarkAllRead}
+                onMarkRead={handleMarkRead}
+              />
+            </div>
+          </div>
         </section>
       </div>
     </div>
   {/if}
-</div>
+</main>

@@ -79,78 +79,109 @@
   <title>{data.sample.title} - {sample_detail_title()}</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-4xl px-4 py-8">
-  <article class="bg-base-100 rounded-box border-base-200 border p-6">
-    <header class="mb-6">
-      <div class="mb-4 flex items-start justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">{getDocumentTypeIcon(data.sample.documentType)}</span>
-          <span class="badge badge-outline">{getDocumentTypeLabel(data.sample.documentType)}</span>
-        </div>
-        {#if data.isOwner}
-          <a href="/user/samples/{data.sample.id}/edit" class="btn btn-outline btn-sm">
-            {edit()}
-          </a>
-        {/if}
-      </div>
-
-      <h1 class="mb-2 text-2xl font-bold">{data.sample.title}</h1>
-
-      <div class="text-base-content/60 flex items-center gap-4 text-sm">
-        {#if data.author}
-          <span>
-            {sample_posted_by()}:
-            <a href="/user/profile/{data.author.id}" class="link link-hover">
-              {data.author.name}
+<main class="container mx-auto max-w-4xl px-4 py-8">
+  <article class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+      <!-- Header Section -->
+      <header class="flex flex-col gap-4">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl" role="img" aria-hidden="true">
+              {getDocumentTypeIcon(data.sample.documentType)}
+            </span>
+            <span class="badge badge-outline">
+              {getDocumentTypeLabel(data.sample.documentType)}
+            </span>
+          </div>
+          {#if data.isOwner}
+            <a
+              href="/user/samples/{data.sample.id}/edit"
+              class="btn btn-outline btn-sm"
+              aria-label="{edit()} {data.sample.title}"
+            >
+              {edit()}
             </a>
+          {/if}
+        </div>
+
+        <h1 class="card-title text-2xl">{data.sample.title}</h1>
+
+        <div class="text-base-content/60 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {#if data.author}
+            <span>
+              {sample_posted_by()}:
+              <a href="/user/profile/{data.author.id}" class="link link-hover link-primary">
+                {data.author.name}
+              </a>
+            </span>
+          {/if}
+          <span>{sample_posted_at()}: {formattedDate}</span>
+        </div>
+      </header>
+
+      <div class="divider"></div>
+
+      <!-- Description Section -->
+      <section aria-labelledby="description-heading">
+        <h2 id="description-heading" class="sr-only">Description</h2>
+        <div class="prose max-w-none">
+          <p class="whitespace-pre-wrap">{data.sample.description}</p>
+        </div>
+      </section>
+
+      <!-- Tags Section -->
+      {#if data.sample.tags && data.sample.tags.length > 0}
+        <section aria-labelledby="tags-heading" class="mt-4">
+          <h2 id="tags-heading" class="sr-only">Tags</h2>
+          <div class="flex flex-wrap gap-2">
+            {#each data.sample.tags as tag (tag)}
+              <TagButton size="sm">{tag}</TagButton>
+            {/each}
+          </div>
+        </section>
+      {/if}
+
+      <div class="divider"></div>
+
+      <!-- Actions Section -->
+      <section aria-label="Actions" class="flex flex-wrap items-center justify-between gap-4">
+        <!-- Statistics (compact) -->
+        <div class="text-base-content/60 flex items-center gap-4 text-sm">
+          <span title={sample_view_count({ count: data.sample.viewCount.toString() })}>
+            👁️ {data.sample.viewCount}
           </span>
-        {/if}
-        <span>{sample_posted_at()}: {formattedDate}</span>
-      </div>
-    </header>
+          <span title={sample_copy_count({ count: copyCount.toString() })}>
+            📋 {copyCount}
+          </span>
+          <span title={sample_like_count({ count: likeCount.toString() })}>
+            ❤️ {likeCount}
+          </span>
+        </div>
 
-    <div class="prose mb-6 max-w-none">
-      <p class="whitespace-pre-wrap">{data.sample.description}</p>
-    </div>
-
-    {#if data.sample.tags && data.sample.tags.length > 0}
-      <div class="mb-6 flex flex-wrap gap-2">
-        {#each data.sample.tags as tag (tag)}
-          <TagButton size="sm">{tag}</TagButton>
-        {/each}
-      </div>
-    {/if}
-
-    <div class="border-base-200 flex items-center justify-between border-t pt-6">
-      <div class="text-base-content/60 flex items-center gap-4 text-sm">
-        <span title={sample_view_count({ count: data.sample.viewCount.toString() })}>
-          👁️ {data.sample.viewCount}
-        </span>
-        <span title={sample_copy_count({ count: copyCount.toString() })}>📋 {copyCount}</span>
-        <span title={sample_like_count({ count: likeCount.toString() })}>❤️ {likeCount}</span>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button
-          type="button"
-          class="btn btn-ghost"
-          class:text-error={liked}
-          onclick={handleLike}
-          title={liked ? sample_liked_button() : sample_like_button()}
-        >
-          {liked ? '❤️' : '🤍'}
-          <span>{likeCount}</span>
-        </button>
-        <a
-          href={data.sample.copyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn btn-primary"
-          onclick={handleCopy}
-        >
-          📋 {sample_copy_button()}
-        </a>
-      </div>
+        <!-- Action buttons -->
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            class:text-error={liked}
+            onclick={handleLike}
+            aria-label={liked ? sample_liked_button() : sample_like_button()}
+            aria-pressed={liked}
+          >
+            {liked ? '❤️' : '🤍'}
+            <span>{likeCount}</span>
+          </button>
+          <a
+            href={data.sample.copyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary"
+            onclick={handleCopy}
+          >
+            📋 {sample_copy_button()}
+          </a>
+        </div>
+      </section>
     </div>
   </article>
-</div>
+</main>
