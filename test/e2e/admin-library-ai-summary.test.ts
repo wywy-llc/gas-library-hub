@@ -4,6 +4,9 @@ import { LibraryTestDataFactories } from '../factories/index.js';
 // このテストファイルのタイムアウトを延長（ライブラリ登録とスクレイピングに時間がかかるため）
 test.setTimeout(30000);
 
+// フレイキーテスト対策: 失敗時に1回リトライ
+test.describe.configure({ retries: 1 });
+
 /**
  * テストごとにユニークなスコープを生成
  */

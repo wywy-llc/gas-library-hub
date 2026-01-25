@@ -1,6 +1,11 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
+// svelte/reactivity のモック（SvelteURLSearchParamsをURLSearchParamsで代替）
+vi.mock('svelte/reactivity', () => ({
+  SvelteURLSearchParams: URLSearchParams,
+}));
+
 // $app/stores のモック
 vi.mock('$app/stores', () => ({
   page: {
