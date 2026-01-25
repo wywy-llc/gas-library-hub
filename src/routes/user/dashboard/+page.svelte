@@ -1,27 +1,42 @@
 <script lang="ts">
+  import { invalidateAll } from '$app/navigation';
+  import DashboardSummary from '$lib/components/dashboard/DashboardSummary.svelte';
+  import NotificationList from '$lib/components/dashboard/NotificationList.svelte';
+  import SamplePerformanceTable from '$lib/components/dashboard/SamplePerformanceTable.svelte';
+  import TrendChart from '$lib/components/dashboard/TrendChart.svelte';
   import {
-    dashboard_title,
-    dashboard_summary_title,
-    dashboard_trend_title,
     dashboard_no_data,
     dashboard_start_contributing,
+    dashboard_summary_title,
+    dashboard_title,
+    dashboard_trend_title,
     sample_create_first,
   } from '$lib/paraglide/messages.js';
-  import DashboardSummary from '$lib/components/dashboard/DashboardSummary.svelte';
-  import TrendChart from '$lib/components/dashboard/TrendChart.svelte';
-  import SamplePerformanceTable from '$lib/components/dashboard/SamplePerformanceTable.svelte';
-  import NotificationList from '$lib/components/dashboard/NotificationList.svelte';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
 
   async function handleMarkAllRead() {
     try {
-      await fetch('/user/notifications/mark-all-read', { method: 'POST' });
-      // ページを再読み込みして通知状態を更新
-      window.location.reload();
+      const response = await fetch('/user/notifications/mark-all-read', { method: 'POST' });
+      if (response.ok) {
+        await invalidateAll();
+      }
     } catch (e) {
       console.error('Mark all read failed:', e);
+    }
+  }
+
+  async function handleMarkRead(notificationId: string) {
+    try {
+      const response = await fetch(`/user/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        await invalidateAll();
+      }
+    } catch (e) {
+      console.error('Mark read failed:', e);
     }
   }
 </script>
@@ -67,6 +82,7 @@
           <NotificationList
             notifications={data.dashboard.recentNotifications}
             onMarkAllRead={handleMarkAllRead}
+            onMarkRead={handleMarkRead}
           />
         </section>
       </div>

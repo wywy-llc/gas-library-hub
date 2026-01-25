@@ -1,19 +1,16 @@
 <script lang="ts">
+  import TagButton from '$lib/components/TagButton.svelte';
   import {
-    sample_copy_count,
-    sample_like_count,
-    sample_view_count,
-    sample_document_type_spreadsheet,
-    sample_document_type_document,
-    sample_document_type_slides,
-    sample_document_type_apps_script,
     sample_copy_button,
+    sample_copy_count,
     sample_like_button,
+    sample_like_count,
     sample_liked_button,
+    sample_view_count,
   } from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime.js';
-  import type { SampleCode, DocumentType } from '$lib/server/db/schema.js';
-  import TagButton from '$lib/components/TagButton.svelte';
+  import type { SampleCode } from '$lib/server/db/schema.js';
+  import { getDocumentTypeIcon, getDocumentTypeLabel } from '$lib/utils/document-type-util.js';
 
   interface Props {
     sample: SampleCode;
@@ -25,32 +22,6 @@
   let { sample, liked = false, onLike, onCopy }: Props = $props();
 
   let currentLocale = $derived(getLocale());
-
-  function getDocumentTypeLabel(type: DocumentType): string {
-    switch (type) {
-      case 'spreadsheet':
-        return sample_document_type_spreadsheet();
-      case 'document':
-        return sample_document_type_document();
-      case 'slides':
-        return sample_document_type_slides();
-      case 'apps_script':
-        return sample_document_type_apps_script();
-    }
-  }
-
-  function getDocumentTypeIcon(type: DocumentType): string {
-    switch (type) {
-      case 'spreadsheet':
-        return '📊';
-      case 'document':
-        return '📄';
-      case 'slides':
-        return '📽️';
-      case 'apps_script':
-        return '⚡';
-    }
-  }
 
   let formattedDate = $derived(
     currentLocale === 'ja'

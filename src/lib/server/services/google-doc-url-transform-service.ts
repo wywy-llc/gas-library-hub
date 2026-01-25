@@ -24,6 +24,60 @@ export interface UrlTransformResult {
 }
 
 /**
+ * ドキュメントタイプ別のURL設定
+ */
+interface DocTypeConfig {
+  pattern: RegExp;
+  baseUrl: string;
+  copyPath: string;
+}
+
+/**
+ * ドキュメントタイプ別URL設定マッピング
+ * - pattern: URL検出用正規表現（IDをキャプチャ）
+ * - baseUrl: ベースURL（IDを挿入して使用）
+ * - copyPath: コピーURL用パス（/copy または /edit?copyDoc=true）
+ */
+const DOC_TYPE_CONFIG: Record<DocumentType, DocTypeConfig> = {
+  spreadsheet: {
+    pattern: /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
+    baseUrl: 'https://docs.google.com/spreadsheets/d',
+    copyPath: '/copy',
+  },
+  document: {
+    pattern: /docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/,
+    baseUrl: 'https://docs.google.com/document/d',
+    copyPath: '/copy',
+  },
+  slides: {
+    pattern: /docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/,
+    baseUrl: 'https://docs.google.com/presentation/d',
+    copyPath: '/copy',
+  },
+  apps_script: {
+    pattern: /script\.google\.com\/(?:home\/projects\/|d\/)([a-zA-Z0-9_-]+)/,
+    baseUrl: 'https://script.google.com/d',
+    copyPath: '/edit?copyDoc=true',
+  },
+} as const;
+
+/** 許可されたGoogleドキュメントホスト */
+const ALLOWED_HOSTS = new Set(['docs.google.com', 'script.google.com']);
+
+/** DOC_TYPE_CONFIGエントリのキャッシュ（parseUrl最適化用） */
+const DOC_TYPE_ENTRIES = Object.entries(DOC_TYPE_CONFIG) as [DocumentType, DocTypeConfig][];
+
+/**
+ * 非サポートのGoogleサービス検出用パターン
+ * - 検出時により具体的なエラーメッセージを表示するため
+ */
+const UNSUPPORTED_SERVICES: { pattern: RegExp; name: string }[] = [
+  { pattern: /docs\.google\.com\/forms\//, name: 'Googleフォーム' },
+  { pattern: /docs\.google\.com\/drawings\//, name: 'Google図形描画' },
+  { pattern: /drive\.google\.com\//, name: 'Googleドライブ' },
+];
+
+/**
  * GoogleドキュメントURLを「コピーを作成」リンクに変換するサービス
  *
  * 対応フォーマット:
@@ -33,22 +87,14 @@ export interface UrlTransformResult {
  * - GAS: /d/{ID}/edit → /d/{ID}/edit?copyDoc=true
  */
 export const GoogleDocUrlTransformService = (() => {
-  // ドキュメントタイプ検出用パターン
-  const PATTERNS = {
-    spreadsheet: /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
-    document: /docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/,
-    slides: /docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/,
-    apps_script: /script\.google\.com\/(?:home\/projects\/|d\/)([a-zA-Z0-9_-]+)/,
-  } as const;
-
   /**
    * URLからドキュメントタイプとIDを抽出
    */
   const parseUrl = (url: string): { type: DocumentType; id: string } | null => {
-    for (const [type, pattern] of Object.entries(PATTERNS)) {
-      const match = url.match(pattern);
+    for (const [type, config] of DOC_TYPE_ENTRIES) {
+      const match = url.match(config.pattern);
       if (match) {
-        return { type: type as DocumentType, id: match[1] };
+        return { type, id: match[1] };
       }
     }
     return null;
@@ -58,32 +104,16 @@ export const GoogleDocUrlTransformService = (() => {
    * コピーURLを生成
    */
   const generateCopyUrl = (type: DocumentType, id: string): string => {
-    switch (type) {
-      case 'spreadsheet':
-        return `https://docs.google.com/spreadsheets/d/${id}/copy`;
-      case 'document':
-        return `https://docs.google.com/document/d/${id}/copy`;
-      case 'slides':
-        return `https://docs.google.com/presentation/d/${id}/copy`;
-      case 'apps_script':
-        return `https://script.google.com/d/${id}/edit?copyDoc=true`;
-    }
+    const config = DOC_TYPE_CONFIG[type];
+    return `${config.baseUrl}/${id}${config.copyPath}`;
   };
 
   /**
    * 正規化されたオリジナルURLを生成
    */
   const normalizeOriginalUrl = (type: DocumentType, id: string): string => {
-    switch (type) {
-      case 'spreadsheet':
-        return `https://docs.google.com/spreadsheets/d/${id}/edit`;
-      case 'document':
-        return `https://docs.google.com/document/d/${id}/edit`;
-      case 'slides':
-        return `https://docs.google.com/presentation/d/${id}/edit`;
-      case 'apps_script':
-        return `https://script.google.com/d/${id}/edit`;
-    }
+    const config = DOC_TYPE_CONFIG[type];
+    return `${config.baseUrl}/${id}/edit`;
   };
 
   return {
@@ -121,8 +151,7 @@ export const GoogleDocUrlTransformService = (() => {
         );
       }
 
-      const allowedHosts = new Set(['docs.google.com', 'script.google.com']);
-      if (!allowedHosts.has(hostname)) {
+      if (!ALLOWED_HOSTS.has(hostname)) {
         throw new GoogleDocUrlTransformError(
           'GoogleドキュメントのURLを入力してください',
           'INVALID_URL'
@@ -132,8 +161,16 @@ export const GoogleDocUrlTransformService = (() => {
       const parsed = parseUrl(trimmedUrl);
 
       if (!parsed) {
+        // 非サポートのGoogleサービスを特定してより具体的なエラーメッセージを提供
+        const unsupportedService = UNSUPPORTED_SERVICES.find(s => s.pattern.test(trimmedUrl));
+        if (unsupportedService) {
+          throw new GoogleDocUrlTransformError(
+            `${unsupportedService.name}はサポートされていません。スプレッドシート、ドキュメント、スライド、またはApps ScriptのURLを入力してください`,
+            'UNSUPPORTED_TYPE'
+          );
+        }
         throw new GoogleDocUrlTransformError(
-          'サポートされていないGoogleドキュメント形式です。スプレッドシート、ドキュメント、スライド、またはApps ScriptのURLを入力してください',
+          'サポートされていないURL形式です。スプレッドシート、ドキュメント、スライド、またはApps Scriptの編集URLを入力してください',
           'UNSUPPORTED_TYPE'
         );
       }

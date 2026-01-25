@@ -1,13 +1,10 @@
 <script lang="ts">
   import {
-    sample_url_preview_title,
     sample_url_preview_copy_url,
-    sample_document_type_spreadsheet,
-    sample_document_type_document,
-    sample_document_type_slides,
-    sample_document_type_apps_script,
+    sample_url_preview_title,
   } from '$lib/paraglide/messages.js';
-  import type { DocumentType } from '$lib/server/db/schema.js';
+  import { GoogleDocUrlTransformService } from '$lib/server/services/google-doc-url-transform-service.js';
+  import { getDocumentTypeIcon, getDocumentTypeLabel } from '$lib/utils/document-type-util.js';
 
   interface Props {
     url: string;
@@ -15,68 +12,23 @@
 
   let { url }: Props = $props();
 
-  // ドキュメントタイプ検出パターン
-  const PATTERNS = {
-    spreadsheet: /docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/,
-    document: /docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/,
-    slides: /docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/,
-    apps_script: /script\.google\.com\/(?:home\/projects\/|d\/)([a-zA-Z0-9_-]+)/,
-  } as const;
-
-  function parseUrl(inputUrl: string): { type: DocumentType; id: string; copyUrl: string } | null {
-    for (const [type, pattern] of Object.entries(PATTERNS)) {
-      const match = inputUrl.match(pattern);
-      if (match) {
-        const docType = type as DocumentType;
-        const id = match[1];
-        let copyUrl: string;
-        switch (docType) {
-          case 'spreadsheet':
-            copyUrl = `https://docs.google.com/spreadsheets/d/${id}/copy`;
-            break;
-          case 'document':
-            copyUrl = `https://docs.google.com/document/d/${id}/copy`;
-            break;
-          case 'slides':
-            copyUrl = `https://docs.google.com/presentation/d/${id}/copy`;
-            break;
-          case 'apps_script':
-            copyUrl = `https://script.google.com/d/${id}/edit?copyDoc=true`;
-            break;
-        }
-        return { type: docType, id, copyUrl };
-      }
+  /**
+   * URLを解析してプレビュー表示用のデータを取得
+   * GoogleDocUrlTransformServiceを再利用してDRY原則を維持
+   */
+  let parsed = $derived.by(() => {
+    if (!url) return null;
+    try {
+      const result = GoogleDocUrlTransformService.transform(url);
+      return {
+        type: result.documentType,
+        id: result.documentId,
+        copyUrl: result.copyUrl,
+      };
+    } catch {
+      return null;
     }
-    return null;
-  }
-
-  function getDocumentTypeLabel(type: DocumentType): string {
-    switch (type) {
-      case 'spreadsheet':
-        return sample_document_type_spreadsheet();
-      case 'document':
-        return sample_document_type_document();
-      case 'slides':
-        return sample_document_type_slides();
-      case 'apps_script':
-        return sample_document_type_apps_script();
-    }
-  }
-
-  function getDocumentTypeIcon(type: DocumentType): string {
-    switch (type) {
-      case 'spreadsheet':
-        return '📊';
-      case 'document':
-        return '📄';
-      case 'slides':
-        return '📽️';
-      case 'apps_script':
-        return '⚡';
-    }
-  }
-
-  let parsed = $derived(parseUrl(url));
+  });
 </script>
 
 {#if parsed}

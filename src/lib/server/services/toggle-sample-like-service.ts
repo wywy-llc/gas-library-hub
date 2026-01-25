@@ -1,7 +1,7 @@
-import { generateId } from '$lib/server/utils/generate-id.js';
-import { SampleLikeRepository } from '$lib/server/repositories/sample-like-repository.js';
 import { SampleCodeRepository } from '$lib/server/repositories/sample-code-repository.js';
+import { SampleLikeRepository } from '$lib/server/repositories/sample-like-repository.js';
 import { UserNotificationRepository } from '$lib/server/repositories/user-notification-repository.js';
+import { generateId } from '$lib/server/utils/generate-id.js';
 
 /**
  * いいねトグル結果
@@ -35,46 +35,71 @@ export class ToggleSampleLikeService {
    * ```
    */
   static async toggle(userId: string, sampleCodeId: string): Promise<ToggleLikeResult> {
-    const sample = await SampleCodeRepository.findByIdOrThrow(sampleCodeId);
     const existingLike = await SampleLikeRepository.findByUserAndSample(userId, sampleCodeId);
 
     if (existingLike) {
-      // いいね解除
-      await SampleLikeRepository.delete(userId, sampleCodeId);
-      await SampleCodeRepository.decrementLikeCount(sampleCodeId);
+      return this.removeLike(userId, sampleCodeId);
+    }
 
-      const updatedSample = await SampleCodeRepository.findByIdOrThrow(sampleCodeId);
-      return {
-        liked: false,
-        likeCount: updatedSample.likeCount,
-      };
-    } else {
-      // いいね追加
-      await SampleLikeRepository.create({
+    return this.addLike(userId, sampleCodeId);
+  }
+
+  /**
+   * いいねを追加
+   */
+  private static async addLike(userId: string, sampleCodeId: string): Promise<ToggleLikeResult> {
+    const sample = await SampleCodeRepository.findByIdOrThrow(sampleCodeId);
+
+    // いいね作成とカウント更新を並列実行
+    await Promise.all([
+      SampleLikeRepository.create({
         id: generateId(),
         userId,
         sampleCodeId,
+      }),
+      SampleCodeRepository.incrementLikeCount(sampleCodeId),
+    ]);
+
+    // 投稿者への通知（自分自身へのいいねは通知しない）
+    if (sample.authorId !== userId) {
+      await UserNotificationRepository.create({
+        id: generateId(),
+        userId: sample.authorId,
+        type: 'like',
+        sampleCodeId,
+        actorId: userId,
+        metadata: {},
       });
-      await SampleCodeRepository.incrementLikeCount(sampleCodeId);
-
-      // 投稿者への通知（自分自身へのいいねは通知しない）
-      if (sample.authorId !== userId) {
-        await UserNotificationRepository.create({
-          id: generateId(),
-          userId: sample.authorId,
-          type: 'like',
-          sampleCodeId,
-          actorId: userId,
-          metadata: {},
-        });
-      }
-
-      const updatedSample = await SampleCodeRepository.findByIdOrThrow(sampleCodeId);
-      return {
-        liked: true,
-        likeCount: updatedSample.likeCount,
-      };
     }
+
+    return this.buildResult(true, sampleCodeId);
+  }
+
+  /**
+   * いいねを解除
+   */
+  private static async removeLike(userId: string, sampleCodeId: string): Promise<ToggleLikeResult> {
+    // 削除とカウント更新を並列実行
+    await Promise.all([
+      SampleLikeRepository.delete(userId, sampleCodeId),
+      SampleCodeRepository.decrementLikeCount(sampleCodeId),
+    ]);
+
+    return this.buildResult(false, sampleCodeId);
+  }
+
+  /**
+   * トグル結果を構築
+   */
+  private static async buildResult(
+    liked: boolean,
+    sampleCodeId: string
+  ): Promise<ToggleLikeResult> {
+    const updatedSample = await SampleCodeRepository.findByIdOrThrow(sampleCodeId);
+    return {
+      liked,
+      likeCount: updatedSample.likeCount,
+    };
   }
 
   /**
@@ -90,6 +115,13 @@ export class ToggleSampleLikeService {
   static async getLikedSampleIds(userId: string, sampleCodeIds: string[]): Promise<Set<string>> {
     const likes = await SampleLikeRepository.findByUserId(userId);
     const likedIds = new Set(likes.map(like => like.sampleCodeId));
-    return new Set(sampleCodeIds.filter(id => likedIds.has(id)));
+    // フィルタ結果を直接返す（中間Set生成を削減）
+    const result = new Set<string>();
+    for (const id of sampleCodeIds) {
+      if (likedIds.has(id)) {
+        result.add(id);
+      }
+    }
+    return result;
   }
 }

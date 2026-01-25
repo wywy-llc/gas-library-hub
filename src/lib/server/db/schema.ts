@@ -1,6 +1,15 @@
-import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
-import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
 import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
+import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -211,7 +220,7 @@ export const sampleLike = pgTable(
       .defaultNow(),
   },
   table => ({
-    uniqueUserSample: index('sample_like_user_sample_unique_idx').on(
+    uniqueUserSample: uniqueIndex('sample_like_user_sample_unique_idx').on(
       table.userId,
       table.sampleCodeId
     ),
@@ -260,7 +269,7 @@ export const userNotification = pgTable(
       .references(() => sampleCode.id, { onDelete: 'cascade' }),
     actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }), // nullable - 匿名ユーザーの場合
     metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}).notNull(),
-    isRead: integer('is_read').default(0).notNull(), // 0: 未読, 1: 既読
+    isRead: boolean('is_read').default(false).notNull(),
     createdAt: timestamp('created_at', {
       withTimezone: true,
       mode: 'date',

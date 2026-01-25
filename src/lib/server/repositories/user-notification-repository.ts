@@ -52,7 +52,7 @@ export class UserNotificationRepository {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(userNotification)
-      .where(and(eq(userNotification.userId, userId), eq(userNotification.isRead, 0)));
+      .where(and(eq(userNotification.userId, userId), eq(userNotification.isRead, false)));
     return result[0]?.count ?? 0;
   }
 
@@ -68,7 +68,7 @@ export class UserNotificationRepository {
    * 通知を既読にする
    */
   static async markAsRead(id: string): Promise<void> {
-    await db.update(userNotification).set({ isRead: 1 }).where(eq(userNotification.id, id));
+    await db.update(userNotification).set({ isRead: true }).where(eq(userNotification.id, id));
   }
 
   /**
@@ -77,8 +77,8 @@ export class UserNotificationRepository {
   static async markAllAsRead(userId: string): Promise<void> {
     await db
       .update(userNotification)
-      .set({ isRead: 1 })
-      .where(and(eq(userNotification.userId, userId), eq(userNotification.isRead, 0)));
+      .set({ isRead: true })
+      .where(and(eq(userNotification.userId, userId), eq(userNotification.isRead, false)));
   }
 
   /**

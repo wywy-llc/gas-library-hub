@@ -1,6 +1,11 @@
 import { db } from '$lib/server/db/index.js';
-import { sampleCopy, type SampleCopy, type SampleCopyInsert } from '$lib/server/db/schema.js';
-import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import {
+  sampleCode,
+  sampleCopy,
+  type SampleCopy,
+  type SampleCopyInsert,
+} from '$lib/server/db/schema.js';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
 /**
  * サンプルコピー履歴テーブルのデータアクセス層
@@ -43,26 +48,24 @@ export class SampleCopyRepository {
   }
 
   /**
-   * 日別コピー数を取得（トレンドチャート用）
+   * 作者IDで日別コピー数を取得（トレンドチャート用）
+   * サブクエリを使用してIN句の肥大化を回避
    */
-  static async getDailyCountsByDateRange(
-    sampleCodeIds: string[],
+  static async getDailyCountsByAuthorId(
+    authorId: string,
     startDate: Date,
     endDate: Date
   ): Promise<{ date: string; count: number }[]> {
-    if (sampleCodeIds.length === 0) {
-      return [];
-    }
-
     const result = await db
       .select({
         date: sql<string>`DATE(${sampleCopy.createdAt})::text`,
         count: sql<number>`count(*)::int`,
       })
       .from(sampleCopy)
+      .innerJoin(sampleCode, eq(sampleCopy.sampleCodeId, sampleCode.id))
       .where(
         and(
-          inArray(sampleCopy.sampleCodeId, sampleCodeIds),
+          eq(sampleCode.authorId, authorId),
           gte(sampleCopy.createdAt, startDate),
           lte(sampleCopy.createdAt, endDate)
         )
@@ -71,6 +74,34 @@ export class SampleCopyRepository {
       .orderBy(sql`DATE(${sampleCopy.createdAt})`);
 
     return result;
+  }
+
+  /**
+   * 作者IDでサンプル別の期間内コピー数を一括取得
+   * N+1問題を回避するためのバッチ取得
+   */
+  static async getCountsByAuthorIdGroupedBySample(
+    authorId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Map<string, number>> {
+    const result = await db
+      .select({
+        sampleCodeId: sampleCopy.sampleCodeId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(sampleCopy)
+      .innerJoin(sampleCode, eq(sampleCopy.sampleCodeId, sampleCode.id))
+      .where(
+        and(
+          eq(sampleCode.authorId, authorId),
+          gte(sampleCopy.createdAt, startDate),
+          lte(sampleCopy.createdAt, endDate)
+        )
+      )
+      .groupBy(sampleCopy.sampleCodeId);
+
+    return new Map(result.map(r => [r.sampleCodeId, r.count]));
   }
 
   /**

@@ -110,13 +110,31 @@ describe('GoogleDocUrlTransformService', () => {
         ).toThrow('GoogleドキュメントのURLを入力してください');
       });
 
-      it('サポートされていないGoogleサービスでUNSUPPORTED_TYPEエラーをスローする', () => {
+      it('Googleフォームで具体的なエラーメッセージをスローする', () => {
         expect(() =>
           GoogleDocUrlTransformService.transform('https://docs.google.com/forms/d/123/edit')
         ).toThrow(GoogleDocUrlTransformError);
         expect(() =>
           GoogleDocUrlTransformService.transform('https://docs.google.com/forms/d/123/edit')
-        ).toThrow('サポートされていないGoogleドキュメント形式です');
+        ).toThrow('Googleフォームはサポートされていません');
+      });
+
+      it('Google図形描画で具体的なエラーメッセージをスローする', () => {
+        expect(() =>
+          GoogleDocUrlTransformService.transform('https://docs.google.com/drawings/d/123/edit')
+        ).toThrow(GoogleDocUrlTransformError);
+        expect(() =>
+          GoogleDocUrlTransformService.transform('https://docs.google.com/drawings/d/123/edit')
+        ).toThrow('Google図形描画はサポートされていません');
+      });
+
+      it('不明なGoogleドキュメント形式でUNSUPPORTED_TYPEエラーをスローする', () => {
+        expect(() =>
+          GoogleDocUrlTransformService.transform('https://docs.google.com/unknown/d/123/edit')
+        ).toThrow(GoogleDocUrlTransformError);
+        expect(() =>
+          GoogleDocUrlTransformService.transform('https://docs.google.com/unknown/d/123/edit')
+        ).toThrow('サポートされていないURL形式です');
       });
     });
   });

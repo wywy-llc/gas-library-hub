@@ -1,11 +1,11 @@
 <script lang="ts">
   import {
-    notification_title,
-    notification_like_message,
-    notification_copy_message,
     notification_anonymous_copy_message,
+    notification_copy_message,
+    notification_like_message,
     notification_mark_all_read,
     notification_no_notifications,
+    notification_title,
   } from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime.js';
   import type { UserNotification } from '$lib/server/db/schema.js';
@@ -76,7 +76,7 @@
     <ul class="divide-base-200 divide-y">
       {#each notifications as notification}
         <li
-          class="cursor-pointer p-4 transition-colors {notification.isRead === 0
+          class="cursor-pointer p-4 transition-colors {!notification.isRead
             ? 'bg-primary/5'
             : ''} hover:bg-base-200/50"
           onclick={() => onMarkRead?.(notification.id)}
@@ -96,7 +96,7 @@
                 {formatDate(notification.createdAt)}
               </time>
             </div>
-            {#if notification.isRead === 0}
+            {#if !notification.isRead}
               <span class="badge badge-primary badge-xs">NEW</span>
             {/if}
           </div>

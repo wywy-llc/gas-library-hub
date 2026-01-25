@@ -57,6 +57,20 @@
       "when": 1769307002863,
       "tag": "0007_wet_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1769324607990,
+      "tag": "0008_workable_the_enforcers",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769324769957,
+      "tag": "0009_strong_firebrand",
+      "breakpoints": true
     }
   ]
 }

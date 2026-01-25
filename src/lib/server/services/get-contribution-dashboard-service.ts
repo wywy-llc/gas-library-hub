@@ -1,7 +1,24 @@
+import type { SampleCode, UserNotification } from '$lib/server/db/schema.js';
 import { SampleCodeRepository } from '$lib/server/repositories/sample-code-repository.js';
 import { SampleCopyRepository } from '$lib/server/repositories/sample-copy-repository.js';
 import { UserNotificationRepository } from '$lib/server/repositories/user-notification-repository.js';
-import type { SampleCode, UserNotification } from '$lib/server/db/schema.js';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 定数
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** トレンドデータの日数 */
+const TREND_DAYS = 30;
+
+/** トップサンプルの表示件数 */
+const TOP_SAMPLES_LIMIT = 10;
+
+/** 最新通知の表示件数 */
+const RECENT_NOTIFICATIONS_LIMIT = 10;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 型定義
+// ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * サマリー統計
@@ -29,7 +46,7 @@ export interface SamplePerformance {
   copyCount: number;
   likeCount: number;
   viewCount: number;
-  recentCopies: number; // 直近30日のコピー数
+  recentCopies: number; // 直近のコピー数（TREND_DAYS日間）
 }
 
 /**
@@ -54,14 +71,14 @@ export interface DashboardData {
  */
 export const GetContributionDashboardService = (() => {
   /**
-   * 過去30日間の日付リストを生成
+   * 過去N日間の日付リストを生成
    */
-  const getLast30Days = (): Date[] => {
+  const getLastNDays = (days: number): Date[] => {
     const dates: Date[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    for (let i = 29; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       dates.push(date);
@@ -74,6 +91,28 @@ export const GetContributionDashboardService = (() => {
    */
   const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
+  };
+
+  /**
+   * サンプル一覧からサマリー統計を計算（単一走査: O(n)）
+   */
+  const calculateSummary = (samples: SampleCode[]): DashboardSummary => {
+    let totalCopies = 0;
+    let totalLikes = 0;
+    let totalViews = 0;
+
+    for (const s of samples) {
+      totalCopies += s.copyCount;
+      totalLikes += s.likeCount;
+      totalViews += s.viewCount;
+    }
+
+    return {
+      totalSamples: samples.length,
+      totalCopies,
+      totalLikes,
+      totalViews,
+    };
   };
 
   return {
@@ -90,64 +129,50 @@ export const GetContributionDashboardService = (() => {
      * ```
      */
     call: async (userId: string): Promise<DashboardData> => {
-      // ユーザーのサンプル一覧を取得
-      const samples = await SampleCodeRepository.findByAuthorId(userId);
-
-      // サマリー統計を計算
-      const summary: DashboardSummary = {
-        totalSamples: samples.length,
-        totalCopies: samples.reduce((sum, s) => sum + s.copyCount, 0),
-        totalLikes: samples.reduce((sum, s) => sum + s.likeCount, 0),
-        totalViews: samples.reduce((sum, s) => sum + s.viewCount, 0),
-      };
-
-      // 30日間のトレンドデータを取得
-      const last30Days = getLast30Days();
-      const startDate = last30Days[0];
+      // トレンドデータ用の日付範囲を事前計算
+      const trendDays = getLastNDays(TREND_DAYS);
+      const startDate = trendDays[0];
       const endDate = new Date();
       endDate.setHours(23, 59, 59, 999);
 
-      const sampleIds = samples.map(s => s.id);
-      const dailyCopies =
-        sampleIds.length > 0
-          ? await SampleCopyRepository.getDailyCountsByDateRange(sampleIds, startDate, endDate)
-          : [];
+      // 日付文字列を事前計算（formatDate重複呼び出しを排除）
+      const formattedDates = trendDays.map(formatDate);
+
+      // すべての独立したDB呼び出しを並列実行
+      const [samples, dailyCopies, recentCopiesMap, recentNotifications, unreadNotificationCount] =
+        await Promise.all([
+          SampleCodeRepository.findByAuthorId(userId),
+          SampleCopyRepository.getDailyCountsByAuthorId(userId, startDate, endDate),
+          SampleCopyRepository.getCountsByAuthorIdGroupedBySample(userId, startDate, endDate),
+          UserNotificationRepository.findByUserId(userId, { limit: RECENT_NOTIFICATIONS_LIMIT }),
+          UserNotificationRepository.getUnreadCount(userId),
+        ]);
+
+      // サマリー統計を計算
+      const summary = calculateSummary(samples);
 
       // 日別データをマップに変換
       const copiesMap = new Map(dailyCopies.map(d => [d.date, d.count]));
 
-      // 全日付のトレンドデータを生成（データがない日は0）
-      const trend: TrendData[] = last30Days.map(date => ({
-        date: formatDate(date),
-        copies: copiesMap.get(formatDate(date)) ?? 0,
+      // 全日付のトレンドデータを生成（事前計算した日付文字列を使用）
+      const trend: TrendData[] = formattedDates.map(dateStr => ({
+        date: dateStr,
+        copies: copiesMap.get(dateStr) ?? 0,
       }));
 
-      // 直近30日のコピー数を計算してサンプルパフォーマンスを生成
-      const recentCopiesPromises = samples.map(async sample => {
-        const recentCopies = await SampleCopyRepository.getCountByDateRange(
-          sample.id,
-          startDate,
-          endDate
-        );
-        return {
-          sample,
-          copyCount: sample.copyCount,
-          likeCount: sample.likeCount,
-          viewCount: sample.viewCount,
-          recentCopies,
-        };
-      });
+      // サンプルパフォーマンスを生成（N+1問題を回避）
+      const samplePerformances: SamplePerformance[] = samples.map(sample => ({
+        sample,
+        copyCount: sample.copyCount,
+        likeCount: sample.likeCount,
+        viewCount: sample.viewCount,
+        recentCopies: recentCopiesMap.get(sample.id) ?? 0,
+      }));
 
-      const samplePerformances = await Promise.all(recentCopiesPromises);
-
-      // コピー数でソートしてトップ10を取得
-      const topSamples = samplePerformances.sort((a, b) => b.copyCount - a.copyCount).slice(0, 10);
-
-      // 最新の通知を取得
-      const [recentNotifications, unreadNotificationCount] = await Promise.all([
-        UserNotificationRepository.findByUserId(userId, { limit: 10 }),
-        UserNotificationRepository.getUnreadCount(userId),
-      ]);
+      // コピー数でソートしてトップN件を取得
+      const topSamples = samplePerformances
+        .sort((a, b) => b.copyCount - a.copyCount)
+        .slice(0, TOP_SAMPLES_LIMIT);
 
       return {
         summary,
@@ -170,12 +195,7 @@ export const GetContributionDashboardService = (() => {
      */
     getSummary: async (userId: string): Promise<DashboardSummary> => {
       const samples = await SampleCodeRepository.findByAuthorId(userId);
-      return {
-        totalSamples: samples.length,
-        totalCopies: samples.reduce((sum, s) => sum + s.copyCount, 0),
-        totalLikes: samples.reduce((sum, s) => sum + s.likeCount, 0),
-        totalViews: samples.reduce((sum, s) => sum + s.viewCount, 0),
-      };
+      return calculateSummary(samples);
     },
   } as const;
 })();
