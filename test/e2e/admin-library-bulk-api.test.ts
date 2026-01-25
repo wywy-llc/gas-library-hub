@@ -28,8 +28,9 @@ test.describe('Admin Screen - Library Bulk Register API', () => {
     await submitButton.click();
 
     // エラーメッセージが表示されることを確認
-    await expect(page.locator('.bg-red-50')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=開始ページは終了ページ以下である必要があります')).toBeVisible();
+    await expect(page.locator('text=開始ページは終了ページ以下である必要があります')).toBeVisible({
+      timeout: 5000,
+    });
 
     console.log('✅ パラメータ検証エラーのテストが完了しました');
   });

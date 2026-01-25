@@ -30,8 +30,15 @@ async function clearTestData() {
     const db = drizzle(client);
 
     // 外部キー制約を考慮した削除順序で全テーブルのデータをクリア
+    // Sample関連テーブル（依存順）
+    await db.execute(sql`DELETE FROM "user_notification"`);
+    await db.execute(sql`DELETE FROM "sample_like"`);
+    await db.execute(sql`DELETE FROM "sample_copy"`);
+    await db.execute(sql`DELETE FROM "sample_code"`);
+    // Library関連テーブル
     await db.execute(sql`DELETE FROM "library_summary"`);
     await db.execute(sql`DELETE FROM "library"`);
+    // User（最後に削除）
     await db.execute(sql`DELETE FROM "user"`);
   } catch (error) {
     console.error('❌ データクリアエラー:', error);

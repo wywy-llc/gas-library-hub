@@ -8,6 +8,9 @@ const isCI = process.env.CI === 'true';
 
 // テスト専用ポート（開発サーバーと競合しないよう別ポート）
 const TEST_PORT = 5174;
+// CI環境ではpreviewサーバーのデフォルトポートを使用
+const CI_PORT = 4173;
+const ACTIVE_PORT = isCI ? CI_PORT : TEST_PORT;
 
 // 共通の環境変数設定
 const serverEnv = {
@@ -39,7 +42,7 @@ export default defineConfig({
     browserName: 'chromium',
     actionTimeout: 5000, // アクション: 5秒
     navigationTimeout: 10000, // ナビゲーション: 10秒
-    baseURL: `http://localhost:${TEST_PORT}`,
+    baseURL: `http://localhost:${ACTIVE_PORT}`,
   },
 
   // プロジェクト設定: テストファイルごとに独立したプロジェクトを定義
@@ -106,7 +109,7 @@ export default defineConfig({
     ? {
         // CI: フルビルド + preview
         command: 'npm run build && npm run preview',
-        port: 4173,
+        port: CI_PORT,
         reuseExistingServer: false,
         env: serverEnv,
       }

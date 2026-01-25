@@ -41,6 +41,13 @@ export default ts.config(
     },
   },
   {
+    // CodeBlock.svelteはhighlight.jsのHTML出力を表示するため@htmlが必要
+    files: ['**/CodeBlock.svelte'],
+    rules: {
+      'svelte/no-at-html-tags': 'off',
+    },
+  },
+  {
     ignores: [
       '.svelte-kit/**/*',
       'src/lib/paraglide/**/*',

@@ -56,7 +56,7 @@
   <meta property="og:site_name" content={ogSiteName} />
   {#if ogAuthor}<meta property="article:author" content={ogAuthor} />{/if}
   {#if ogSection}<meta property="article:section" content={ogSection} />{/if}
-  {#if ogTags}{#each ogTags as tag}<meta property="article:tag" content={tag} />{/each}{/if}
+  {#if ogTags}{#each ogTags as tag (tag)}<meta property="article:tag" content={tag} />{/each}{/if}
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content={twitterCard} />
@@ -69,7 +69,7 @@
   <!-- Canonical & Hreflang -->
   <link rel="canonical" href={canonical} />
   {#if hreflangLinks}
-    {#each hreflangLinks as link}
+    {#each hreflangLinks as link (link.hreflang)}
       <link rel="alternate" hreflang={link.hreflang} href={link.href} />
     {/each}
   {/if}

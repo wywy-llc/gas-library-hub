@@ -1,6 +1,15 @@
-import { index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
-import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
 import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
+import type { UsageExampleAnnotated } from '$lib/types/library-summary.js';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -141,3 +150,152 @@ export type User = typeof user.$inferSelect;
 export type Library = typeof library.$inferSelect;
 
 export type LibrarySummaryRecord = typeof librarySummary.$inferSelect;
+
+// ==================== Sample Code Tables ====================
+
+/**
+ * サンプルコード本体
+ * Googleドキュメント（スプレッドシート、ドキュメント、スライド、GAS）のサンプルを管理
+ */
+export const sampleCode = pgTable(
+  'sample_code',
+  {
+    id: text('id').primaryKey(),
+    libraryId: text('library_id').references(() => library.id), // nullable - ライブラリに紐づかない場合もある
+    authorId: text('author_id')
+      .notNull()
+      .references(() => user.id),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    documentType: text('document_type', {
+      enum: ['spreadsheet', 'document', 'slides', 'apps_script'],
+    }).notNull(),
+    originalUrl: text('original_url').notNull(),
+    copyUrl: text('copy_url').notNull(), // 変換後の「コピーを作成」URL
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    status: text('status', { enum: ['draft', 'published', 'archived'] })
+      .notNull()
+      .default('published'), // ログイン必須で即公開、管理者が取り下げ可能
+    copyCount: integer('copy_count').default(0).notNull(),
+    likeCount: integer('like_count').default(0).notNull(),
+    viewCount: integer('view_count').default(0).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  table => ({
+    authorIdIdx: index('sample_code_author_id_idx').on(table.authorId),
+    statusIdx: index('sample_code_status_idx').on(table.status),
+    libraryIdIdx: index('sample_code_library_id_idx').on(table.libraryId),
+  })
+);
+
+/**
+ * サンプルコードへのいいね
+ */
+export const sampleLike = pgTable(
+  'sample_like',
+  {
+    id: text('id').primaryKey(),
+    sampleCodeId: text('sample_code_id')
+      .notNull()
+      .references(() => sampleCode.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  table => ({
+    uniqueUserSample: uniqueIndex('sample_like_user_sample_unique_idx').on(
+      table.userId,
+      table.sampleCodeId
+    ),
+    sampleCodeIdIdx: index('sample_like_sample_code_id_idx').on(table.sampleCodeId),
+  })
+);
+
+/**
+ * サンプルコードのコピー履歴（トレンド分析用）
+ */
+export const sampleCopy = pgTable(
+  'sample_copy',
+  {
+    id: text('id').primaryKey(),
+    sampleCodeId: text('sample_code_id')
+      .notNull()
+      .references(() => sampleCode.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }), // nullable - 未ログインユーザーの場合
+    sessionId: text('session_id'), // 匿名ユーザー識別用
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  table => ({
+    sampleCodeIdIdx: index('sample_copy_sample_code_id_idx').on(table.sampleCodeId),
+    createdAtIdx: index('sample_copy_created_at_idx').on(table.createdAt),
+  })
+);
+
+/**
+ * ユーザー通知（サイト内通知のみ）
+ */
+export const userNotification = pgTable(
+  'user_notification',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: ['like', 'copy'] }).notNull(),
+    sampleCodeId: text('sample_code_id')
+      .notNull()
+      .references(() => sampleCode.id, { onDelete: 'cascade' }),
+    actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }), // nullable - 匿名ユーザーの場合
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}).notNull(),
+    isRead: boolean('is_read').default(false).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  table => ({
+    userIdIsReadIdx: index('user_notification_user_id_is_read_idx').on(table.userId, table.isRead),
+    createdAtIdx: index('user_notification_created_at_idx').on(table.createdAt),
+  })
+);
+
+// Type exports for new tables
+export type SampleCode = typeof sampleCode.$inferSelect;
+export type SampleCodeInsert = typeof sampleCode.$inferInsert;
+
+export type SampleLike = typeof sampleLike.$inferSelect;
+export type SampleLikeInsert = typeof sampleLike.$inferInsert;
+
+export type SampleCopy = typeof sampleCopy.$inferSelect;
+export type SampleCopyInsert = typeof sampleCopy.$inferInsert;
+
+export type UserNotification = typeof userNotification.$inferSelect;
+export type UserNotificationInsert = typeof userNotification.$inferInsert;
+
+export type DocumentType = 'spreadsheet' | 'document' | 'slides' | 'apps_script';
+export type SampleCodeStatus = 'draft' | 'published' | 'archived';
+export type NotificationType = 'like' | 'copy';

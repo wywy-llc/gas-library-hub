@@ -88,8 +88,13 @@ test.describe('Admin Screen - Library Registration', () => {
     // 詳細ページへのリダイレクトを待機
     await page.waitForURL(/\/admin\/libraries\/[^/]+$/);
 
+    // ページが完全にロードされるまで待機
+    await page.waitForLoadState('networkidle');
+
     // 管理者ヘッダーのライブラリ一覧リンクをクリック
-    await page.click('a[href="/admin/libraries"]');
+    const libraryListLink = page.locator('header a[href="/admin/libraries"]');
+    await libraryListLink.waitFor({ state: 'visible' });
+    await libraryListLink.click();
 
     // ライブラリ一覧ページに遷移することを確認
     await expect(page).toHaveURL('/admin/libraries');

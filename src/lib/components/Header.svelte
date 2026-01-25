@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app_title, gas_library_add, login } from '$lib/paraglide/messages.js';
+  import { gas_library_add, login } from '$lib/paraglide/messages.js';
   import Button from './Button.svelte';
   import GoogleAnalytics from './GoogleAnalytics.svelte';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
@@ -19,14 +19,12 @@
 </script>
 
 <header class="navbar bg-base-100/80 sticky top-0 z-50 border-b backdrop-blur-sm">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto px-1 sm:px-2 lg:px-4">
     <div class="flex h-16 items-center justify-between">
       <!-- ロゴ -->
       <div class="flex items-center">
-        <a href="/" class="flex items-center space-x-2 text-xl font-bold">
-          <img src="/logo.png" alt={app_title()} class="h-8 w-8" />
-          <span class="hidden sm:block">{app_title()}</span>
-          <span class="block text-lg sm:hidden">{app_title()}</span>
+        <a href="/" class="flex items-center">
+          <img src="/logo.png" alt="GAS Library Hub" class="h-16 w-auto" />
         </a>
       </div>
 

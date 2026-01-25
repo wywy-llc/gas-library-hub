@@ -31,6 +31,7 @@
   let { data }: Props = $props();
   const library = $derived(data.library);
   const librarySummary = $derived(data.librarySummary);
+  const samples = $derived(data.samples);
 
   // 現在のロケールを取得
   const currentLocale = getLocale();
@@ -78,6 +79,8 @@
   });
 
   // データベースのコピー回数を表示用の状態として管理
+  // APIレスポンスで更新するため$stateを使用（$derivedは読み取り専用のため不可）
+  // eslint-disable-next-line svelte/prefer-writable-derived -- 代入が必要なため$stateを使用
   let displayCopyCount = $state(0);
 
   // library.copyCountが変更された時に同期
@@ -177,6 +180,7 @@
     <LibraryDetail
       {library}
       librarySummary={data.librarySummary}
+      {samples}
       isAdminMode={false}
       {displayCopyCount}
       onCopyScriptId={handleCopyScriptId}
