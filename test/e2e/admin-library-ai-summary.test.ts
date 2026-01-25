@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { LibraryTestDataFactories } from '../factories/index.js';
 
+// このテストファイルのタイムアウトを延長（ライブラリ登録とスクレイピングに時間がかかるため）
+test.setTimeout(30000);
+
 /**
  * テストごとにユニークなスコープを生成
  */
@@ -24,16 +27,17 @@ async function registerLibraryAndWaitForDetailPage(
   await page.fill('input[name="repoUrl"]', repoPath);
   await page.click('button[type="submit"]');
 
-  // 成功メッセージまたはURLリダイレクトのいずれかを待機
-  await Promise.race([
-    page.waitForURL(/\/admin\/libraries\/[^/]+$/, { timeout: 15000 }),
-    page
-      .locator('text=Library has been successfully registered. Redirecting to the details page...')
-      .waitFor({ timeout: 15000 }),
-  ]);
+  // 成功メッセージが表示されるまで待機
+  await expect(
+    page.locator(
+      'text=Library has been successfully registered. Redirecting to the details page...'
+    )
+  ).toBeVisible({ timeout: 15000 });
 
-  // リダイレクトが完了するまで待機
-  await page.waitForURL(/\/admin\/libraries\/[^/]+$/, { timeout: 10000 });
+  // 詳細ページへのリダイレクトを待機（NanoID形式のID）
+  await page.waitForURL(/\/admin\/libraries\/[a-zA-Z0-9_-]{21}$/, {
+    timeout: 10000,
+  });
 
   // ページのロード完了を待機
   await page.waitForLoadState('networkidle');
@@ -77,7 +81,7 @@ test.describe('Admin Screen - Library AI Summary Generation', () => {
 
     // スクレイピング後のconfirmダイアログを自動で「キャンセル」に設定
     // （AI要約生成をスキップしてテストを高速化）
-    page.on('dialog', async (dialog) => {
+    page.on('dialog', async dialog => {
       await dialog.dismiss();
     });
 

@@ -41,17 +41,14 @@
 
   let isSubmitting = $state(false);
   let showPreview = $state(false);
-  let descriptionValue = $state('');
 
   // フォームの初期値（propsまたはエラー時の入力値）
   let title = $derived(form?.values?.title ?? data.sample.title);
   let description = $derived(form?.values?.description ?? data.sample.description);
   let tags = $derived(form?.values?.tags ?? data.sample.tags.join(', '));
 
-  // descriptionValueを同期（初期値とエラー復元時の両方に対応）
-  $effect(() => {
-    descriptionValue = description;
-  });
+  // descriptionValue: 初期値はdescriptionから派生、ユーザー入力で上書き可能
+  let descriptionValue = $derived.by(() => description);
 </script>
 
 <svelte:head>
