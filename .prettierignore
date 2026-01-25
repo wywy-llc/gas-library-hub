@@ -1,5 +1,6 @@
 # Generated files
 src/lib/paraglide/
+project.inlang/
 
 # Configuration files
 .claude/
