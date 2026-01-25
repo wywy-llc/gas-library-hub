@@ -63,6 +63,7 @@ const DEFAULT_MAX_PAGES = 2;
 const DEFAULT_PER_PAGE = 10;
 const TAG_PROCESSING_DELAY_MS = 2000;
 
+// ─── 公開インターフェース ───
 interface BatchRegisterRequest {
   maxPages?: number;
   perPage?: number;
@@ -97,10 +98,7 @@ interface BatchRegisterResponse {
   tagResults: TagResult[];
 }
 
-/**
- * 全タグ一括登録エンドポイント
- */
-// ─── 型定義（内部用） ───
+// ─── 内部インターフェース ───
 interface ParsedConfig {
   maxPages: number;
   perPage: number;
@@ -108,10 +106,32 @@ interface ParsedConfig {
   tags: readonly string[];
 }
 
+/**
+ * 内部APIレスポンスの期待される形式
+ * /api/libraries/bulk-register からのレスポンス
+ */
+interface InternalBulkRegisterResponse {
+  success: boolean;
+  summary: {
+    total: number;
+    successCount: number;
+    errorCount: number;
+    duplicateCount: number;
+  };
+  errors?: string[];
+}
+
 // ─── ヘルパー関数 ───
 
 async function parseRequest(request: Request): Promise<ParsedConfig> {
-  const body: BatchRegisterRequest = await request.json();
+  let body: BatchRegisterRequest;
+  try {
+    body = (await request.json()) as BatchRegisterRequest;
+  } catch {
+    // JSON解析失敗時はデフォルト値を使用
+    body = {};
+  }
+
   return {
     maxPages: body.maxPages ?? DEFAULT_MAX_PAGES,
     perPage: body.perPage ?? DEFAULT_PER_PAGE,
@@ -169,7 +189,12 @@ async function processSingleTag(
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as InternalBulkRegisterResponse;
+
+    // レスポンス検証: summaryが存在しない場合はエラー扱い
+    if (!result.summary) {
+      throw new Error('内部APIからの不正なレスポンス: summary が存在しません');
+    }
 
     console.log(
       `✅ ${tag}完了: 成功=${result.summary.successCount}件, エラー=${result.summary.errorCount}件`
