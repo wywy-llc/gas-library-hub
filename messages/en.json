@@ -250,6 +250,7 @@
   "sample_list_title": "Sample Code List",
   "sample_new_title": "Post Sample Code",
   "sample_edit_title": "Edit Sample Code",
+  "sample_edit_url_readonly_help": "URL cannot be changed. Please create a new one if you need to change it.",
   "sample_detail_title": "Sample Code Details",
   "sample_my_samples": "My Samples",
   "sample_no_samples": "No sample codes yet",

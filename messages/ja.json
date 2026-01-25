@@ -250,6 +250,7 @@
   "sample_list_title": "サンプルコード一覧",
   "sample_new_title": "サンプルコードを投稿",
   "sample_edit_title": "サンプルコードを編集",
+  "sample_edit_url_readonly_help": "URLは変更できません。変更が必要な場合は新規作成してください。",
   "sample_detail_title": "サンプルコード詳細",
   "sample_my_samples": "投稿したサンプル",
   "sample_no_samples": "まだサンプルコードがありません",
