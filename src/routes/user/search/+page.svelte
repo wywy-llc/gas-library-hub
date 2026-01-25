@@ -6,6 +6,9 @@
   import { APP_CONFIG, createFullUrl, getLogoUrl } from '$lib/constants/app-config.js';
   import {
     all_libraries_count,
+    library_sort_most_copied,
+    library_sort_newest,
+    library_sort_stars,
     meta_keywords_home,
     no_search_results,
     search_from_box,
@@ -42,6 +45,7 @@
     const params = new SvelteURLSearchParams();
     if (data.searchQuery) params.set('q', data.searchQuery);
     if (data.scriptType) params.set('scriptType', data.scriptType);
+    if (data.orderBy && data.orderBy !== 'starCount') params.set('orderBy', data.orderBy);
     if (data.currentPage > 1) params.set('page', data.currentPage.toString());
     const queryString = params.toString();
     return createFullUrl(`/user/search${queryString ? `?${queryString}` : ''}`);
@@ -62,9 +66,22 @@
     const params = new SvelteURLSearchParams();
     if (data.searchQuery) params.set('q', data.searchQuery);
     if (data.scriptType) params.set('scriptType', data.scriptType);
+    if (data.orderBy && data.orderBy !== 'starCount') params.set('orderBy', data.orderBy);
     if (pageNum > 1) params.set('page', pageNum.toString());
     const queryString = params.toString();
     return `/user/search${queryString ? `?${queryString}` : ''}`;
+  }
+
+  // ソート変更ハンドラー
+  function handleSortChange(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    const params = new SvelteURLSearchParams();
+    if (data.searchQuery) params.set('q', data.searchQuery);
+    if (data.scriptType) params.set('scriptType', data.scriptType);
+    if (select.value !== 'starCount') params.set('orderBy', select.value);
+    params.set('page', '1');
+    const queryString = params.toString();
+    window.location.href = `/user/search${queryString ? `?${queryString}` : ''}`;
   }
 </script>
 
@@ -91,43 +108,63 @@
 
 <main class="bg-base-200 min-h-screen">
   <div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-    <!-- 検索バーと結果件数 - daisyUI v5準拠 -->
-    <header class="mb-8">
-      <div class="mx-auto mb-6 max-w-xl">
-        <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
-      </div>
+    <!-- 検索バー -->
+    <div class="mx-auto mb-6 max-w-xl">
+      <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
+    </div>
+
+    <!-- ヘッダー部分: タイトルとアクション -->
+    <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       {#if data.searchQuery}
-        <h1 class="text-center text-2xl font-bold">
+        <h1 class="text-2xl font-bold sm:text-3xl">
           {search_results_for({ query: data.searchQuery, count: data.totalResults })}
         </h1>
       {:else}
-        <h1 class="text-center text-2xl font-bold">
+        <h1 class="text-2xl font-bold sm:text-3xl">
           {all_libraries_count({ count: data.totalResults })}
         </h1>
       {/if}
+
+      <div class="flex items-center gap-3">
+        <!-- ソート選択: daisyUI v5 select -->
+        <label class="sr-only" for="sort-select">ソート順</label>
+        <select
+          id="sort-select"
+          class="select select-sm"
+          value={data.orderBy}
+          onchange={handleSortChange}
+          aria-label="ソート順を選択"
+        >
+          <option value="starCount">{library_sort_stars()}</option>
+          <option value="createdAt">{library_sort_newest()}</option>
+          <option value="copyCount">{library_sort_most_copied()}</option>
+        </select>
+      </div>
     </header>
 
     <!-- ライブラリリスト -->
     {#if data.libraries.length > 0}
-      <section class="mx-auto max-w-3xl space-y-6" aria-label="検索結果ライブラリ一覧">
+      <section class="mx-auto max-w-3xl space-y-6" role="list" aria-label="検索結果ライブラリ一覧">
         {#each data.libraries as library (library.id)}
-          <article>
+          <article role="listitem">
             <LibraryCard {library} librarySummary={library.librarySummary} />
           </article>
         {/each}
       </section>
 
       <!-- ページネーション -->
-      <div class="mx-auto mt-12 max-w-3xl">
-        <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
-      </div>
+      {#if totalPages > 1}
+        <nav class="mx-auto mt-10 max-w-3xl" aria-label="ページナビゲーション">
+          <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
+        </nav>
+      {/if}
     {:else}
-      <!-- 検索結果なし -->
-      <section class="mx-auto max-w-3xl" aria-label="検索結果なし">
-        <div class="card bg-base-100 shadow-sm">
-          <div class="card-body items-center py-12 text-center">
+      <!-- 検索結果なし: daisyUI heroコンポーネント -->
+      <div class="hero rounded-box bg-base-100 mx-auto min-h-[60vh] max-w-3xl shadow-sm">
+        <div class="hero-content text-center">
+          <div class="max-w-md">
             <svg
-              class="h-12 w-12 opacity-40"
+              class="mx-auto h-12 w-12 opacity-40"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -141,15 +178,15 @@
                 d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
               />
             </svg>
-            <h2 class="mt-4 text-lg font-medium">
+            <h2 class="text-base-content/80 mt-4 text-2xl font-semibold">
               {data.searchQuery ? no_search_results() : search_gas_libraries()}
             </h2>
-            <p class="mt-2 opacity-60">
+            <p class="text-base-content/60 py-6">
               {data.searchQuery ? try_different_keywords() : search_from_box()}
             </p>
           </div>
         </div>
-      </section>
+      </div>
     {/if}
   </div>
 </main>

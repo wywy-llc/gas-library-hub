@@ -20,8 +20,10 @@
   "hero_description": "GAS Library Hub is an open hub for finding and sharing useful libraries and tools for GAS.",
   "featured_libraries": "Featured Libraries",
   "featured_web_apps": "Featured Web Apps",
+  "featured_samples": "Featured Samples",
   "view_all_libraries": "View All Libraries",
   "view_all_web_apps": "View All Web Apps",
+  "view_all_samples": "View All Samples",
   "open_web_app": "Open Web App",
   "web_app_execution_url": "Web App URL",
   "open_github_repository": "Open GitHub Repository",
@@ -302,6 +304,10 @@
   "sample_sort_newest": "Newest",
   "sample_sort_popular": "Popular",
   "sample_sort_most_copied": "Most Copied",
+
+  "library_sort_stars": "Stars",
+  "library_sort_newest": "Newest",
+  "library_sort_most_copied": "Most Copied",
 
   "dashboard_title": "Contribution Dashboard",
   "dashboard_summary_title": "Summary",

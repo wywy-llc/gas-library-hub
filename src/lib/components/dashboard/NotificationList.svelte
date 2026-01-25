@@ -75,31 +75,31 @@
   {:else}
     <ul class="divide-base-200 divide-y">
       {#each notifications as notification (notification.id)}
-        <li
-          class="cursor-pointer p-4 transition-colors {!notification.isRead
-            ? 'bg-primary/5'
-            : ''} hover:bg-base-200/50"
-          onclick={() => onMarkRead?.(notification.id)}
-          role="button"
-          tabindex="0"
-          onkeydown={e => e.key === 'Enter' && onMarkRead?.(notification.id)}
-        >
-          <div class="flex items-start gap-3">
-            <span class="text-xl">
-              {notification.type === 'like' ? '❤️' : '📋'}
-            </span>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm">
-                {getMessage(notification)}
-              </p>
-              <time class="text-base-content/60 text-xs">
-                {formatDate(notification.createdAt)}
-              </time>
+        <li>
+          <button
+            type="button"
+            class="w-full cursor-pointer p-4 text-left transition-colors {!notification.isRead
+              ? 'bg-primary/5'
+              : ''} hover:bg-base-200/50"
+            onclick={() => onMarkRead?.(notification.id)}
+          >
+            <div class="flex items-start gap-3">
+              <span class="text-xl">
+                {notification.type === 'like' ? '❤️' : '📋'}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm">
+                  {getMessage(notification)}
+                </p>
+                <time class="text-base-content/60 text-xs">
+                  {formatDate(notification.createdAt)}
+                </time>
+              </div>
+              {#if !notification.isRead}
+                <span class="badge badge-primary badge-xs">NEW</span>
+              {/if}
             </div>
-            {#if !notification.isRead}
-              <span class="badge badge-primary badge-xs">NEW</span>
-            {/if}
-          </div>
+          </button>
         </li>
       {/each}
     </ul>

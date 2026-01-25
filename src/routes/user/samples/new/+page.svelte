@@ -42,7 +42,15 @@
 
   let isSubmitting = $state(false);
   let showPreview = $state(false);
-  let descriptionValue = $state(form?.values?.description ?? '');
+  let descriptionValue = $state('');
+
+  // form propsの値からdescriptionValueを同期
+  let formDescription = $derived(form?.values?.description ?? '');
+  $effect(() => {
+    if (formDescription) {
+      descriptionValue = formDescription;
+    }
+  });
 </script>
 
 <svelte:head>

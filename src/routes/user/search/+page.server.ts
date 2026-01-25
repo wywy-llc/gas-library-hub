@@ -92,9 +92,24 @@ function formatLibraryData(row: LibraryQueryResult) {
 export const load: PageServerLoad = async ({ url }) => {
   const searchQuery = url.searchParams.get('q') || '';
   const scriptTypeParam = url.searchParams.get('scriptType');
+  const orderByParam = url.searchParams.get('orderBy') || 'starCount';
   const page = parseInt(url.searchParams.get('page') || '1', 10);
   const itemsPerPage = 10;
   const offset = (page - 1) * itemsPerPage;
+
+  // orderByのバリデーション
+  const validOrderBy = ['starCount', 'createdAt', 'copyCount'] as const;
+  const orderBy = validOrderBy.includes(orderByParam as (typeof validOrderBy)[number])
+    ? (orderByParam as (typeof validOrderBy)[number])
+    : 'starCount';
+
+  // orderByに基づいてソート列を決定
+  const orderByColumn =
+    orderBy === 'starCount'
+      ? library.starCount
+      : orderBy === 'createdAt'
+        ? library.createdAt
+        : library.copyCount;
 
   // scriptTypeのバリデーション
   const validScriptTypes = ['library', 'web_app'] as const;
@@ -119,7 +134,7 @@ export const load: PageServerLoad = async ({ url }) => {
         .from(library)
         .leftJoin(librarySummary, eq(library.id, librarySummary.libraryId))
         .where(whereCondition)
-        .orderBy(desc(library.starCount))
+        .orderBy(desc(orderByColumn))
         .limit(itemsPerPage)
         .offset(offset),
       db
@@ -134,6 +149,7 @@ export const load: PageServerLoad = async ({ url }) => {
       totalResults: totalCount,
       searchQuery: '',
       scriptType: scriptType || null,
+      orderBy,
       currentPage: page,
       itemsPerPage,
     };
@@ -157,7 +173,7 @@ export const load: PageServerLoad = async ({ url }) => {
       .from(library)
       .leftJoin(librarySummary, eq(library.id, librarySummary.libraryId))
       .where(searchWithScriptTypeCondition)
-      .orderBy(desc(library.starCount))
+      .orderBy(desc(orderByColumn))
       .limit(itemsPerPage)
       .offset(offset),
     db
@@ -173,6 +189,7 @@ export const load: PageServerLoad = async ({ url }) => {
     totalResults: totalCount,
     searchQuery,
     scriptType: scriptType || null,
+    orderBy,
     currentPage: page,
     itemsPerPage,
   };

@@ -113,9 +113,9 @@
       class="input input-bordered w-full"
       required
     />
-    <label class="label">
+    <div class="label">
       <span class="label-text-alt text-base-content/60">{sample_form_url_help()}</span>
-    </label>
+    </div>
     {#if originalUrl}
       <UrlPreview url={originalUrl} />
     {/if}
@@ -133,9 +133,9 @@
       placeholder={sample_form_tags_placeholder()}
       class="input input-bordered w-full"
     />
-    <label class="label">
+    <div class="label">
       <span class="label-text-alt text-base-content/60">{sample_form_tags_help()}</span>
-    </label>
+    </div>
   </div>
 
   <div class="flex justify-end gap-3">

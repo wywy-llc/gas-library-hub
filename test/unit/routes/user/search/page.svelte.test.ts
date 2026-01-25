@@ -13,6 +13,7 @@ describe('SearchPage', () => {
     currentPage: 1,
     itemsPerPage: 10,
     scriptType: 'library' as const,
+    orderBy: 'starCount' as const,
   };
 
   // 基本的なレンダリングテスト

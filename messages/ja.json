@@ -20,8 +20,10 @@
   "hero_description": "GAS Library Hubは、GASで使える便利なライブラリやツールを見つけ、共有するためのオープンなハブです。",
   "featured_libraries": "注目のライブラリ",
   "featured_web_apps": "注目のWebアプリ",
+  "featured_samples": "注目のサンプルコード",
   "view_all_libraries": "すべてのライブラリを見る",
   "view_all_web_apps": "すべてのWebアプリを見る",
+  "view_all_samples": "すべてのサンプルを見る",
   "open_web_app": "Webアプリを開く",
   "web_app_execution_url": "WebアプリURL",
   "open_github_repository": "GitHubリポジトリを開く",
@@ -302,6 +304,10 @@
   "sample_sort_newest": "新着順",
   "sample_sort_popular": "人気順",
   "sample_sort_most_copied": "コピー数順",
+
+  "library_sort_stars": "スター順",
+  "library_sort_newest": "新着順",
+  "library_sort_most_copied": "コピー数順",
 
   "dashboard_title": "貢献度ダッシュボード",
   "dashboard_summary_title": "サマリー",

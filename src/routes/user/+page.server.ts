@@ -1,5 +1,7 @@
 import { db } from '$lib/server/db';
 import { library, librarySummary } from '$lib/server/db/schema';
+import { SampleCodeRepository } from '$lib/server/repositories/sample-code-repository.js';
+import { ToggleSampleLikeService } from '$lib/server/services/toggle-sample-like-service.js';
 import { and, desc, eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -71,9 +73,27 @@ export const load: PageServerLoad = async ({ locals }) => {
     librarySummary: row.summary?.id ? row.summary : null,
   });
 
+  // 注目のサンプルコードを取得（いいね数順に6件）
+  const { samples: featuredSamples } = await SampleCodeRepository.findPublishedWithPagination({
+    limit: 6,
+    offset: 0,
+    orderBy: 'likeCount',
+  });
+
+  // ログインユーザーの場合、いいね状態を取得
+  let likedSampleIds = new Set<string>();
+  if (locals.user && featuredSamples.length > 0) {
+    likedSampleIds = await ToggleSampleLikeService.getLikedSampleIds(
+      locals.user.id,
+      featuredSamples.map(s => s.id)
+    );
+  }
+
   return {
     session,
     user: locals.user,
     featuredLibraries: featuredLibrariesResult.map(formatLibraryData),
+    featuredSamples,
+    likedSampleIds: Array.from(likedSampleIds),
   };
 };
