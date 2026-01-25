@@ -29,7 +29,7 @@
   "open_github_repository": "GitHubリポジトリを開く",
   "invalid_web_app_url_notice": "GitHubのREADMEで利用方法をご確認ください。",
   "cta_title": "あなたのライブラリを公開しませんか？",
-  "cta_description": "あなたが作成した便利なGASライブラリやツールをGAS Library Hubに登録して、GASコミュニティに貢献しましょう。",
+  "cta_description": "あなたが作成した便利なGASライブラリやツールをGAS Library Hubに登録して、GASコミュニティを一緒に盛り上げませんか？",
   "view_contribution_guide": "ライブラリ登録方法を見る",
   "gas_library_search": "GASライブラリ検索",
   "welcome_user": "ようこそ、{userName}さん",
@@ -309,7 +309,7 @@
   "library_sort_newest": "新着順",
   "library_sort_most_copied": "コピー数順",
 
-  "dashboard_title": "貢献度ダッシュボード",
+  "dashboard_title": "ダッシュボード",
   "dashboard_summary_title": "サマリー",
   "dashboard_total_samples": "投稿数",
   "dashboard_total_copies": "総コピー数",
@@ -324,7 +324,7 @@
   "dashboard_performance_views": "閲覧",
   "dashboard_performance_recent": "直近30日",
   "dashboard_no_data": "まだデータがありません",
-  "dashboard_start_contributing": "サンプルコードを投稿して貢献を始めましょう",
+  "dashboard_start_contributing": "サンプルコードを投稿して一緒に盛り上げましょう！",
 
   "notification_title": "通知",
   "notification_like_message": "{actorName}さんがあなたのサンプル「{sampleTitle}」にいいねしました",
