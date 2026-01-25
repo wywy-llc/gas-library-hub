@@ -3,6 +3,8 @@
   import {
     edit,
     sample_copy_button,
+    sample_copy_card_description,
+    sample_copy_card_title,
     sample_copy_count,
     sample_detail_title,
     sample_like_button,
@@ -85,13 +87,23 @@
       <!-- Header Section -->
       <header class="flex flex-col gap-4">
         <div class="flex items-start justify-between">
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <span class="text-2xl" role="img" aria-hidden="true">
               {getDocumentTypeIcon(data.sample.documentType)}
             </span>
             <span class="badge badge-outline">
               {getDocumentTypeLabel(data.sample.documentType)}
             </span>
+            {#if data.relatedLibrary}
+              <span class="text-base-content/40">|</span>
+              <a
+                href="/libraries/{data.relatedLibrary.id}"
+                class="link link-hover link-primary flex items-center gap-1 text-sm"
+              >
+                <span role="img" aria-hidden="true">📚</span>
+                {data.relatedLibrary.name}
+              </a>
+            {/if}
           </div>
           {#if data.isOwner}
             <a
@@ -143,8 +155,11 @@
 
       <div class="divider"></div>
 
-      <!-- Actions Section -->
-      <section aria-label="Actions" class="flex flex-wrap items-center justify-between gap-4">
+      <!-- Statistics & Like Section -->
+      <section
+        aria-label="Statistics and engagement"
+        class="flex flex-wrap items-center justify-between gap-4"
+      >
         <!-- Statistics (compact) -->
         <div class="text-base-content/60 flex items-center gap-4 text-sm">
           <span title={sample_view_count({ count: data.sample.viewCount.toString() })}>
@@ -158,28 +173,45 @@
           </span>
         </div>
 
-        <!-- Action buttons -->
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            class:text-error={liked}
-            onclick={handleLike}
-            aria-label={liked ? sample_liked_button() : sample_like_button()}
-            aria-pressed={liked}
-          >
-            {liked ? '❤️' : '🤍'}
-            <span>{likeCount}</span>
-          </button>
-          <a
-            href={data.sample.copyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-primary"
-            onclick={handleCopy}
-          >
-            📋 {sample_copy_button()}
-          </a>
+        <!-- Like button -->
+        <button
+          type="button"
+          class="btn btn-ghost"
+          class:text-error={liked}
+          onclick={handleLike}
+          aria-label={liked ? sample_liked_button() : sample_like_button()}
+          aria-pressed={liked}
+        >
+          {liked ? '❤️' : '🤍'}
+          <span>{likeCount}</span>
+        </button>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Copy Action Card Section -->
+      <section aria-labelledby="copy-action-heading">
+        <div class="card card-border bg-base-200">
+          <div class="card-body flex-row flex-wrap items-center justify-between gap-4 p-4">
+            <div class="flex-1">
+              <h3 id="copy-action-heading" class="card-title text-base">
+                {sample_copy_card_title()}
+              </h3>
+              <p class="text-base-content/60 text-sm">
+                {sample_copy_card_description()}
+              </p>
+            </div>
+            <a
+              href={data.sample.copyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-primary"
+              onclick={handleCopy}
+              aria-describedby="copy-action-heading"
+            >
+              📋 {sample_copy_button()}
+            </a>
+          </div>
         </div>
       </section>
     </div>

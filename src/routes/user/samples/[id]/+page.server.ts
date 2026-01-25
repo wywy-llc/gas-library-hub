@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db/index.js';
 import { user } from '$lib/server/db/schema.js';
+import { LibraryRepository } from '$lib/server/repositories/library-repository.js';
 import { SampleCodeRepository } from '$lib/server/repositories/sample-code-repository.js';
 import { ToggleSampleLikeService } from '$lib/server/services/toggle-sample-like-service.js';
 import { error } from '@sveltejs/kit';
@@ -58,8 +59,8 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
     });
   }
 
-  // 作者情報といいね状態を並列取得
-  const [authorResult, liked] = await Promise.all([
+  // 作者情報、いいね状態、関連ライブラリを並列取得
+  const [authorResult, liked, relatedLibrary] = await Promise.all([
     db
       .select({ id: user.id, name: user.name, picture: user.picture })
       .from(user)
@@ -68,6 +69,7 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
     locals.user
       ? ToggleSampleLikeService.hasLiked(locals.user.id, sample.id)
       : Promise.resolve(false),
+    sample.libraryId ? LibraryRepository.findById(sample.libraryId) : Promise.resolve(null),
   ]);
   const author = authorResult[0] ?? null;
 
@@ -76,5 +78,6 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
     author,
     liked,
     isOwner,
+    relatedLibrary: relatedLibrary ? { id: relatedLibrary.id, name: relatedLibrary.name } : null,
   };
 };

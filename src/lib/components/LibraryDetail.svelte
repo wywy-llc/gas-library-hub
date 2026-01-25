@@ -232,59 +232,112 @@
 
       <!-- サンプルコードセクション（ユーザーモードのみ） -->
       {#if !isAdminMode}
-        <section class="mt-12">
-          <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-2xl font-bold">{m.library_sample_section_title()}</h2>
-            <a href="/user/samples/new?libraryId={library.id}" class="btn btn-primary btn-sm">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4v16m8-8H4"
-                ></path>
-              </svg>
-              {m.library_sample_post_button()}
-            </a>
-          </div>
-
-          {#if samples.length > 0}
-            <div class="grid gap-4 sm:grid-cols-2">
-              {#each samples as sample (sample.id)}
-                <SampleCard {sample} />
-              {/each}
-            </div>
-          {:else}
-            <div class="card bg-base-100 shadow-sm">
-              <div class="card-body items-center py-12 text-center">
-                <svg
-                  class="text-base-content/30 mb-4 h-16 w-16"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.5"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  ></path>
-                </svg>
-                <h3 class="text-base-content/70 text-lg font-medium">
-                  {m.library_sample_no_samples()}
-                </h3>
-                <p class="text-base-content/50 mt-1 text-sm">
-                  {m.library_sample_no_samples_description()}
-                </p>
+        <section class="mt-12" aria-labelledby="sample-section-title">
+          <div class="card card-border bg-base-100 shadow-sm">
+            <div class="card-body">
+              <!-- ヘッダー: タイトル + アクションボタン -->
+              <header class="flex flex-wrap items-center justify-between gap-4">
+                <h2 id="sample-section-title" class="card-title text-xl">
+                  <svg
+                    class="h-5 w-5 opacity-70"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                    ></path>
+                  </svg>
+                  {m.library_sample_section_title()}
+                  {#if samples.length > 0}
+                    <span class="badge badge-outline badge-sm ml-1">{samples.length}</span>
+                  {/if}
+                </h2>
                 <a
                   href="/user/samples/new?libraryId={library.id}"
-                  class="btn btn-primary btn-sm mt-4"
+                  class="btn btn-primary btn-sm"
+                  aria-label={m.library_sample_post_button()}
                 >
+                  <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    ></path>
+                  </svg>
                   {m.library_sample_post_button()}
                 </a>
-              </div>
+              </header>
+
+              <!-- コンテンツ: サンプル一覧または空状態 -->
+              {#if samples.length > 0}
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                  {#each samples as sample (sample.id)}
+                    <SampleCard {sample} />
+                  {/each}
+                </div>
+              {:else}
+                <!-- 空状態: heroコンポーネント -->
+                <div class="hero bg-base-200/50 rounded-box mt-4 py-12">
+                  <div class="hero-content text-center">
+                    <div class="max-w-md">
+                      <svg
+                        class="text-base-content/30 mx-auto mb-6 h-20 w-20"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        ></path>
+                      </svg>
+                      <h3 class="text-lg font-semibold">
+                        {m.library_sample_no_samples()}
+                      </h3>
+                      <p class="text-base-content/60 mt-2 text-sm">
+                        {m.library_sample_no_samples_description()}
+                      </p>
+                      <a
+                        href="/user/samples/new?libraryId={library.id}"
+                        class="btn btn-primary btn-sm mt-6"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4v16m8-8H4"
+                          ></path>
+                        </svg>
+                        {m.library_sample_post_button()}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              {/if}
             </div>
-          {/if}
+          </div>
         </section>
       {/if}
 
