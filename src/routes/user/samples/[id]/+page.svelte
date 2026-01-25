@@ -99,7 +99,7 @@
 
     {#if data.sample.tags && data.sample.tags.length > 0}
       <div class="mb-6 flex flex-wrap gap-2">
-        {#each data.sample.tags as tag}
+        {#each data.sample.tags as tag (tag)}
           <TagButton size="sm">{tag}</TagButton>
         {/each}
       </div>

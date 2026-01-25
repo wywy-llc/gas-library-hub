@@ -305,7 +305,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {#each librarySummary.usageExample?.functions || [] as func}
+                  {#each librarySummary.usageExample?.functions || [] as func (func.name)}
                     <tr>
                       <td class="font-mono text-sm">{func.name}</td>
                       <td class="text-sm opacity-80">
@@ -331,7 +331,7 @@
               </svg>
               {m.usage_examples()}
             </h4>
-            {#each librarySummary.usageExample?.examples || [] as example}
+            {#each librarySummary.usageExample?.examples || [] as example, index (index)}
               <div class="card bg-base-200 mb-4 shadow-sm">
                 <div class="card-body p-4">
                   <h5 class="mb-2 text-sm font-semibold">

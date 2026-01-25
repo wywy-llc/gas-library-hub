@@ -56,7 +56,7 @@
 
     {#if displayTags.length > 0}
       <div class="flex flex-wrap gap-1">
-        {#each displayTags as tag}
+        {#each displayTags as tag (tag)}
           <TagButton size="xs">{tag}</TagButton>
         {/each}
       </div>

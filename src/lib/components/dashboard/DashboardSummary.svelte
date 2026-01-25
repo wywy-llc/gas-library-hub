@@ -24,7 +24,7 @@
 </script>
 
 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-  {#each stats as stat}
+  {#each stats as stat (stat.label)}
     <div class="stat bg-base-100 rounded-box border-base-200 border p-4">
       <div class="stat-figure text-2xl">{stat.icon}</div>
       <div class="stat-title text-sm">{stat.label}</div>

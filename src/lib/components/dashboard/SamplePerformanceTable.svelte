@@ -47,7 +47,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each samples as perf}
+          {#each samples as perf (perf.sample.id)}
             <tr class="hover">
               <td>
                 <a href="/user/samples/{perf.sample.id}" class="link link-hover line-clamp-1">

@@ -167,15 +167,17 @@ export class MockGitHubApiClient implements GitHubApiClient {
    * モックリポジトリツリーを取得
    * @param owner リポジトリオーナー名
    * @param repo リポジトリ名
-   * @param _sha ツリーSHA
-   * @param _recursive 再帰的に取得するか
+   * @param _sha ツリーSHA（未使用、インターフェース互換性のため保持）
+   * @param _recursive 再帰的に取得するか（未使用、インターフェース互換性のため保持）
    * @returns モックファイルツリー
    */
   async fetchRepositoryTree(
     owner: string,
     repo: string,
-    _sha: string = 'HEAD',
-    _recursive: boolean = true
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _sha = 'HEAD',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _recursive = true
   ): Promise<GitHubTreeResponse | undefined> {
     console.log(`🤖 [E2E Mock] リポジトリツリー取得中: ${owner}/${repo} (モックデータを使用)`);
     await new Promise(resolve => setTimeout(resolve, 50));

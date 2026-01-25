@@ -74,7 +74,7 @@
     </div>
   {:else}
     <ul class="divide-base-200 divide-y">
-      {#each notifications as notification}
+      {#each notifications as notification (notification.id)}
         <li
           class="cursor-pointer p-4 transition-colors {!notification.isRead
             ? 'bg-primary/5'

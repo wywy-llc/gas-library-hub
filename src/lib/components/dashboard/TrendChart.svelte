@@ -25,7 +25,7 @@
 
   <div class="relative" style="height: {height}px;">
     <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-      {#each data as point, i}
+      {#each data as point, i (point.date)}
         {@const barHeight = (point.copies / maxValue) * 100}
         <rect
           x={i * barWidth}

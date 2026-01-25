@@ -10,7 +10,7 @@
   import { signOut } from '@auth/sveltekit/client';
 
   type Props = {
-    user: { name?: string; email?: string; image?: string };
+    user: { name?: string; email?: string };
     showAdminLink?: boolean;
   };
 
