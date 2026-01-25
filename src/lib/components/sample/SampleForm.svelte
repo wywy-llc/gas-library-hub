@@ -33,10 +33,19 @@
 
   let { sample = null, isSubmitting = false, onSubmit, onCancel }: Props = $props();
 
-  let title = $state(sample?.title ?? '');
-  let description = $state(sample?.description ?? '');
-  let originalUrl = $state(sample?.originalUrl ?? '');
-  let tagsInput = $state(sample?.tags?.join(', ') ?? '');
+  // フォーム入力状態
+  let title = $state('');
+  let description = $state('');
+  let originalUrl = $state('');
+  let tagsInput = $state('');
+
+  // sample propが変更されたときにフォームの値を同期
+  $effect(() => {
+    title = sample?.title ?? '';
+    description = sample?.description ?? '';
+    originalUrl = sample?.originalUrl ?? '';
+    tagsInput = sample?.tags?.join(', ') ?? '';
+  });
 
   let isEditMode = $derived(sample !== null);
 

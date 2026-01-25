@@ -18,9 +18,25 @@
 
   let { data }: { data: PageData } = $props();
 
-  let liked = $state(data.liked);
-  let likeCount = $state(data.sample.likeCount);
-  let copyCount = $state(data.sample.copyCount);
+  // ユーザーアクションで変更される状態
+  // $derived.by を使用してdataの変更を追跡しつつ、ローカル状態も保持
+  let likedOverride = $state<boolean | null>(null);
+  let likeCountOverride = $state<number | null>(null);
+  let copyCountOverride = $state<number | null>(null);
+
+  let liked = $derived(likedOverride ?? data.liked);
+  let likeCount = $derived(likeCountOverride ?? data.sample.likeCount);
+  let copyCount = $derived(copyCountOverride ?? data.sample.copyCount);
+
+  // dataが変更された場合（ページ遷移など）にオーバーライドをリセット
+  $effect(() => {
+    // dataの変更を監視
+    void data.sample.id;
+    likedOverride = null;
+    likeCountOverride = null;
+    copyCountOverride = null;
+  });
+
   let currentLocale = $derived(getLocale());
 
   let formattedDate = $derived(
@@ -36,8 +52,8 @@
       });
       if (res.ok) {
         const result = await res.json();
-        liked = result.liked;
-        likeCount = result.likeCount;
+        likedOverride = result.liked;
+        likeCountOverride = result.likeCount;
       }
     } catch (e) {
       console.error('Like failed:', e);
@@ -51,7 +67,7 @@
       });
       if (res.ok) {
         const result = await res.json();
-        copyCount = result.copyCount;
+        copyCountOverride = result.copyCount;
       }
     } catch (e) {
       console.error('Copy record failed:', e);
