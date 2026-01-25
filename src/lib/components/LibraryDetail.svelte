@@ -6,10 +6,10 @@
   import { formatDate, getStatusText } from '$lib/helpers/format.js';
   import { isValidGasWebAppUrl } from '$lib/helpers/url.js';
   import * as m from '$lib/paraglide/messages.js';
+  import type { SampleCode } from '$lib/server/db/schema.js';
+  import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
   import { toastStore } from '$lib/stores/toast-store.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
-  import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
-  import type { SampleCode } from '$lib/server/db/schema.js';
 
   interface Library {
     id: string;
@@ -156,6 +156,7 @@
             onclick={onScraping}
             disabled={isScrapingInProgress}
             class="btn btn-outline btn-sm"
+            data-testid="execute-scraping-button"
           >
             {isScrapingInProgress ? m.scraping_in_progress() : m.execute_scraping()}
           </button>

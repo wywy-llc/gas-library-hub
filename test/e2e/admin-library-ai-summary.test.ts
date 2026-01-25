@@ -61,11 +61,11 @@ test.describe('Admin Screen - Library AI Summary Generation', () => {
     await page.waitForURL(/\/admin\/libraries\/[^/]+$/, { timeout: 15000 });
 
     // スクレイピング実行ボタンを押してライブラリ情報を更新（AI要約再生成）
-    await expect(page.locator('button:has-text("Execute Scraping")')).toBeVisible();
-    await page.click('button:has-text("Execute Scraping")');
+    await expect(page.locator('[data-testid="execute-scraping-button"]')).toBeVisible();
+    await page.click('[data-testid="execute-scraping-button"]');
 
     // スクレイピング処理完了を待機（ボタンの再有効化で判断）
-    await expect(page.locator('button:has-text("Execute Scraping")')).toBeEnabled({
+    await expect(page.locator('[data-testid="execute-scraping-button"]')).toBeEnabled({
       timeout: 10000,
     });
 
