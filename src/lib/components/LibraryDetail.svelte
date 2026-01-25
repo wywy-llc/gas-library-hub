@@ -1,6 +1,7 @@
 <script lang="ts">
   import StatusUpdateButtons from '$lib/components/admin/StatusUpdateButtons.svelte';
   import LibrarySummarySection from '$lib/components/LibrarySummarySection.svelte';
+  import SampleCard from '$lib/components/sample/SampleCard.svelte';
   import { LIBRARY_STATUS_BADGE_CLASS, type LibraryStatus } from '$lib/constants/library-status.js';
   import { formatDate, getStatusText } from '$lib/helpers/format.js';
   import { isValidGasWebAppUrl } from '$lib/helpers/url.js';
@@ -8,6 +9,7 @@
   import { toastStore } from '$lib/stores/toast-store.js';
   import type { LibrarySummaryRecord } from '$lib/types/library-summary.js';
   import type { ScriptValidationStatus } from '$lib/server/utils/gas-script-validator.js';
+  import type { SampleCode } from '$lib/server/db/schema.js';
 
   interface Library {
     id: string;
@@ -39,6 +41,7 @@
   interface Props {
     library: Library;
     librarySummary?: LibrarySummaryRecord | null;
+    samples?: SampleCode[];
     isAdminMode?: boolean;
     form?: Form;
     onScraping?: () => void;
@@ -57,6 +60,7 @@
   let {
     library,
     librarySummary,
+    samples = [],
     isAdminMode = false,
     form,
     onScraping,
@@ -223,6 +227,64 @@
           {isAdminMode}
           {onCopyScriptId}
         />
+      {/if}
+
+      <!-- サンプルコードセクション（ユーザーモードのみ） -->
+      {#if !isAdminMode}
+        <section class="mt-12">
+          <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-2xl font-bold">{m.library_sample_section_title()}</h2>
+            <a href="/user/samples/new?libraryId={library.id}" class="btn btn-primary btn-sm">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                ></path>
+              </svg>
+              {m.library_sample_post_button()}
+            </a>
+          </div>
+
+          {#if samples.length > 0}
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each samples as sample (sample.id)}
+                <SampleCard {sample} />
+              {/each}
+            </div>
+          {:else}
+            <div class="card bg-base-100 shadow-sm">
+              <div class="card-body items-center py-12 text-center">
+                <svg
+                  class="text-base-content/30 mb-4 h-16 w-16"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                <h3 class="text-base-content/70 text-lg font-medium">
+                  {m.library_sample_no_samples()}
+                </h3>
+                <p class="text-base-content/50 mt-1 text-sm">
+                  {m.library_sample_no_samples_description()}
+                </p>
+                <a
+                  href="/user/samples/new?libraryId={library.id}"
+                  class="btn btn-primary btn-sm mt-4"
+                >
+                  {m.library_sample_post_button()}
+                </a>
+              </div>
+            </div>
+          {/if}
+        </section>
       {/if}
 
       {#if isAdminMode}

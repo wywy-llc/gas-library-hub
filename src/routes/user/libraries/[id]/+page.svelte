@@ -31,6 +31,7 @@
   let { data }: Props = $props();
   const library = $derived(data.library);
   const librarySummary = $derived(data.librarySummary);
+  const samples = $derived(data.samples);
 
   // 現在のロケールを取得
   const currentLocale = getLocale();
@@ -177,6 +178,7 @@
     <LibraryDetail
       {library}
       librarySummary={data.librarySummary}
+      {samples}
       isAdminMode={false}
       {displayCopyCount}
       onCopyScriptId={handleCopyScriptId}

@@ -1,6 +1,12 @@
 <script lang="ts">
   import { clickOutside } from '$lib/actions/clickOutside';
-  import { admin_dashboard, library_search, logout } from '$lib/paraglide/messages.js';
+  import {
+    admin_dashboard,
+    library_search,
+    logout,
+    user_menu_dashboard,
+    user_menu_my_samples,
+  } from '$lib/paraglide/messages.js';
   import { signOut } from '@auth/sveltekit/client';
 
   type Props = {
@@ -52,7 +58,20 @@
             {admin_dashboard()}
           </a>
         </li>
+        <li class="menu-title">
+          <hr />
+        </li>
       {/if}
+      <li>
+        <a href="/user/dashboard" onclick={closeDropdown}>
+          {user_menu_dashboard()}
+        </a>
+      </li>
+      <li>
+        <a href="/user/samples" onclick={closeDropdown}>
+          {user_menu_my_samples()}
+        </a>
+      </li>
       <li>
         <a href="/user/search" onclick={closeDropdown}>
           {library_search()}
