@@ -89,61 +89,67 @@
   {/if}
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-  <!-- 検索バーと結果件数 - daisyUI v5準拠 -->
-  <header class="mb-8">
-    <div class="mx-auto mb-6 max-w-xl">
-      <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
-    </div>
-    {#if data.searchQuery}
-      <h1 class="text-center text-2xl font-bold">
-        {search_results_for({ query: data.searchQuery, count: data.totalResults })}
-      </h1>
+<main class="bg-base-200 min-h-screen">
+  <div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <!-- 検索バーと結果件数 - daisyUI v5準拠 -->
+    <header class="mb-8">
+      <div class="mx-auto mb-6 max-w-xl">
+        <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
+      </div>
+      {#if data.searchQuery}
+        <h1 class="text-center text-2xl font-bold">
+          {search_results_for({ query: data.searchQuery, count: data.totalResults })}
+        </h1>
+      {:else}
+        <h1 class="text-center text-2xl font-bold">
+          {all_libraries_count({ count: data.totalResults })}
+        </h1>
+      {/if}
+    </header>
+
+    <!-- ライブラリリスト -->
+    {#if data.libraries.length > 0}
+      <section class="mx-auto max-w-3xl space-y-6" aria-label="検索結果ライブラリ一覧">
+        {#each data.libraries as library (library.id)}
+          <article>
+            <LibraryCard {library} librarySummary={library.librarySummary} />
+          </article>
+        {/each}
+      </section>
+
+      <!-- ページネーション -->
+      <div class="mx-auto mt-12 max-w-3xl">
+        <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
+      </div>
     {:else}
-      <h1 class="text-center text-2xl font-bold">
-        {all_libraries_count({ count: data.totalResults })}
-      </h1>
+      <!-- 検索結果なし -->
+      <section class="mx-auto max-w-3xl" aria-label="検索結果なし">
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body items-center py-12 text-center">
+            <svg
+              class="h-12 w-12 opacity-40"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
+            </svg>
+            <h2 class="mt-4 text-lg font-medium">
+              {data.searchQuery ? no_search_results() : search_gas_libraries()}
+            </h2>
+            <p class="mt-2 opacity-60">
+              {data.searchQuery ? try_different_keywords() : search_from_box()}
+            </p>
+          </div>
+        </div>
+      </section>
     {/if}
-  </header>
-
-  <!-- ライブラリリスト -->
-  {#if data.libraries.length > 0}
-    <section class="mx-auto max-w-3xl space-y-6" aria-label="検索結果ライブラリ一覧">
-      {#each data.libraries as library (library.id)}
-        <article>
-          <LibraryCard {library} librarySummary={library.librarySummary} />
-        </article>
-      {/each}
-    </section>
-
-    <!-- ページネーション -->
-    <div class="mx-auto mt-12 max-w-3xl">
-      <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
-    </div>
-  {:else}
-    <!-- 検索結果なし - daisyUI v5準拠 -->
-    <section class="mx-auto max-w-3xl py-12 text-center" aria-label="検索結果なし">
-      <svg
-        class="mx-auto h-12 w-12 opacity-50"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-        />
-      </svg>
-      <h2 class="mt-4 text-lg font-medium">
-        {data.searchQuery ? no_search_results() : search_gas_libraries()}
-      </h2>
-      <p class="mt-2 opacity-70">
-        {data.searchQuery ? try_different_keywords() : search_from_box()}
-      </p>
-    </section>
-  {/if}
+  </div>
 </main>

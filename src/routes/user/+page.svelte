@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
   import LibraryCard from '$lib/components/LibraryCard.svelte';
   import SearchBox from '$lib/components/SearchBox.svelte';
   import SeoHead from '$lib/components/SeoHead.svelte';
@@ -53,8 +52,8 @@
   </div>
 </div>
 
-<!-- 注目のライブラリセクション - 準拠 -->
-<section class="bg-base-100 py-16 sm:py-24">
+<!-- 注目のライブラリセクション -->
+<section class="bg-base-100 py-8">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
     <header class="mb-12 text-center">
       <h2 class="text-3xl font-bold sm:text-4xl">
@@ -75,9 +74,9 @@
     </div>
 
     <footer class="mt-16 text-center">
-      <Button variant="outline" size="lg" href="/user/search?scriptType=library">
+      <a href="/user/search?scriptType=library" class="btn btn-outline btn-lg">
         {view_all_libraries()}
-      </Button>
+      </a>
     </footer>
   </div>
 </section>

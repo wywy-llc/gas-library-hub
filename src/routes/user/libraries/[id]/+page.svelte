@@ -172,7 +172,7 @@
   {hreflangLinks}
 />
 
-<main>
+<main class="bg-base-200 min-h-screen">
   <article>
     <LibraryDetail
       {library}

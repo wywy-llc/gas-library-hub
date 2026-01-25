@@ -18,7 +18,7 @@
   <!-- Skip to main content link for accessibility -->
   <a
     href="#main-content"
-    class="sr-only z-50 rounded bg-blue-600 px-4 py-2 text-white focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
+    class="btn btn-primary sr-only z-50 focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
   >
     メインコンテンツにスキップ
   </a>
