@@ -55,9 +55,6 @@
       <h3 class="card-title line-clamp-2 text-base group-hover:underline">{sample.title}</h3>
     </a>
 
-    <!-- 説明文 -->
-    <p class="text-base-content/70 line-clamp-2 text-sm">{sample.description}</p>
-
     <!-- タグ -->
     {#if displayTags.length > 0}
       <div class="flex flex-wrap gap-1" role="list" aria-label="Tags">

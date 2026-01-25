@@ -1,10 +1,10 @@
-import { generateId } from '$lib/server/utils/generate-id.js';
+import type { DocumentType, SampleCode, SampleCodeInsert } from '$lib/server/db/schema.js';
 import { SampleCodeRepository } from '$lib/server/repositories/sample-code-repository.js';
 import {
-  GoogleDocUrlTransformService,
   GoogleDocUrlTransformError,
+  GoogleDocUrlTransformService,
 } from '$lib/server/services/google-doc-url-transform-service.js';
-import type { SampleCode, SampleCodeInsert, DocumentType } from '$lib/server/db/schema.js';
+import { generateId } from '$lib/server/utils/generate-id.js';
 
 /**
  * サンプルコード作成パラメータ
@@ -83,8 +83,8 @@ export const CreateSampleCodeService = (() => {
       throw new CreateSampleCodeError('説明を入力してください', 'VALIDATION_ERROR');
     }
 
-    if (params.description.length > 5000) {
-      throw new CreateSampleCodeError('説明は5000文字以内で入力してください', 'VALIDATION_ERROR');
+    if (params.description.length > 50000) {
+      throw new CreateSampleCodeError('説明は50000文字以内で入力してください', 'VALIDATION_ERROR');
     }
 
     if (!params.originalUrl || params.originalUrl.trim().length === 0) {
@@ -199,9 +199,9 @@ export const CreateSampleCodeService = (() => {
         if (params.description.trim().length === 0) {
           throw new CreateSampleCodeError('説明を入力してください', 'VALIDATION_ERROR');
         }
-        if (params.description.length > 5000) {
+        if (params.description.length > 50000) {
           throw new CreateSampleCodeError(
-            '説明は5000文字以内で入力してください',
+            '説明は50000文字以内で入力してください',
             'VALIDATION_ERROR'
           );
         }

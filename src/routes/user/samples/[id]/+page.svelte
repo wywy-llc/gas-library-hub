@@ -1,4 +1,5 @@
 <script lang="ts">
+  import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
   import TagButton from '$lib/components/TagButton.svelte';
   import {
     edit,
@@ -97,7 +98,7 @@
             {#if data.relatedLibrary}
               <span class="text-base-content/40">|</span>
               <a
-                href="/libraries/{data.relatedLibrary.id}"
+                href="/user/libraries/{data.relatedLibrary.id}"
                 class="link link-hover link-primary flex items-center gap-1 text-sm"
               >
                 <span role="img" aria-hidden="true">📚</span>
@@ -136,9 +137,7 @@
       <!-- Description Section -->
       <section aria-labelledby="description-heading">
         <h2 id="description-heading" class="sr-only">Description</h2>
-        <div class="prose max-w-none">
-          <p class="whitespace-pre-wrap">{data.sample.description}</p>
-        </div>
+        <MarkdownRenderer content={data.sample.description} />
       </section>
 
       <!-- Tags Section -->

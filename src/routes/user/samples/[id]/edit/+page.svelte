@@ -1,12 +1,16 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
+  import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
   import {
     cancel,
     sample_edit_title,
     sample_edit_url_readonly_help,
+    sample_form_description_edit,
     sample_form_description_label,
+    sample_form_description_markdown_help,
     sample_form_description_placeholder,
+    sample_form_description_preview,
     sample_form_related_library_info,
     sample_form_tags_help,
     sample_form_tags_label,
@@ -36,11 +40,18 @@
   let { data, form }: Props = $props();
 
   let isSubmitting = $state(false);
+  let showPreview = $state(false);
+  let descriptionValue = $state(data.sample.description);
 
   // フォームの初期値（propsまたはエラー時の入力値）
   let title = $derived(form?.values?.title ?? data.sample.title);
   let description = $derived(form?.values?.description ?? data.sample.description);
   let tags = $derived(form?.values?.tags ?? data.sample.tags.join(', '));
+
+  // descriptionの同期
+  $effect(() => {
+    descriptionValue = description;
+  });
 </script>
 
 <svelte:head>
@@ -110,21 +121,51 @@
     </div>
 
     <div class="form-control">
-      <label class="label" for="description">
-        <span class="label-text font-medium">
-          {sample_form_description_label()}
-          <span class="text-error">*</span>
-        </span>
-      </label>
-      <textarea
-        id="description"
-        name="description"
-        value={description}
-        placeholder={sample_form_description_placeholder()}
-        class="textarea textarea-bordered min-h-32 w-full"
-        required
-        maxlength="5000"
-      ></textarea>
+      <div class="flex items-center justify-between">
+        <label class="label" for="description">
+          <span class="label-text font-medium">
+            {sample_form_description_label()}
+            <span class="text-error">*</span>
+          </span>
+        </label>
+        <div class="tabs tabs-boxed tabs-sm">
+          <button
+            type="button"
+            class="tab"
+            class:tab-active={!showPreview}
+            onclick={() => (showPreview = false)}
+          >
+            {sample_form_description_edit()}
+          </button>
+          <button
+            type="button"
+            class="tab"
+            class:tab-active={showPreview}
+            onclick={() => (showPreview = true)}
+          >
+            {sample_form_description_preview()}
+          </button>
+        </div>
+      </div>
+      {#if showPreview}
+        <div class="border-base-300 bg-base-100 min-h-32 rounded-lg border p-4">
+          <MarkdownRenderer content={descriptionValue} />
+        </div>
+      {:else}
+        <textarea
+          id="description"
+          name="description"
+          bind:value={descriptionValue}
+          placeholder={sample_form_description_placeholder()}
+          class="textarea textarea-bordered min-h-32 w-full"
+          required
+          maxlength="50000"
+        ></textarea>
+      {/if}
+      <p class="label-text-alt text-base-content/60 mt-1 flex items-center gap-1 px-1">
+        <span class="text-lg" aria-hidden="true">📝</span>
+        {sample_form_description_markdown_help()}
+      </p>
     </div>
 
     <div class="form-control">
