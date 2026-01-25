@@ -60,8 +60,13 @@ test.describe('Admin Screen - Library AI Summary Generation', () => {
     // 詳細ページに到達するまで待機
     await page.waitForURL(/\/admin\/libraries\/[^/]+$/, { timeout: 15000 });
 
+    // ページのロード完了を待機（DOMが完全にレンダリングされるまで）
+    await page.waitForLoadState('networkidle');
+
     // スクレイピング実行ボタンを押してライブラリ情報を更新（AI要約再生成）
-    await expect(page.locator('[data-testid="execute-scraping-button"]')).toBeVisible();
+    await expect(page.locator('[data-testid="execute-scraping-button"]')).toBeVisible({
+      timeout: 10000,
+    });
     await page.click('[data-testid="execute-scraping-button"]');
 
     // スクレイピング処理完了を待機（ボタンの再有効化で判断）
