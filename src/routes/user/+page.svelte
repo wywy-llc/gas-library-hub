@@ -41,16 +41,16 @@
 />
 
 <!-- GASライブラリ検索ヘッダー -  Hero -->
-<div class="hero bg-base-200 py-12">
+<div class="hero bg-base-200 px-4 py-8 sm:py-12">
   <div class="hero-content w-full max-w-4xl text-center">
     <div class="w-full">
-      <h1 class="text-3xl font-bold">{gas_library_search()}</h1>
+      <h1 class="text-2xl font-bold sm:text-3xl">{gas_library_search()}</h1>
       {#if data.session?.user}
-        <p class="mt-4 text-lg">
+        <p class="mt-3 text-base sm:mt-4 sm:text-lg">
           {welcome_user({ userName: data.session.user.name || data.session.user.email || '' })}
         </p>
       {/if}
-      <div class="mx-auto mt-8 max-w-xl" role="search">
+      <div class="mx-auto mt-6 max-w-xl sm:mt-8" role="search">
         <SearchBox />
       </div>
     </div>
@@ -58,16 +58,16 @@
 </div>
 
 <!-- 注目のライブラリセクション -->
-<section class="bg-base-100 py-8">
+<section class="bg-base-100 py-6 sm:py-8">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <header class="mb-12 text-center">
-      <h2 class="text-3xl font-bold sm:text-4xl">
+    <header class="mb-8 text-center sm:mb-12">
+      <h2 class="text-2xl font-bold sm:text-3xl lg:text-4xl">
         {featured_libraries()}
       </h2>
     </header>
 
     <div
-      class="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
+      class="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8"
       role="list"
       aria-label="注目のライブラリ一覧"
     >
@@ -78,8 +78,8 @@
       {/each}
     </div>
 
-    <footer class="mt-16 text-center">
-      <a href="/user/search?scriptType=library" class="btn btn-outline btn-lg">
+    <footer class="mt-10 text-center sm:mt-16">
+      <a href="/user/search?scriptType=library" class="btn btn-outline btn-md sm:btn-lg">
         {view_all_libraries()}
       </a>
     </footer>
@@ -88,16 +88,16 @@
 
 <!-- 注目のサンプルコードセクション -->
 {#if data.featuredSamples.length > 0}
-  <section class="bg-base-200 py-8">
+  <section class="bg-base-200 py-6 sm:py-8">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <header class="mb-12 text-center">
-        <h2 class="text-3xl font-bold sm:text-4xl">
+      <header class="mb-8 text-center sm:mb-12">
+        <h2 class="text-2xl font-bold sm:text-3xl lg:text-4xl">
           {featured_samples()}
         </h2>
       </header>
 
       <div
-        class="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
+        class="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8"
         role="list"
         aria-label="注目のサンプルコード一覧"
       >
@@ -108,8 +108,8 @@
         {/each}
       </div>
 
-      <footer class="mt-16 text-center">
-        <a href="/user/samples" class="btn btn-outline btn-lg">
+      <footer class="mt-10 text-center sm:mt-16">
+        <a href="/user/samples" class="btn btn-outline btn-md sm:btn-lg">
           {view_all_samples()}
         </a>
       </footer>

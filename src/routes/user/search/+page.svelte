@@ -107,30 +107,32 @@
 </svelte:head>
 
 <main class="bg-base-200 min-h-screen">
-  <div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+  <div class="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
     <!-- 検索バー -->
-    <div class="mx-auto mb-6 max-w-xl">
+    <div class="mx-auto mb-4 max-w-xl sm:mb-6">
       <SearchBox placeholder={search_gas_libraries()} value={data.searchQuery} />
     </div>
 
     <!-- ヘッダー部分: タイトルとアクション -->
-    <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header
+      class="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+    >
       {#if data.searchQuery}
-        <h1 class="text-2xl font-bold sm:text-3xl">
+        <h1 class="text-xl font-bold sm:text-2xl lg:text-3xl">
           {search_results_for({ query: data.searchQuery, count: data.totalResults })}
         </h1>
       {:else}
-        <h1 class="text-2xl font-bold sm:text-3xl">
+        <h1 class="text-xl font-bold sm:text-2xl lg:text-3xl">
           {all_libraries_count({ count: data.totalResults })}
         </h1>
       {/if}
 
-      <div class="flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-3">
         <!-- ソート選択: daisyUI v5 select -->
         <label class="sr-only" for="sort-select">ソート順</label>
         <select
           id="sort-select"
-          class="select select-sm"
+          class="select select-sm w-full sm:w-auto"
           value={data.orderBy}
           onchange={handleSortChange}
           aria-label="ソート順を選択"
@@ -144,7 +146,11 @@
 
     <!-- ライブラリリスト -->
     {#if data.libraries.length > 0}
-      <section class="mx-auto max-w-3xl space-y-6" role="list" aria-label="検索結果ライブラリ一覧">
+      <section
+        class="mx-auto max-w-3xl space-y-4 sm:space-y-6"
+        role="list"
+        aria-label="検索結果ライブラリ一覧"
+      >
         {#each data.libraries as library (library.id)}
           <article role="listitem">
             <LibraryCard {library} librarySummary={library.librarySummary} />
@@ -154,17 +160,19 @@
 
       <!-- ページネーション -->
       {#if totalPages > 1}
-        <nav class="mx-auto mt-10 max-w-3xl" aria-label="ページナビゲーション">
+        <nav class="mx-auto mt-8 max-w-3xl sm:mt-10" aria-label="ページナビゲーション">
           <Pagination currentPage={data.currentPage} {totalPages} {getPageUrl} />
         </nav>
       {/if}
     {:else}
       <!-- 検索結果なし: daisyUI heroコンポーネント -->
-      <div class="hero rounded-box bg-base-100 mx-auto min-h-[60vh] max-w-3xl shadow-sm">
+      <div
+        class="hero rounded-box bg-base-100 mx-auto min-h-[50vh] max-w-3xl px-4 shadow-sm sm:min-h-[60vh]"
+      >
         <div class="hero-content text-center">
           <div class="max-w-md">
             <svg
-              class="mx-auto h-12 w-12 opacity-40"
+              class="mx-auto h-10 w-10 opacity-40 sm:h-12 sm:w-12"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -178,10 +186,10 @@
                 d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
               />
             </svg>
-            <h2 class="text-base-content/80 mt-4 text-2xl font-semibold">
+            <h2 class="text-base-content/80 mt-3 text-xl font-semibold sm:mt-4 sm:text-2xl">
               {data.searchQuery ? no_search_results() : search_gas_libraries()}
             </h2>
-            <p class="text-base-content/60 py-6">
+            <p class="text-base-content/60 py-4 text-sm sm:py-6 sm:text-base">
               {data.searchQuery ? try_different_keywords() : search_from_box()}
             </p>
           </div>

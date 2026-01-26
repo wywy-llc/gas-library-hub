@@ -136,21 +136,21 @@
   });
 </script>
 
-<div class="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+<div class="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
   {#if isAdminMode}
     <!-- 管理者モード: ヘッダーにアクションボタン -->
     <div class="mx-auto max-w-3xl">
-      <div class="mb-8 flex items-center justify-between">
+      <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-3xl font-bold">{m.library_detail_title()}</h1>
-          <div class="mt-2 flex items-center space-x-3">
+          <h1 class="text-2xl font-bold sm:text-3xl">{m.library_detail_title()}</h1>
+          <div class="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
             <p class="text-sm opacity-70">{library.name}</p>
             <span class={getStatusBadge(library.status)}>
               {getStatusText(library.status)}
             </span>
           </div>
         </div>
-        <div class="flex space-x-2">
+        <div class="flex flex-wrap gap-2">
           <button
             type="button"
             onclick={onScraping}
@@ -207,15 +207,21 @@
     </div>
   {/if}
 
-  <div class="lg:grid lg:grid-cols-12 lg:gap-6 {isAdminMode ? 'mx-auto max-w-none' : ''}">
+  <div
+    class="flex flex-col-reverse gap-6 lg:grid lg:grid-cols-12 lg:gap-8 {isAdminMode
+      ? 'mx-auto max-w-none'
+      : ''}"
+  >
     <!-- メインコンテンツ（左カラム） -->
-    <div class="lg:col-span-9">
+    <div class="lg:col-span-8 xl:col-span-9">
       {#if !isAdminMode}
-        <div class="mb-8">
-          <h1 class="text-2xl font-bold sm:text-3xl">
+        <div class="mb-6 sm:mb-8">
+          <h1 class="text-xl font-bold sm:text-2xl lg:text-3xl">
             {library.name}
           </h1>
-          <p class="mt-3 leading-relaxed opacity-70">{library.description}</p>
+          <p class="mt-2 text-sm leading-relaxed opacity-70 sm:mt-3 sm:text-base">
+            {library.description}
+          </p>
         </div>
       {/if}
 
@@ -535,9 +541,9 @@
       {/if}
     </div>
 
-    <!-- サイドバー（右カラム） -->
-    <aside class="mt-8 lg:col-span-3 lg:mt-0">
-      <div class="sticky top-24 space-y-4">
+    <!-- サイドバー（右カラム） - モバイルでは上部に表示 -->
+    <aside class="lg:col-span-4 xl:col-span-3">
+      <div class="space-y-4 lg:sticky lg:top-24">
         {#if library.scriptType === 'library'}
           <!-- インストールカード -->
           <div class="card bg-base-100 shadow-sm">
